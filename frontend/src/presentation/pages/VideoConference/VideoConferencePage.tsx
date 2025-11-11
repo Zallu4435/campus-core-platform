@@ -82,7 +82,8 @@ export const VideoConferencePage: React.FC = () => {
       return;
     }
 
-    const SOCKET_URL = 'https://vago-uv.ddns.net';
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+    const SOCKET_URL = apiBaseUrl.replace('/api', '');
     const socket = io(SOCKET_URL, {
       transports: ['websocket'],
       auth: { userId }

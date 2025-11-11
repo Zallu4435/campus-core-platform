@@ -38,24 +38,27 @@ A modern, responsive web application built with React and TypeScript for managin
 3. **Environment Setup**
    Create a `.env` file in the frontend root directory with the following variables:
    ```env
-   # API Configuration
-   VITE_API_BASE_URL="http://localhost:3000/api/v1"
+   # API Configuration (REQUIRED)
+   VITE_API_BASE_URL=http://localhost:5000/api
    
-   # Firebase Configuration
-   VITE_FIREBASE_API_KEY="your_firebase_api_key"
-   VITE_FIREBASE_AUTH_DOMAIN="your_project.firebaseapp.com"
-   VITE_FIREBASE_PROJECT_ID="your_project_id"
-   VITE_FIREBASE_STORAGE_BUCKET="your_project.appspot.com"
-   VITE_FIREBASE_MESSAGING_SENDER_ID="your_sender_id"
-   VITE_FIREBASE_APP_ID="your_app_id"
+   # Firebase Configuration (REQUIRED)
+   VITE_FIREBASE_API_KEY=your_firebase_api_key
+   VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+   VITE_FIREBASE_PROJECT_ID=your_project_id
+   VITE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+   VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+   VITE_FIREBASE_APP_ID=your_app_id
+   VITE_FIREBASE_MEASUREMENT_ID=your_measurement_id
+   VITE_FIREBASE_VAPID_KEY=your_firebase_vapid_key
    
-   # Stripe Configuration
-   VITE_STRIPE_PUBLISHABLE_KEY="your_stripe_publishable_key"
-   
-   # Feature Flags
-   VITE_ENABLE_PWA="true"
-   VITE_ENABLE_ANALYTICS="false"
+   # Payment Gateways
+   VITE_STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
+   VITE_RAZORPAY_KEY_ID=your_razorpay_key_id
    ```
+   
+   **Important**: Copy `.env.example` to `.env` and update with your actual values.
+   
+   **Note**: The `VITE_API_BASE_URL` should match your backend URL. For Socket.IO connections (chat, video conference), the base URL without `/api` will be used automatically.
 
 ## 🚀 Available Scripts
 

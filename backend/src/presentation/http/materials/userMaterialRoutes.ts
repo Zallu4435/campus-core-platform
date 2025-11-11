@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { expressAdapter } from '../../adapters/ExpressAdapter';
 import { makeUserMaterialController } from '../../../infrastructure/services/materials/UserMaterialComposers';
 import { authMiddleware } from '../../../shared/middlewares/authMiddleware';
+import { config } from '../../../config/config';
 const fetch = require('node-fetch');
 
 const userMaterialRoutes = Router();
@@ -41,7 +42,7 @@ userMaterialRoutes.get('/:id/download-file', authMiddleware, async (req: Request
     await repo.incrementDownloads(materialId);
     let fileUrl = material.fileUrl;
     if (!/^https?:\/\//i.test(fileUrl)) {
-      fileUrl = `https://vago-uv.ddns.net${fileUrl.startsWith('/') ? '' : '/'}${fileUrl}`;
+      fileUrl = `${config.backendUrl}${fileUrl.startsWith('/') ? '' : '/'}${fileUrl}`;
     }
     let fileName = (material.title || 'material').replace(/\s+/g, '_') + '.' + (fileUrl.split('.').pop().split('?')[0] || 'pdf');
     fileName = fileName.replace(/[^a-zA-Z0-9._-]/g, '');

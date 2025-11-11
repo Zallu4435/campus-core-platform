@@ -24,6 +24,7 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 httpServer.listen(port, () => {
-    Logger.info(`Server running on http://localhost:${port}`);
-    Logger.info(`Socket.IO available at ws://localhost:${port}/socket.io/`);
+    Logger.info(`Server running on port ${port}`);
+    Logger.info(`Backend URL: ${config.backendUrl}`);
+    Logger.info(`Socket.IO available at ${config.backendUrl.replace('http', 'ws')}/socket.io/`);
 });

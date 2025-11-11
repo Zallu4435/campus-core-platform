@@ -8,7 +8,7 @@ interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
 }
 
 const httpClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'https://vago-university.onrender.com/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL,
   timeout: 15000,
   withCredentials: true,
 });

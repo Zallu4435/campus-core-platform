@@ -21,13 +21,7 @@ const app = express();
 const httpServer = createServer(app);
 
 const corsOptions = {
-  origin: [
-    "http://localhost:5173",
-    "http://localhost:3000",
-    "http://10.0.14.4:5173",
-    "http://10.0.14.4:3000",
-    "https://vago-uv.ddns.net"
-  ],
+  origin: process.env.CORS_ORIGINS?.split(',') || [config.frontendUrl],
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
   allowedHeaders: ["Content-Type", "Authorization", "Cookie", "X-Requested-With"],

@@ -38,18 +38,34 @@ A comprehensive backend API for managing university academy operations including
 3. **Environment Setup**
    Create a `.env` file in the backend root directory with the following variables:
    ```env
-   # Database
-   DATABASE_URL="your_mongodb_connection_string"
+   # URLs (REQUIRED)
+   FRONTEND_URL="http://localhost:5173"
+   BACKEND_BASE_URL="http://localhost:5000"
+   CORS_ORIGINS="http://localhost:5173,http://localhost:3000,https://yourdomain.com"
    
-   # JWT
+   # Database (REQUIRED)
+   MONGODB_URI="your_mongodb_connection_string"
+   DATABASE_URL="your_postgresql_connection_string"
+   
+   # JWT (REQUIRED)
    JWT_SECRET="your_jwt_secret_key"
+   JWT_REFRESH_SECRET="your_refresh_jwt_secret_key"
+   JWT_EXPIRES_IN="7d"
    
-   # Cloudinary
+   # Email (REQUIRED)
+   EMAIL_HOST="your_smtp_host"
+   EMAIL_PORT="587"
+   EMAIL_SECURE="false"
+   EMAIL_USER="your_email"
+   EMAIL_PASSWORD="your_password"
+   EMAIL_FROM="Your App Name <your_email@example.com>"
+   
+   # Cloudinary (REQUIRED)
    CLOUDINARY_CLOUD_NAME="your_cloud_name"
    CLOUDINARY_API_KEY="your_api_key"
    CLOUDINARY_API_SECRET="your_api_secret"
    
-   # Firebase
+   # Firebase (REQUIRED)
    FIREBASE_PROJECT_ID="your_project_id"
    FIREBASE_PRIVATE_KEY="your_private_key"
    FIREBASE_CLIENT_EMAIL="your_client_email"
@@ -57,14 +73,10 @@ A comprehensive backend API for managing university academy operations including
    # Payment Gateways
    STRIPE_SECRET_KEY="your_stripe_secret"
    RAZORPAY_KEY_ID="your_razorpay_key"
-   RAZORPAY_SECRET="your_razorpay_secret"
-   
-   # Email
-   SMTP_HOST="your_smtp_host"
-   SMTP_PORT="587"
-   SMTP_USER="your_email"
-   SMTP_PASS="your_password"
+   RAZORPAY_KEY_SECRET="your_razorpay_secret"
    ```
+   
+   **Important**: Copy `.env.example` to `.env` and update with your actual values.
 
 ## 🚀 Available Scripts
 
