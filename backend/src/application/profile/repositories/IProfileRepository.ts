@@ -1,11 +1,11 @@
-import { GetProfileResult, ProfileUser, SaveableProfileUser } from "../../../domain/profile/entities/User";
+// IProfileRepository.ts
+import { Profile } from "../../../domain/profile/entities/Profile";
 
 export interface IProfileRepository {
-    getProfile(userId: string): Promise<GetProfileResult>;
-    updateProfile(userId: string): Promise<{ user: SaveableProfileUser; isFaculty: boolean }>;
-    changePassword(userId: string): Promise<SaveableProfileUser>;
-    updateProfilePicture(userId: string): Promise<SaveableProfileUser>;
-    findUserByEmail(email: string): Promise<ProfileUser>;
-    findFacultyByEmail(email: string): Promise<ProfileUser>;
-    saveUser<T extends { save: () => Promise<T> }>(user: T): Promise<T>;
+    getProfile(userId: string): Promise<Profile | null>;
+    findByEmail(email: string): Promise<Profile | null>; // Search both collections
+    save(profile: Profile): Promise<Profile>; // Save to appropriate collection
+
+    // Explicit checks if strictly needed for conflict resolution (e.g. updating email)
+    checkEmailExists(email: string): Promise<boolean>;
 }

@@ -3,14 +3,14 @@ import {
     UpdateProfileRequestDTO,
     ChangePasswordRequestDTO,
     UpdateProfilePictureRequestDTO,
-} from "../../../domain/profile/dtos/ProfileRequestDTOs";
+} from "../dtos/ProfileRequestDTOs";
 import {
     ProfileResponseDTO,
     UpdateProfileResponseDTO,
     ChangePasswordResponseDTO,
     UpdateProfilePictureResponseDTO,
     ResponseDTO
-} from "../../../domain/profile/dtos/ProfileResponseDTOs";
+} from "../dtos/ProfileResponseDTOs";
 
 export interface IGetProfileUseCase {
     execute(params: GetProfileRequestDTO): Promise<ResponseDTO<ProfileResponseDTO>>;

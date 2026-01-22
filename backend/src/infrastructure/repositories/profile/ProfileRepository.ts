@@ -1,59 +1,61 @@
+// ProfileRepository.ts
 import { User } from "../../database/mongoose/auth/user.model";
 import { Faculty } from "../../database/mongoose/auth/faculty.model";
 import { IProfileRepository } from "../../../application/profile/repositories/IProfileRepository";
+import { IProfileMapper } from "../../../application/profile/interfaces/IProfileMapper";
+import { Profile } from "../../../domain/profile/entities/Profile";
+import { ProfileRole } from "../../../domain/profile/entities/ProfileTypes";
 
 export class ProfileRepository implements IProfileRepository {
-    async getProfile(userId: string) {
-        let user = await User.findById(userId).select("firstName lastName email phone profilePicture passwordChangedAt");
-        let isFaculty = false;
-        if (!user) {
-            const faculty = await Faculty.findById(userId).select("firstName lastName email phone profilePicture passwordChangedAt");
-            user = faculty;
-            isFaculty = true;
+    constructor(private _mapper: IProfileMapper) { }
+
+    async getProfile(userId: string): Promise<Profile | null> {
+        let userDocs = await User.findById(userId);
+        if (userDocs) {
+            return this._mapper.toDomain(userDocs, false);
         }
-        return { user, isFaculty };
-    } 
 
-    async updateProfile(userId: string) {
-        let user = await User.findById(userId);
-        let isFaculty = false;
-        if (!user) {
-            const faculty = await Faculty.findById(userId);
-            user = faculty;
-            isFaculty = true;
+        let facultyDocs = await Faculty.findById(userId);
+        if (facultyDocs) {
+            return this._mapper.toDomain(facultyDocs, true);
         }
-        return { user, isFaculty };
+
+        return null;
     }
 
-    async findUserByEmail(email: string) {
-        const user = await User.findOne({ email });
-        return user;
-    }
-
-    async findFacultyByEmail(email: string) {
-        const faculty = await Faculty.findOne({ email });
-        return faculty;
-    }
-
-    async saveUser(user) {
-        return await user.save();
-    }
-
-    async changePassword(userId: string) {
-        let user = await User.findById(userId);
-        if (!user) {
-            const faculty = await Faculty.findById(userId);
-            user = faculty;
+    async findByEmail(email: string): Promise<Profile | null> {
+        let userDocs = await User.findOne({ email });
+        if (userDocs) {
+            return this._mapper.toDomain(userDocs, false);
         }
-        return user;
+
+        let facultyDocs = await Faculty.findOne({ email });
+        if (facultyDocs) {
+            return this._mapper.toDomain(facultyDocs, true);
+        }
+
+        return null;
     }
 
-    async updateProfilePicture(userId: string) {
-        let user = await User.findById(userId);
-        if (!user) {
-            const faculty = await Faculty.findById(userId);
-            user = faculty;
+    async checkEmailExists(email: string): Promise<boolean> {
+        const userCount = await User.countDocuments({ email });
+        if (userCount > 0) return true;
+        const facultyCount = await Faculty.countDocuments({ email });
+        return facultyCount > 0;
+    }
+
+    async save(profile: Profile): Promise<Profile> {
+        const persistence = this._mapper.toPersistence(profile);
+        const { _id, ...updateData } = persistence;
+
+        if (profile.role === ProfileRole.Faculty) {
+            const updated = await Faculty.findByIdAndUpdate(_id, updateData, { new: true });
+            if (!updated) throw new Error("Faculty not found to update");
+            return this._mapper.toDomain(updated, true);
+        } else {
+            const updated = await User.findByIdAndUpdate(_id, updateData, { new: true });
+            if (!updated) throw new Error("Student not found to update");
+            return this._mapper.toDomain(updated, false);
         }
-        return user;
     }
 }

@@ -48,28 +48,28 @@ export class AdmissionMapper implements IAdmissionMapper {
         return domain;
     }
 
-    toDTO(domain: AdminAdmission | FullAdmissionDetails, blocked?: boolean): Record<string, any> {
-        return {
+    toDTO(domain: AdminAdmission | FullAdmissionDetails, blocked?: boolean): any {
+        // For list view (GetAdmissions), return simplified DTO
+        const baseDTO = {
             _id: domain.id,
-            id: domain.id,
-            registerId: domain.registerId,
-            applicationId: domain.applicationId,
-            personal: domain.personal,
-            choiceOfStudy: domain.choiceOfStudy,
-            education: domain.education,
-            achievements: domain.achievements,
-            otherInformation: domain.otherInformation,
-            documents: domain.documents,
-            declaration: domain.declaration,
-            paymentId: domain.paymentId,
+            fullName: domain.personal?.fullName || "",
+            email: domain.personal?.emailAddress || "",
+            createdAt: domain.createdAt.toISOString ? domain.createdAt.toISOString() : domain.createdAt.toString(),
             status: domain.status,
-            confirmationToken: domain.confirmationToken,
-            tokenExpiry: domain.tokenExpiry,
-            rejectedBy: domain.rejectedBy,
-            createdAt: domain.createdAt,
-            updatedAt: domain.updatedAt,
-            ...(blocked !== undefined && { blocked })
+            program: domain.choiceOfStudy?.[0]?.programme || "",
         };
+
+        // For detail view (GetAdmissionById), return full details
+        if ('registerId' in domain) {
+            return {
+                ...domain,
+                _id: domain.id,
+                createdAt: domain.createdAt.toISOString ? domain.createdAt.toISOString() : domain.createdAt.toString(),
+                ...(blocked !== undefined && { blocked })
+            };
+        }
+
+        return baseDTO;
     }
 
     toPersistence(domain: AdminAdmission | FullAdmissionDetails): AdmissionPersistenceData {

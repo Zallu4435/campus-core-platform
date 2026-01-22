@@ -1,44 +1,54 @@
+// ProfileUseCases.ts
 import {
     GetProfileRequestDTO,
     UpdateProfileRequestDTO,
     ChangePasswordRequestDTO,
     UpdateProfilePictureRequestDTO,
-} from "../../../domain/profile/dtos/ProfileRequestDTOs";
+} from "../dtos/ProfileRequestDTOs";
 import {
     ProfileResponseDTO,
     UpdateProfileResponseDTO,
     ChangePasswordResponseDTO,
     UpdateProfilePictureResponseDTO,
     ResponseDTO
-} from "../../../domain/profile/dtos/ProfileResponseDTOs";
-import { ProfileErrorType } from "../../../domain/profile/enums/ProfileErrorType";
+} from "../dtos/ProfileResponseDTOs";
 import { IProfileRepository } from "../repositories/IProfileRepository";
-import bcrypt from "bcryptjs";
+import { IPasswordService } from "../services/IPasswordService";
 import {
     IGetProfileUseCase,
     IUpdateProfileUseCase,
     IChangePasswordUseCase,
     IUpdateProfilePictureUseCase
 } from "./IProfileUseCases";
+import { ProfileRole } from "../../../domain/profile/entities/ProfileTypes";
+import {
+    ProfileNotFoundError,
+    EmailAlreadyInUseError,
+    InvalidPasswordError,
+    PasswordMismatchError
+} from "../../../domain/profile/errors/ProfileErrors";
 
 
 export class GetProfileUseCase implements IGetProfileUseCase {
-    constructor(private profileRepository: IProfileRepository) { }
+    constructor(private _profileRepository: IProfileRepository) { }
 
     async execute(params: GetProfileRequestDTO): Promise<ResponseDTO<ProfileResponseDTO>> {
-        const { user, isFaculty } = await this.profileRepository.getProfile(params.userId);
+        const user = await this._profileRepository.getProfile(params.userId);
         if (!user) {
-            return { data: { error: ProfileErrorType.UserNotFound }, success: false };
+            throw new ProfileNotFoundError();
         }
+
+        const isFaculty = user.role === ProfileRole.Faculty;
+
         return {
             data: {
                 firstName: user.firstName,
-                lastName: user.lastName || undefined,
+                lastName: user.lastName,
                 email: user.email,
                 phone: user.phone,
                 profilePicture: user.profilePicture,
-                facultyId: isFaculty ? user._id.toString() : undefined,
-                studentId: !isFaculty ? user._id.toString() : undefined,
+                facultyId: isFaculty ? user.id : undefined,
+                studentId: !isFaculty ? user.id : undefined,
                 passwordChangedAt: user.passwordChangedAt ? user.passwordChangedAt.toISOString() : undefined,
             },
             success: true
@@ -47,31 +57,30 @@ export class GetProfileUseCase implements IGetProfileUseCase {
 }
 
 export class UpdateProfileUseCase implements IUpdateProfileUseCase {
-    constructor(private profileRepository: IProfileRepository) { }
+    constructor(private _profileRepository: IProfileRepository) { }
 
     async execute(params: UpdateProfileRequestDTO): Promise<ResponseDTO<UpdateProfileResponseDTO>> {
-        const { user, isFaculty } = await this.profileRepository.updateProfile(params.userId);
+        const user = await this._profileRepository.getProfile(params.userId);
         if (!user) {
-            return { data: { error: ProfileErrorType.UserNotFound }, success: false };
+            throw new ProfileNotFoundError();
         }
+
         if (params.email && params.email !== user.email) {
-            const existingUser = await this.profileRepository.findUserByEmail(params.email);
-            const existingFaculty = await this.profileRepository.findFacultyByEmail(params.email);
-            if (existingUser || existingFaculty) {
-                return { data: { error: ProfileErrorType.EmailAlreadyInUse }, success: false };
+            const existing = await this._profileRepository.findByEmail(params.email);
+            if (existing && existing.id !== user.id) {
+                throw new EmailAlreadyInUseError(params.email);
             }
         }
-        user.firstName = params.firstName;
-        user.lastName = params.lastName;
-        user.phone = params.phone;
-        user.email = params.email;
-        await this.profileRepository.saveUser(user);
+
+        user.updatePersonalDetails(params.firstName, params.lastName, params.phone, params.email);
+        const updated = await this._profileRepository.save(user);
+
         return {
             data: {
-                firstName: user.firstName,
-                lastName: user.lastName,
-                phone: user.phone,
-                email: user.email,
+                firstName: updated.firstName,
+                lastName: updated.lastName,
+                phone: updated.phone,
+                email: updated.email,
             },
             success: true
         };
@@ -79,36 +88,57 @@ export class UpdateProfileUseCase implements IUpdateProfileUseCase {
 }
 
 export class ChangePasswordUseCase implements IChangePasswordUseCase {
-    constructor(private profileRepository: IProfileRepository) { }
+    constructor(
+        private _profileRepository: IProfileRepository,
+        private _passwordService: IPasswordService
+    ) { }
 
     async execute(params: ChangePasswordRequestDTO): Promise<ResponseDTO<ChangePasswordResponseDTO>> {
         if (params.newPassword !== params.confirmPassword) {
-            return { data: { error: ProfileErrorType.PasswordsDoNotMatch }, success: false };
+            throw new PasswordMismatchError();
         }
-        let user = await this.profileRepository.changePassword(params.userId);
+
+        const user = await this._profileRepository.getProfile(params.userId);
         if (!user) {
-            return { data: { error: ProfileErrorType.UserNotFound }, success: false };
+            throw new ProfileNotFoundError();
         }
-        const isPasswordValid = await bcrypt.compare(params.currentPassword, user.password);
+
+        if (!user.password) {
+            throw new InvalidPasswordError("Password not set for user");
+        }
+
+        // Use password service abstraction
+        const isPasswordValid = await this._passwordService.compare(params.currentPassword, user.password);
         if (!isPasswordValid) {
-            return { data: { error: ProfileErrorType.IncorrectCurrentPassword }, success: false };
+            throw new InvalidPasswordError("Current password is incorrect");
         }
-        user.password = params.newPassword;
-        await this.profileRepository.saveUser(user);
+
+        // Validate password strength
+        if (!this._passwordService.validateStrength(params.newPassword)) {
+            throw new InvalidPasswordError("Password does not meet security requirements");
+        }
+
+        // Use password service for hashing
+        const hashedPassword = await this._passwordService.hash(params.newPassword);
+        user.changePassword(hashedPassword);
+        await this._profileRepository.save(user);
+
         return { data: { message: "Password updated successfully" }, success: true };
     }
 }
 
 export class UpdateProfilePictureUseCase implements IUpdateProfilePictureUseCase {
-    constructor(private profileRepository: IProfileRepository) { }
+    constructor(private _profileRepository: IProfileRepository) { }
 
     async execute(params: UpdateProfilePictureRequestDTO): Promise<ResponseDTO<UpdateProfilePictureResponseDTO>> {
-        let user = await this.profileRepository.updateProfilePicture(params.userId);
+        const user = await this._profileRepository.getProfile(params.userId);
         if (!user) {
-            return { data: { error: ProfileErrorType.UserNotFound }, success: false };
+            throw new ProfileNotFoundError();
         }
-        user.profilePicture = params.filePath;
-        await this.profileRepository.saveUser(user);
-        return { data: { profilePicture: user.profilePicture || "" }, success: true };
+
+        user.updateProfilePicture(params.filePath);
+        const updated = await this._profileRepository.save(user);
+
+        return { data: { profilePicture: updated.profilePicture || "" }, success: true };
     }
 }

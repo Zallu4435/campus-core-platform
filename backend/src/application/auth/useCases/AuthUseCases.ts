@@ -238,7 +238,7 @@ export class RefreshTokenUseCase implements IRefreshTokenUseCase {
         firstName: resultFromRepo.user.firstName,
         lastName: resultFromRepo.user.lastName,
         email: resultFromRepo.user.email,
-        id: resultFromRepo.user.id as string,
+        id: resultFromRepo.user.id || "",
         profilePicture: resultFromRepo.user.profilePicture,
       },
       collection: resultFromRepo.collection,
