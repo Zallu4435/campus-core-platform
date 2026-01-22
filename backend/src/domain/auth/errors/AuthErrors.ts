@@ -72,9 +72,43 @@ export class AlreadyConfirmedError extends DomainError {
     }
 }
 
-export class BlockedAccountError extends Error {
-  constructor(message = 'Account is blocked. Please contact support.') {
-    super(message);
-    this.name = 'BlockedAccountError';
-  }
+// Value Object Errors
+export class InvalidEmailError extends DomainError {
+    constructor(email: string) {
+        super(`Invalid email format: "${email}"`, "InvalidEmailError");
+    }
+}
+
+export class WeakPasswordError extends DomainError {
+    constructor() {
+        super(
+            "Password does not meet security requirements. Must be at least 8 characters with uppercase, lowercase, and numbers.",
+            "WeakPasswordError"
+        );
+    }
+}
+
+export class BlockedAccountError extends DomainError {
+    constructor(message = 'Account is blocked. Please contact support.') {
+        super(message, 'BlockedAccountError');
+    }
+}
+
+// Additional Domain Errors
+export class ValidationError extends DomainError {
+    constructor(message: string) {
+        super(message, 'ValidationError');
+    }
+}
+
+export class InvalidPhoneNumberError extends DomainError {
+    constructor(phone: string) {
+        super(`Invalid phone number format: "${phone}"`, 'InvalidPhoneNumberError');
+    }
+}
+
+export class SessionExpiredError extends DomainError {
+    constructor() {
+        super('Your session has expired. Please log in again.', 'SessionExpiredError');
+    }
 }

@@ -1,4 +1,4 @@
-import { IUser, FacultyProps } from "../entities/AuthTypes";
+import { IUser, FacultyProps } from "../../../domain/auth/entities/AuthTypes";
 
 export type RegisterRequestDTO = Pick<IUser, "firstName" | "lastName" | "email" | "password">;
 
@@ -10,13 +10,18 @@ export interface LoginRequestDTO {
 }
 
 export interface RefreshTokenRequestDTO {
-  refreshToken: string;
+  refreshToken?: string;
   userId?: string;
   email?: string;
   collection?: 'register' | 'admin' | 'user' | 'faculty';
 }
 
-export type LogoutRequestDTO = { sessionId: string };
+
+export interface LogoutRequestDTO {
+  sessionId?: string;
+  accessToken?: string;
+}
+
 
 export type RegisterFacultyRequestDTO = Pick<FacultyProps, "fullName" | "email" | "phone" | "department" | "qualification" | "experience" | "aboutMe" | "cvUrl" | "certificatesUrl">;
 

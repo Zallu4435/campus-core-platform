@@ -11,16 +11,12 @@ import {
   IConfirmRegistrationUseCase
 } from "../../../application/auth/useCases/IAuthUseCases";
 import { LogoutAllUseCase } from "../../../application/auth/useCases/AuthUseCases";
-import { AuthRepository } from '../../../infrastructure/repositories/auth/AuthRepository';
-import { facultyUpload } from "../../../config/cloudinary.config";
+import { AUTH_EXPIRIES, FACULTY_UPLOAD_CONSTANTS } from "../../../application/auth/constants/AuthConstants";
+import Logger from "../../../shared/utils/logger";
 
 export class AuthController implements IAuthController {
   private _httpErrors: HttpErrors;
   private _httpSuccess: HttpSuccess;
-  private _uploadDocuments = facultyUpload.fields([
-    { name: "cv", maxCount: 1 },
-    { name: "certificates", maxCount: 5 },
-  ]);
 
   constructor(
     private _registerUseCase: IRegisterUseCase,
@@ -32,8 +28,7 @@ export class AuthController implements IAuthController {
     private _verifyEmailOtpUseCase: IVerifyEmailOtpUseCase,
     private _resetPasswordUseCase: IResetPasswordUseCase,
     private _confirmRegistrationUseCase: IConfirmRegistrationUseCase,
-    private _logoutAllUseCase: LogoutAllUseCase,
-    private _authRepository: AuthRepository,
+    private _logoutAllUseCase: LogoutAllUseCase
   ) {
     this._httpErrors = new HttpErrors();
     this._httpSuccess = new HttpSuccess();
@@ -41,18 +36,16 @@ export class AuthController implements IAuthController {
 
   async register(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const { firstName, lastName, email, password } = httpRequest.body;
-    if (!firstName || !lastName || !email || !password) {
-      return this._httpErrors.error_400("All required fields must be provided!");
-    }
+
+    // Validation now handled by middleware
     const data = await this._registerUseCase.execute({ firstName, lastName, email, password });
     return this._httpSuccess.success_201(data);
   }
 
   async login(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const { email, password } = httpRequest.body;
-    if (!email || !password) {
-      return this._httpErrors.error_400("Email and password are required");
-    }
+
+    // Validation now handled by middleware
     const userAgent = (httpRequest.headers && httpRequest.headers['user-agent']) ? String(httpRequest.headers['user-agent']) : '';
     const ipAddress = httpRequest.ip || '';
     const data = await this._loginUseCase.execute({ email, password, userAgent, ipAddress });
@@ -70,7 +63,7 @@ export class AuthController implements IAuthController {
           secure: process.env.NODE_ENV === 'production',
           sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
           path: '/',
-          maxAge: 10 * 60 * 1000 
+          maxAge: AUTH_EXPIRIES.ACCESS_TOKEN_COOKIE_MS
         }
       }
     ];
@@ -79,15 +72,13 @@ export class AuthController implements IAuthController {
 
   async refreshToken(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const userId = httpRequest.body?.userId;
-    const allSessions = await this._authRepository.getAllSessions();
-    if (!userId) {
-      return this._httpErrors.error_400('No userId provided');
-    }
-    const session = await this._authRepository.findLatestSessionByUserId(userId);
-    if (!session) {
-      return this._httpErrors.error_401('No valid refresh session found');
-    }
-    const data = await this._refreshTokenUseCase.execute({ refreshToken: session.refreshToken });
+
+
+    // Validation now handled by middleware
+
+    // Delegate to use case - no repository access in controller
+    const data = await this._refreshTokenUseCase.execute({ userId });
+
     const response = this._httpSuccess.success_200({
       user: data.user,
       collection: data.collection,
@@ -101,7 +92,7 @@ export class AuthController implements IAuthController {
           secure: process.env.NODE_ENV === 'production',
           sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
           path: '/',
-          maxAge: 10 * 60 * 1000 
+          maxAge: AUTH_EXPIRIES.ACCESS_TOKEN_COOKIE_MS
         }
       }
     ];
@@ -110,53 +101,39 @@ export class AuthController implements IAuthController {
 
   async logout(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const accessToken = httpRequest.cookies?.access_token;
+
+    // Delegate to use case - no business logic in controller
+    await this._logoutUseCase.execute({ accessToken });
+
+    // Clear cookie and return response
     const response = this._httpSuccess.success_200({ message: 'Logged out successfully' });
     response.cookies = [
       { name: 'access_token', value: '', options: { httpOnly: true, path: '/', maxAge: 0 } }
     ];
-    if (!accessToken) {
-      return response;
-    }
-    let decoded;
-    try {
-      decoded = this._loginUseCase['jwtService'].verifyToken(accessToken);
-    } catch (err) {
-      return response;
-    }
-    const userId = decoded.userId;
-    await this._authRepository.deleteAllSessionsByUserId(userId);
+
     return response;
   }
 
   async logoutAll(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const accessToken = httpRequest.cookies?.access_token;
+
+    // Delegate to use case - no business logic in controller
+    await this._logoutAllUseCase.execute({ accessToken });
+
+    // Clear cookie and return response
     const response = this._httpSuccess.success_200({ message: 'Logged out from all devices' });
     response.cookies = [
       { name: 'access_token', value: '', options: { httpOnly: true, path: '/', maxAge: 0 } }
     ];
-    
-    if (!accessToken) {
-      return response;
-    }
-    
-    let decoded;
-    try {
-      decoded = this._loginUseCase['jwtService'].verifyToken(accessToken);
-    } catch (err) {
-      return response; // Return success even if token is invalid
-    }
-    
-    const userId = decoded.userId;
-    await this._logoutAllUseCase.execute({ userId });
+
     return response;
   }
 
   async registerFaculty(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const { fullName, email, phone, department, qualification, experience, aboutMe } = httpRequest.body;
 
-    if (!fullName || !email || !phone || !department || !qualification || !experience || !aboutMe) {
-      return this._httpErrors.error_400("All required fields must be provided!");
-    }
+
+    // Validation now handled by middleware
 
     const files = httpRequest.files as Express.Multer.File[];
     let cvUrl: string | undefined;
@@ -164,14 +141,14 @@ export class AuthController implements IAuthController {
 
     if (Array.isArray(files)) {
       for (const file of files) {
-        if (file.fieldname === 'cv') {
+        if (file.fieldname === FACULTY_UPLOAD_CONSTANTS.FIELDS.CV) {
           cvUrl = file.path;
-        } else if (file.fieldname === 'certificates') {
+        } else if (file.fieldname === FACULTY_UPLOAD_CONSTANTS.FIELDS.CERTIFICATES) {
           certificatesUrl.push(file.path);
         }
       }
     } else {
-      console.error('No files uploaded or invalid file structure');
+      Logger.error('No files uploaded or invalid file structure');
     }
 
     try {
@@ -197,27 +174,24 @@ export class AuthController implements IAuthController {
 
   async sendEmailOtp(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const { email } = httpRequest.body;
-    if (!email) {
-      return this._httpErrors.error_400("Email is required");
-    }
+
+    // Validation now handled by middleware
     const data = await this._sendEmailOtpUseCase.execute({ email });
     return this._httpSuccess.success_200(data);
   }
 
   async verifyEmailOtp(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const { email, otp } = httpRequest.body;
-    if (!email || !otp) {
-      return this._httpErrors.error_400("Email and OTP are required");
-    }
+
+    // Validation now handled by middleware
     const data = await this._verifyEmailOtpUseCase.execute({ email, otp });
     return this._httpSuccess.success_200(data);
   }
 
   async resetPassword(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const { resetToken, newPassword } = httpRequest.body;
-    if (!resetToken || !newPassword) {
-      return this._httpErrors.error_400("Reset token and new password are required");
-    }
+
+    // Validation now handled by middleware
     const data = await this._resetPasswordUseCase.execute({ resetToken, newPassword });
     return this._httpSuccess.success_200(data);
   }

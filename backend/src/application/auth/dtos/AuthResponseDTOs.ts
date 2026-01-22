@@ -1,21 +1,21 @@
-import { IUser, FacultyProps } from "../entities/AuthTypes";
+import { UserDTO, FacultyDTO } from "./UserDTO";
 
 export interface RegisterResponseDTO {
   message: string;
-  user: Pick<IUser, "firstName" | "lastName" | "email"> & { id: string };
+  user: { id: string; firstName: string; lastName: string; email: string };
 }
 
 export interface LoginResponseDTO {
   accessToken: string;
   refreshToken: string;
-  user: Pick<IUser, "firstName" | "lastName" | "email" | "id" | "profilePicture"> & { password: string; blocked?: boolean };
+  user: UserDTO;
   collection: "register" | "admin" | "user" | "faculty";
   sessionId: string;
 }
 
 export interface RefreshTokenResponseDTO {
   accessToken: string;
-  user: Pick<IUser, "firstName" | "lastName" | "email" | "id" | "profilePicture">;
+  user: UserDTO;
   collection: "register" | "admin" | "user" | "faculty";
 }
 
@@ -25,7 +25,13 @@ export interface LogoutResponseDTO {
 
 export interface RegisterFacultyResponseDTO {
   token: string;
-  user: Pick<FacultyProps, "fullName" | "email" | "phone" | "department" | "id">;
+  user: {
+    id: string;
+    fullName: string;
+    email: string;
+    phone: string;
+    department: string;
+  };
   collection: "faculty";
 }
 
@@ -39,6 +45,10 @@ export interface VerifyEmailOtpResponseDTO {
 
 export interface ResetPasswordResponseDTO {
   token: string;
-  user: Pick<IUser, "firstName" | "lastName" | "email" | "id" | "profilePicture">;
+  user: UserDTO;
   collection: "register" | "admin" | "user" | "faculty";
+}
+
+export interface GenericResponseDTO {
+  message: string;
 }

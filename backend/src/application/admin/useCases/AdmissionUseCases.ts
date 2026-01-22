@@ -260,7 +260,11 @@ export class BlockAdmissionUseCase implements IBlockAdmissionUseCase {
         if (!user) {
             throw new AdminRegisterUserNotFoundError();
         }
-        user.blocked = !user.blocked;
+        if (user.blocked) {
+            user.unblock();
+        } else {
+            user.block();
+        }
         await this._admissionRepository.saveUser(user);
         return {
             data: { message: user.blocked ? 'User blocked' : 'User unblocked' },

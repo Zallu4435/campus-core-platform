@@ -1,18 +1,8 @@
-import { Schema, model, Document } from 'mongoose';
-
-export interface IRefreshSession extends Document {
-    userId: string;
-    sessionId: string;
-    refreshToken: string;
-    userAgent: string;
-    ipAddress: string;
-    createdAt: Date;
-    lastUsedAt: Date;
-    expiresAt: Date;
-}
+import { Schema, model } from 'mongoose';
+import { IRefreshSession } from '../../../../domain/auth/entities/AuthTypes';
 
 const RefreshSessionSchema = new Schema<IRefreshSession>({
-    userId: { type: String, required: true },
+    userId: { type: String, required: true, index: true },
     sessionId: { type: String, required: true, unique: true },
     refreshToken: { type: String, required: true },
     userAgent: { type: String, required: true },

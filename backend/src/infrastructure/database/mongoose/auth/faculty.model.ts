@@ -34,6 +34,11 @@ facultySchema.pre("save", async function (next) {
 
   if (!faculty.isModified("password")) return next();
 
+  // If password is already hashed (starts with $2a$, $2b$, or $2y$ and is 60 chars long), skip
+  if (/^\$2[aby]\$[\d]+\$/.test(faculty.password) && faculty.password.length === 60) {
+    return next();
+  }
+
   try {
     const salt = await bcrypt.genSalt(10);
     faculty.password = await bcrypt.hash(faculty.password, salt);

@@ -1,5 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import { IFacultyRegister } from '../../../../domain/faculty/FacultyTypes';
+import { IFacultyRegister } from '../../../../domain/auth/entities/AuthTypes';
 
 const FacultyRegisterSchema: Schema = new Schema<IFacultyRegister>(
   {

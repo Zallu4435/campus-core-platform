@@ -1,11 +1,12 @@
 import {
   RegisterRequestDTO, LoginRequestDTO, RefreshTokenRequestDTO, LogoutRequestDTO,
   RegisterFacultyRequestDTO, SendEmailOtpRequestDTO, VerifyEmailOtpRequestDTO, ResetPasswordRequestDTO,
-} from "../../../domain/auth/dtos/AuthRequestDTOs";
+} from "../dtos/AuthRequestDTOs";
 import {
   RegisterResponseDTO, LoginResponseDTO, RefreshTokenResponseDTO, LogoutResponseDTO,
   RegisterFacultyResponseDTO, SendEmailOtpResponseDTO, VerifyEmailOtpResponseDTO, ResetPasswordResponseDTO,
-} from "../../../domain/auth/dtos/AuthResponseDTOs";
+  GenericResponseDTO
+} from "../dtos/AuthResponseDTOs";
 
 export interface IRegisterUseCase {
   execute(params: RegisterRequestDTO): Promise<RegisterResponseDTO>;
@@ -39,6 +40,10 @@ export interface IResetPasswordUseCase {
   execute(params: ResetPasswordRequestDTO): Promise<ResetPasswordResponseDTO>;
 }
 
+export interface ILogoutAllUseCase {
+  execute(params: { userId?: string; accessToken?: string }): Promise<GenericResponseDTO>;
+}
+
 export interface IConfirmRegistrationUseCase {
-  execute(token: string): Promise<{ message: string }>;
+  execute(token: string): Promise<GenericResponseDTO>;
 }

@@ -13,6 +13,7 @@ import {
   NextFunction,
   FolderCallback
 } from './cloudinary.types';
+import { FACULTY_UPLOAD_CONSTANTS } from '../application/auth/constants/AuthConstants';
 
 cloudinary.config({
   cloud_name: appConfig.cloudinary.cloudName,
@@ -24,7 +25,7 @@ const facultyStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: () => 'faculty-documents',
-    allowed_formats: () => ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'],
+    allowed_formats: () => FACULTY_UPLOAD_CONSTANTS.ALLOWED_FORMATS,
     resource_type: ((req: Request, file: Express.Multer.File) => {
       const ext = file.originalname.split('.').pop()?.toLowerCase();
       const type = (['pdf', 'doc', 'docx'].includes(ext)) ? 'raw' : 'image';
@@ -33,7 +34,7 @@ const facultyStorage = new CloudinaryStorage({
     public_id: ((req: Request, file: Express.Multer.File) => {
       const timestamp = Date.now();
       const originalName = file.originalname.split('.')[0];
-      const fieldName = file.fieldname; 
+      const fieldName = file.fieldname;
       const id = `faculty_${fieldName}_${timestamp}_${originalName}`;
       return id;
     }) as PublicIdCallback
@@ -56,7 +57,7 @@ const messageAttachmentStorage = new CloudinaryStorage({
   params: {
     folder: () => 'message-attachments',
     allowed_formats: () => ['pdf', 'doc', 'docx', 'txt', 'jpg', 'jpeg', 'png'],
-    resource_type: () => 'auto', 
+    resource_type: () => 'auto',
     transformation: () => [{ quality: 'auto' }],
   } as CloudinaryStorageParams,
 });
@@ -89,7 +90,7 @@ const assignmentSubmissionStorage = new CloudinaryStorage({
     resource_type: ((req: Request, file: Express.Multer.File) => {
       const ext = file.originalname.split('.').pop()?.toLowerCase();
       console.log('🔍 Determining resource_type for extension:', ext);
-      
+
       if (['pdf', 'doc', 'docx', 'txt'].includes(ext)) {
         console.log('📄 Document detected, using resource_type: raw');
         return 'raw';
@@ -134,7 +135,7 @@ const materialStorage = new CloudinaryStorage({
       const originalName = file.originalname.split('.')[0];
       const fieldName = file.fieldname;
       const ext = file.originalname.split('.').pop()?.toLowerCase();
-      
+
       if (fieldName === 'thumbnail') {
         return `material_thumbnail_${timestamp}_${originalName}`;
       }
@@ -178,7 +179,7 @@ const siteSectionImageStorage = new CloudinaryStorage({
 
 const siteSectionImageUpload = multer({
   storage: siteSectionImageStorage,
-  limits: { fileSize: 5 * 1024 * 1024 }, 
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const allowedMimeTypes = [
       'image/jpeg',
@@ -196,7 +197,7 @@ const siteSectionImageUpload = multer({
 
 const facultyUpload = multer({
   storage: facultyStorage,
-  limits: { fileSize: 10 * 1024 * 1024 },
+  limits: { fileSize: FACULTY_UPLOAD_CONSTANTS.LIMITS.FILE_SIZE },
 });
 const profilePictureUpload = multer({
   storage: profilePictureStorage,
@@ -232,7 +233,7 @@ const assignmentSubmissionUpload = multer({
   storage: assignmentSubmissionStorage,
   limits: {
     fileSize: 10 * 1024 * 1024,
-    files: 1 
+    files: 1
   },
   fileFilter: (req, file, cb) => {
     console.log('🔍 File filter checking file:', {
@@ -241,7 +242,7 @@ const assignmentSubmissionUpload = multer({
       size: file.size,
       fieldname: file.fieldname
     });
-    
+
     const allowedMimeTypes = [
       'application/pdf',
       'application/msword',
@@ -275,7 +276,7 @@ const assignmentSubmissionUpload = multer({
 
 const materialUpload = multer({
   storage: materialStorage,
-  limits: { fileSize: 20 * 1024 * 1024 }, 
+  limits: { fileSize: 20 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const ext = file.originalname.split('.').pop()?.toLowerCase();
     const allowedMimeTypes = [
@@ -286,7 +287,7 @@ const materialUpload = multer({
       'image/jpeg',
       'image/png'
     ];
-    const allowedFormats = ['pdf', 'doc', 'docx', 'txt', 'jpg', 'jpeg', 'png']; 
+    const allowedFormats = ['pdf', 'doc', 'docx', 'txt', 'jpg', 'jpeg', 'png'];
     if (!ext || !allowedFormats.includes(ext)) {
       console.error('[MaterialUpload] Extension not allowed:', ext);
       return cb(new Error(`File extension .${ext} is not allowed. Allowed: ${allowedFormats.join(', ')}`));
@@ -306,7 +307,7 @@ const admissionDocumentUpload = multer({
   storage: admissionDocumentStorage,
   limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-  
+
     const allowedMimeTypes = [
       'application/pdf',
       'application/msword',
@@ -327,11 +328,11 @@ const admissionDocumentUpload = multer({
 const contentVideoStorage = new CloudinaryStorage({
   cloudinary,
   params: {
-    folder: () => 'content',          
+    folder: () => 'content',
     resource_type: () => 'video',
     allowed_formats: () => ['mp4', 'mov', 'avi', 'webm', 'mkv'],
     transformation: () => [{ quality: 'auto' }],
-    timeout: () => 60000, 
+    timeout: () => 60000,
   } as CloudinaryStorageParams,
 });
 
@@ -342,10 +343,10 @@ const contentVideoUpload = multer({
 
     const allowedMimeTypes = [
       'video/mp4',
-      'video/quicktime',    
-      'video/x-msvideo',    
+      'video/quicktime',
+      'video/x-msvideo',
       'video/webm',
-      'video/x-matroska',   
+      'video/x-matroska',
     ];
 
     if (allowedMimeTypes.includes(file.mimetype)) {
@@ -364,7 +365,7 @@ const contentVideoUploadWithErrorHandling = (req: Request, res: Response, next: 
 
   const isUpdateRequest = req.method === 'PUT';
   const hasFile = req.headers['content-type']?.includes('multipart/form-data');
-  
+
   if (isUpdateRequest && !hasFile) {
     return next();
   }
