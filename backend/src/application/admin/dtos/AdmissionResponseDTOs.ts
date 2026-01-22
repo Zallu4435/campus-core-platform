@@ -1,4 +1,4 @@
-import { AdminAdmission, AdminAdmissionStatus, FullAdmissionDetails } from '../entities/AdminAdmissionTypes';
+import { AdminAdmission, AdminAdmissionStatus, FullAdmissionDetails } from '../../../domain/admin/entities/AdminAdmissionTypes';
 
 export interface AdmissionResponseDTO {
     _id: string;
@@ -16,8 +16,12 @@ export interface GetAdmissionsResponseDTO {
     currentPage: number;
 }
 
+/**
+ * Response DTO for getting admission by ID
+ * Extends FullAdmissionDetails with computed/derived fields
+ */
 export interface GetAdmissionByIdResponseDTO extends FullAdmissionDetails {
-    blocked?: boolean;
+    blocked: boolean; // Computed field - user's blocked status
 }
 
 export interface GetAdmissionByTokenResponseDTO {

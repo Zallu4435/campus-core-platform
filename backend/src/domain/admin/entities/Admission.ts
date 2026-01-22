@@ -6,7 +6,7 @@ import {
   AdminAdmissionPersonal
 } from "./AdminAdmissionTypes";
 
-export interface AdmissionProps extends AdminAdmission {}
+export interface AdmissionProps extends AdminAdmission { }
 
 export class Admission {
   private _id?: string;
@@ -21,7 +21,7 @@ export class Admission {
   private _createdAt?: Date;
 
   constructor(props: AdmissionProps) {
-    this._id = props._id;
+    this._id = props.id;
     this._registerId = props.registerId;
     this._applicationId = props.applicationId;
     this._personal = props.personal;

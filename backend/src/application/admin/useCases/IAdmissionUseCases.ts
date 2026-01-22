@@ -6,7 +6,7 @@ import {
     RejectAdmissionRequestDTO,
     DeleteAdmissionRequestDTO,
     ConfirmAdmissionOfferRequestDTO,
-} from "../../../domain/admin/dtos/AdmissionRequestDTOs";
+} from "../dtos/AdmissionRequestDTOs";
 import {
     GetAdmissionsResponseDTO,
     GetAdmissionByIdResponseDTO,
@@ -16,7 +16,8 @@ import {
     DeleteAdmissionResponseDTO,
     ConfirmAdmissionOfferResponseDTO,
     ResponseDTO
-} from "../../../domain/admin/dtos/AdmissionResponseDTOs";
+} from "../dtos/AdmissionResponseDTOs";
+import { ServeAdmissionDocumentRequestDTO, ServeAdmissionDocumentResponseDTO } from "./ServeAdmissionDocumentUseCase";
 
 export interface IGetAdmissionsUseCase {
     execute(params: GetAdmissionsRequestDTO): Promise<ResponseDTO<GetAdmissionsResponseDTO>>;
@@ -48,4 +49,8 @@ export interface IConfirmAdmissionOfferUseCase {
 
 export interface IBlockAdmissionUseCase {
     execute(params: { id: string }): Promise<ResponseDTO<{ message: string }>>;
+}
+
+export interface IServeAdmissionDocumentUseCase {
+    execute(params: ServeAdmissionDocumentRequestDTO): Promise<ResponseDTO<ServeAdmissionDocumentResponseDTO>>;
 }

@@ -1,6 +1,4 @@
 import { IHttpRequest, IHttpResponse, HttpErrors, HttpSuccess, IAdminAdmissionController } from "../IHttp";
-
-import { Admission } from "../../../infrastructure/database/mongoose/admission/AdmissionModel";
 import {
   IApproveAdmissionUseCase,
   IBlockAdmissionUseCase,
@@ -9,7 +7,8 @@ import {
   IGetAdmissionByIdUseCase,
   IGetAdmissionByTokenUseCase,
   IGetAdmissionsUseCase,
-  IRejectAdmissionUseCase
+  IRejectAdmissionUseCase,
+  IServeAdmissionDocumentUseCase
 } from "../../../application/admin/useCases/IAdmissionUseCases";
 
 export class AdminAdmissionController implements IAdminAdmissionController {
@@ -24,7 +23,8 @@ export class AdminAdmissionController implements IAdminAdmissionController {
     private _rejectAdmissionUseCase: IRejectAdmissionUseCase,
     private _deleteAdmissionUseCase: IDeleteAdmissionUseCase,
     private _confirmAdmissionOfferUseCase: IConfirmAdmissionOfferUseCase,
-    private _blockAdmissionUseCase: IBlockAdmissionUseCase
+    private _blockAdmissionUseCase: IBlockAdmissionUseCase,
+    private _serveAdmissionDocumentUseCase: IServeAdmissionDocumentUseCase
   ) {
     this._httpErrors = new HttpErrors();
     this._httpSuccess = new HttpSuccess();
@@ -35,9 +35,9 @@ export class AdminAdmissionController implements IAdminAdmissionController {
     const response = await this._getAdmissionsUseCase.execute({
       page: Number(page),
       limit: Number(limit),
-      status: String(status),
+      status: status as any,
       program: String(program),
-      dateRange: String(dateRange),
+      dateRange: dateRange as any,
       startDate: startDate ? String(startDate) : undefined,
       endDate: endDate ? String(endDate) : undefined,
       search: search ? String(search) : undefined,
@@ -148,58 +148,25 @@ export class AdminAdmissionController implements IAdminAdmissionController {
     const { documentId } = httpRequest.params || {};
     const { admissionId } = httpRequest.query || {};
 
-    if (!documentId) {
+    if (!documentId || !admissionId || typeof admissionId !== 'string') {
       return this._httpErrors.error_400();
     }
 
-    if (!admissionId) {
-      return this._httpErrors.error_400();
-    }
-
-    const admission = await Admission.findOne({
-      _id: admissionId,
-      "documents.documents": { $elemMatch: { id: documentId } }
+    const response = await this._serveAdmissionDocumentUseCase.execute({
+      admissionId,
+      documentId
     });
 
-    if (!admission) {
+    if (!response.success) {
       return this._httpErrors.error_404();
     }
 
-    const docsArray = Array.isArray(admission.documents?.documents) 
-      ? admission.documents.documents 
-      : [];
-    const document = docsArray.find((doc) => doc.id === documentId);
-
-    if (!document) {
-      return this._httpErrors.error_404();
-    }
-
-    const documentUrl = document.cloudinaryUrl || document.url || document.path;
-
-    if (!documentUrl) {
-      return this._httpErrors.error_404();
-    }
-
-    const response = await fetch(documentUrl);
-
-    if (!response.ok) {
-      return this._httpErrors.error_404();
-    }
-
-    const pdfBuffer = await response.arrayBuffer();
-
-    const result_response = {
+    return {
       statusCode: 200,
       body: {
-        data: {
-          pdfData: Buffer.from(pdfBuffer).toString('base64'),
-          fileName: document.fileName,
-          contentType: 'application/pdf'
-        }
+        data: response.data
       }
     };
-
-    return result_response;
   }
 
   async blockAdmission(httpRequest: IHttpRequest): Promise<IHttpResponse> {
