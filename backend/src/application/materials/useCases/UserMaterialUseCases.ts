@@ -4,69 +4,72 @@ import {
   GetUserMaterialByIdRequestDTO,
   ToggleBookmarkRequestDTO,
   ToggleLikeRequestDTO,
-  DownloadMaterialRequestDTO,
-} from '../../../domain/materials/dtos/UserMaterialRequestDTOs';
-import { GetUserMaterialsResponseDTO } from '../../../domain/materials/dtos/UserMaterialResponseDTOs';
+  DownloadMaterialRequestDTO
+} from '../dtos/UserMaterialRequestDTOs';
+import {
+  GetUserMaterialsResponseDTO,
+  GetUserMaterialByIdResponseDTO,
+} from '../dtos/UserMaterialResponseDTOs';
+import { MaterialValidationError, MaterialNotFoundError } from '../../../domain/materials/errors/MaterialErrors';
+import { MATERIAL_CONSTANTS } from '../constants/MaterialConstants';
 import { UserMaterialFilter, MaterialSortOptions } from '../../../domain/materials/entities/MaterialTypes';
-import { MaterialNotFoundError, MaterialValidationError } from '../../../domain/materials/errors/MaterialErrors';
-import { 
-    IDownloadMaterialUseCase,
-    IGetUserMaterialByIdUseCase,
-    IGetUserMaterialsUseCase,
-} from './IUserMaterialUseCases'
+import {
+  IGetUserMaterialsUseCase,
+  IGetUserMaterialByIdUseCase,
+  IToggleBookmarkUseCase,
+  IToggleLikeUseCase,
+  IDownloadMaterialUseCase
+} from './IUserMaterialUseCases';
 
 export class GetUserMaterialsUseCase implements IGetUserMaterialsUseCase {
   constructor(private _repo: IUserMaterialsRepository) { }
+
   async execute(params: GetUserMaterialsRequestDTO): Promise<GetUserMaterialsResponseDTO> {
-    const { userId, subject, course, semester, type, difficulty, search, sortBy = 'createdAt', sortOrder = 'desc', page = 1, limit = 10 } = params;
+    const {
+      page = MATERIAL_CONSTANTS.PAGINATION.DEFAULT_PAGE,
+      limit = MATERIAL_CONSTANTS.PAGINATION.DEFAULT_LIMIT,
+      userId,
+      subject,
+      course,
+      semester,
+      type,
+      difficulty,
+      search,
+      sortBy,
+      sortOrder
+    } = params;
+
+    const filter: UserMaterialFilter = {
+      subject,
+      course,
+      semester,
+      type,
+      difficulty,
+      search,
+    };
+
     const skip = (page - 1) * limit;
-    const filter: UserMaterialFilter = {};
-    if (subject) filter.subject = { $regex: `^${subject.replace(/\+/g, ' ')}`, $options: 'i' };
-    if (course) {
-      filter.course = course;
-    } else if (subject) {
-      filter.course = { $regex: `^${subject.replace(/\+/g, ' ')}`, $options: 'i' };
-    }
-    if (semester) filter.semester = semester;
-    if (type) filter.type = type;
-    if (difficulty) filter.difficulty = difficulty;
-    if (search) {
-      filter.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { subject: { $regex: search, $options: 'i' } },
-        { uploadedBy: { $regex: search, $options: 'i' } },
-        { course: { $regex: search, $options: 'i' } },
-        { tags: { $in: [new RegExp(search, 'i')] } }
-      ];
-    }
-    let sortOptions: MaterialSortOptions = {};
-    switch (sortBy) {
-      case 'createdAt':
-        sortOptions.uploadedAt = sortOrder === 'desc' ? -1 : 1;
-        break;
-      case 'downloads':
-        sortOptions.downloads = sortOrder === 'desc' ? -1 : 1;
-        break;
-      case 'views':
-        sortOptions.views = sortOrder === 'desc' ? -1 : 1;
-        break;
-      case 'rating':
-        sortOptions.rating = sortOrder === 'desc' ? -1 : 1;
-        break;
-      case 'title':
-        sortOptions.title = sortOrder === 'asc' ? 1 : -1;
-        break;
-      default:
-        sortOptions.uploadedAt = -1;
-    }
-    const [materials, total] = await Promise.all([
-      this._repo.find(filter, { skip, limit, sort: sortOptions }),
-      this._repo.count(filter)
-    ]);
-    const totalPages = Math.ceil(total / limit);
+    const sort: MaterialSortOptions = sortBy ? { [sortBy]: sortOrder === 'desc' ? -1 : 1 } : { uploadedAt: -1 };
+
+    const materials = await this._repo.find(filter, { skip, limit, sort });
+    const total = await this._repo.count(filter);
+
+    const materialsWithStatus = await Promise.all(materials.map(async (m) => {
+      const isBookmarked = await this._repo.isBookmarked(userId, m.id!);
+      const isLiked = await this._repo.isLiked(userId, m.id!);
+      return {
+        ...m.toJSON(),
+        isBookmarked,
+        isLiked
+      };
+    }));
+
     return {
-      materials: materials.map((m) => toUserMaterialProps(m, userId)),
-      totalPages,
+      materials: materialsWithStatus,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
       bookmarkedMaterials: [],
       likedMaterials: []
     };
@@ -75,12 +78,20 @@ export class GetUserMaterialsUseCase implements IGetUserMaterialsUseCase {
 
 export class GetUserMaterialByIdUseCase implements IGetUserMaterialByIdUseCase {
   constructor(private _repo: IUserMaterialsRepository) { }
-  async execute(params: GetUserMaterialByIdRequestDTO): Promise<GetUserMaterialsResponseDTO> {
-    const { userId, id } = params;
-    const material = await this._repo.findById(id);
-    if (!material) throw new MaterialNotFoundError(id);
+
+  async execute(params: GetUserMaterialByIdRequestDTO): Promise<GetUserMaterialByIdResponseDTO> {
+    const material = await this._repo.findById(params.id);
+    if (!material) throw new MaterialNotFoundError(params.id);
+
+    const isBookmarked = await this._repo.isBookmarked(params.userId, params.id);
+    const isLiked = await this._repo.isLiked(params.userId, params.id);
+
     return {
-      materials: [toUserMaterialProps(material, userId)],
+      material: {
+        ...material.toJSON(),
+        isBookmarked,
+        isLiked
+      },
       totalPages: 1,
       bookmarkedMaterials: [],
       likedMaterials: []
@@ -88,16 +99,18 @@ export class GetUserMaterialByIdUseCase implements IGetUserMaterialByIdUseCase {
   }
 }
 
-export class ToggleBookmarkUseCase {
+export class ToggleBookmarkUseCase implements IToggleBookmarkUseCase {
   constructor(private _repo: IUserMaterialsRepository) { }
+
   async execute(params: ToggleBookmarkRequestDTO): Promise<void> {
     if (!params.id || !params.userId) throw new MaterialValidationError('Material ID and User ID are required');
     await this._repo.toggleBookmark(params.id, params.userId);
   }
 }
 
-export class ToggleLikeUseCase {
+export class ToggleLikeUseCase implements IToggleLikeUseCase {
   constructor(private _repo: IUserMaterialsRepository) { }
+
   async execute(params: ToggleLikeRequestDTO): Promise<void> {
     if (!params.id || !params.userId) throw new MaterialValidationError('Material ID and User ID are required');
     await this._repo.toggleLike(params.id, params.userId);
@@ -106,36 +119,12 @@ export class ToggleLikeUseCase {
 
 export class DownloadMaterialUseCase implements IDownloadMaterialUseCase {
   constructor(private _repo: IUserMaterialsRepository) { }
-  async execute(params: DownloadMaterialRequestDTO): Promise<string> {
-    if (!params.id) throw new MaterialValidationError('Material ID is required');
-    return this._repo.incrementDownloads(params.id);
-  }
-} 
 
-function toUserMaterialProps(obj, userId: string) {
-  const isBookmarked = obj.bookmarks && obj.bookmarks.some((b) => b.userId === userId);
-  const isLiked = obj.likes && obj.likes.some((l) => l.userId === userId);
-  return {
-    id: obj._id.toString(),
-    title: obj.title,
-    description: obj.description,
-    subject: obj.subject,
-    course: obj.course,
-    semester: obj.semester,
-    type: obj.type,
-    fileUrl: obj.fileUrl,
-    thumbnailUrl: obj.thumbnailUrl,
-    tags: obj.tags,
-    difficulty: obj.difficulty,
-    estimatedTime: obj.estimatedTime,
-    isNewMaterial: obj.isNewMaterial,
-    isRestricted: obj.isRestricted,
-    uploadedBy: obj.uploadedBy,
-    uploadedAt: obj.uploadedAt instanceof Date ? obj.uploadedAt.toISOString() : obj.uploadedAt,
-    views: obj.views,
-    downloads: obj.downloads,
-    rating: obj.rating,
-    isBookmarked,
-    isLiked,
-  };
+  async execute(params: DownloadMaterialRequestDTO): Promise<string> {
+    const material = await this._repo.findById(params.id);
+    if (!material) throw new MaterialNotFoundError(params.id);
+
+    await this._repo.incrementDownloads(params.id);
+    return material.fileUrl;
+  }
 }

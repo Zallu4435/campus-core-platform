@@ -1,21 +1,22 @@
 import { Enquiry, EnquiryProps } from "../../../domain/enquiry/entities/Enquiry";
+import { EnquiryStatus } from "../../../domain/enquiry/entities/EnquiryTypes";
 
 export class EnquiryMapper {
-    static toDomain(raw: any): Enquiry {
+    static toDomain(raw: Record<string, unknown>): Enquiry {
         const props: EnquiryProps = {
-            id: raw._id?.toString() ?? raw.id,
-            name: raw.name,
-            email: raw.email,
-            subject: raw.subject,
-            message: raw.message,
-            status: raw.status,
-            createdAt: raw.createdAt,
-            updatedAt: raw.updatedAt,
+            id: (raw._id || raw.id) as string,
+            name: raw.name as string,
+            email: raw.email as string,
+            subject: raw.subject as string,
+            message: raw.message as string,
+            status: raw.status as EnquiryStatus,
+            createdAt: raw.createdAt as Date,
+            updatedAt: raw.updatedAt as Date,
         };
         return new Enquiry(props);
     }
 
-    static toPersistence(enquiry: Enquiry): any {
+    static toPersistence(enquiry: Enquiry): Record<string, unknown> {
         return {
             name: enquiry.name,
             email: enquiry.email,
@@ -25,7 +26,7 @@ export class EnquiryMapper {
         };
     }
 
-    static toDTO(enquiry: Enquiry): any {
-        return enquiry.toJSON();
+    static toDTO(enquiry: Enquiry): EnquiryProps {
+        return enquiry.props;
     }
 }

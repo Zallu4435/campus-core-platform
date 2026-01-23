@@ -1,6 +1,30 @@
-import mongoose from 'mongoose';
+import mongoose, { Schema, Document } from 'mongoose';
+import { MaterialType, MaterialDifficulty } from '../../../../domain/materials/entities/MaterialTypes';
 
-const materialSchema = new mongoose.Schema({
+export interface IMaterialPersistence extends Document {
+  title: string;
+  description: string;
+  subject: string;
+  course: string;
+  semester: number;
+  type: MaterialType;
+  fileUrl: string;
+  thumbnailUrl: string;
+  tags: string[];
+  difficulty: MaterialDifficulty;
+  estimatedTime: string;
+  isNewMaterial: boolean;
+  isRestricted: boolean;
+  uploadedBy: string;
+  uploadedAt: Date;
+  views: number;
+  downloads: number;
+  rating: number;
+  bookmarks: { userId: string }[];
+  likes: { userId: string }[];
+}
+
+const materialSchema = new Schema<IMaterialPersistence>({
   title: { type: String, required: true },
   description: { type: String, required: true },
   subject: { type: String, required: true },
@@ -27,4 +51,4 @@ const materialSchema = new mongoose.Schema({
   }]
 });
 
-export const MaterialModel = mongoose.model('Material', materialSchema); 
+export const MaterialModel = mongoose.model<IMaterialPersistence>('Material', materialSchema);

@@ -5,8 +5,8 @@ import {
     ToggleBookmarkRequestDTO,
     ToggleLikeRequestDTO,
     DownloadMaterialRequestDTO,
-} from '../../../domain/materials/dtos/UserMaterialRequestDTOs';
-import { GetUserMaterialsResponseDTO } from '../../../domain/materials/dtos/UserMaterialResponseDTOs';
+} from '../dtos/UserMaterialRequestDTOs';
+import { GetUserMaterialsResponseDTO, GetUserMaterialByIdResponseDTO } from '../dtos/UserMaterialResponseDTOs';
 
 
 export interface IGetUserMaterialsUseCase {
@@ -14,7 +14,7 @@ export interface IGetUserMaterialsUseCase {
 }
 
 export interface IGetUserMaterialByIdUseCase {
-    execute(params: GetUserMaterialByIdRequestDTO): Promise<GetUserMaterialsResponseDTO>;
+    execute(params: GetUserMaterialByIdRequestDTO): Promise<GetUserMaterialByIdResponseDTO>;
 }
 
 export interface IToggleBookmarkUseCase {

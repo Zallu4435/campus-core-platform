@@ -52,18 +52,19 @@ export const validate = (schema: Joi.ObjectSchema, source: 'body' | 'query' | 'p
  */
 export const validateRequest = (schema: Joi.ObjectSchema) => {
     return (req: Request, res: Response, next: NextFunction) => {
-        const dataToValidate: any = {};
+        const dataToValidate: Record<string, unknown> = {};
 
         // Extract schema keys to know what to validate
-        const schemaDescription = schema.describe() as any;
+        const schemaDescription = schema.describe();
+        const keys = schemaDescription.keys as Record<string, Joi.Description> | undefined;
 
-        if (schemaDescription.keys?.body) {
+        if (keys?.body) {
             dataToValidate.body = req.body;
         }
-        if (schemaDescription.keys?.params) {
+        if (keys?.params) {
             dataToValidate.params = req.params;
         }
-        if (schemaDescription.keys?.query) {
+        if (keys?.query) {
             dataToValidate.query = req.query;
         }
 

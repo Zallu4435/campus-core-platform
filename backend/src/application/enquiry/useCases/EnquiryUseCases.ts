@@ -16,7 +16,7 @@ import {
 } from "../dtos/EnquiryResponseDTOs";
 import { IEnquiryRepository } from "../repositories/IEnquiryRepository";
 import { Enquiry } from "../../../domain/enquiry/entities/Enquiry";
-import { EnquiryFilter, EnquiryStatus } from "../../../domain/enquiry/entities/EnquiryTypes";
+import { EnquiryFilter, EnquiryStatus, EnquirySortOptions } from "../../../domain/enquiry/entities/EnquiryTypes";
 import { IEmailService } from "../../auth/service/IEmailService";
 import { ENQUIRY_CONSTANTS } from "../constants/EnquiryConstants";
 import {
@@ -78,7 +78,7 @@ export class GetEnquiriesUseCase implements IGetEnquiriesUseCase {
       search,
     };
 
-    const sort = { createdAt: -1 };
+    const sort: EnquirySortOptions = { createdAt: -1 };
     const enquiries = await this._enquiryRepository.find(filter, { skip, limit, sort });
     const total = await this._enquiryRepository.count(filter);
     const totalPages = Math.ceil(total / limit);

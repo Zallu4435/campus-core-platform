@@ -16,21 +16,22 @@ import {
   IDownloadMaterialUseCase
 } from '../../../application/materials/useCases/IUserMaterialUseCases';
 
+export class UserMaterialComposers {
+  static composeUserMaterialController() {
+    const repository: IUserMaterialsRepository = new UserMaterialsRepository();
 
-export const makeUserMaterialController = () => {
-  const repository: IUserMaterialsRepository = new UserMaterialsRepository();
+    const getMaterialsUseCase: IGetUserMaterialsUseCase = new GetUserMaterialsUseCase(repository);
+    const getMaterialByIdUseCase: IGetUserMaterialByIdUseCase = new GetUserMaterialByIdUseCase(repository);
+    const toggleBookmarkUseCase: IToggleBookmarkUseCase = new ToggleBookmarkUseCase(repository);
+    const toggleLikeUseCase: IToggleLikeUseCase = new ToggleLikeUseCase(repository);
+    const downloadMaterialUseCase: IDownloadMaterialUseCase = new DownloadMaterialUseCase(repository);
 
-  const getMaterialsUseCase: IGetUserMaterialsUseCase = new GetUserMaterialsUseCase(repository);
-  const getMaterialByIdUseCase: IGetUserMaterialByIdUseCase = new GetUserMaterialByIdUseCase(repository);
-  const toggleBookmarkUseCase: IToggleBookmarkUseCase = new ToggleBookmarkUseCase(repository);
-  const toggleLikeUseCase: IToggleLikeUseCase = new ToggleLikeUseCase(repository);
-  const downloadMaterialUseCase: IDownloadMaterialUseCase = new DownloadMaterialUseCase(repository);
-
-  return new UserMaterialController(
-    getMaterialsUseCase,
-    getMaterialByIdUseCase,
-    toggleBookmarkUseCase,
-    toggleLikeUseCase,
-    downloadMaterialUseCase
-  );
-}; 
+    return new UserMaterialController(
+      getMaterialsUseCase,
+      getMaterialByIdUseCase,
+      toggleBookmarkUseCase,
+      toggleLikeUseCase,
+      downloadMaterialUseCase
+    );
+  }
+}

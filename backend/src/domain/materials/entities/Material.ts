@@ -1,9 +1,10 @@
-import { MaterialProps, CreateMaterialProps, UpdateMaterialProps } from "./MaterialTypes";
+import { MaterialProps, CreateMaterialProps } from "./MaterialTypes";
+import { MaterialValidationError } from "../errors/MaterialErrors";
 
 export type { MaterialProps };
 
 export class Material {
-  constructor(public props: MaterialProps) {}
+  constructor(public props: MaterialProps) { }
 
   get id() { return this.props.id; }
   get title() { return this.props.title; }
@@ -26,26 +27,20 @@ export class Material {
   get rating() { return this.props.rating; }
 
   static create(props: CreateMaterialProps): Material {
-    // Basic validation
-    const missingFields = [];
-    if (!props.title) missingFields.push('title');
-    if (!props.description) missingFields.push('description');
-    if (!props.subject) missingFields.push('subject');
-    if (!props.course) missingFields.push('course');
-    if (!props.semester) missingFields.push('semester');
-    if (!props.type) missingFields.push('type');
-    if (!props.fileUrl) missingFields.push('fileUrl');
-    if (!props.thumbnailUrl) missingFields.push('thumbnailUrl');
-    if (!props.difficulty) missingFields.push('difficulty');
-    if (!props.estimatedTime) missingFields.push('estimatedTime');
-    if (props.isNewMaterial === undefined) missingFields.push('isNewMaterial');
-    if (props.isRestricted === undefined) missingFields.push('isRestricted');
-    if (!props.uploadedBy) missingFields.push('uploadedBy');
-    if (missingFields.length > 0) {
-      console.error('[Material.create] Missing required fields:', missingFields);
-      console.error('[Material.create] Props received:', props);
-      throw new Error("Missing required fields for material creation");
-    }
+    if (!props.title) throw new MaterialValidationError("Title is required");
+    if (!props.description) throw new MaterialValidationError("Description is required");
+    if (!props.subject) throw new MaterialValidationError("Subject is required");
+    if (!props.course) throw new MaterialValidationError("Course is required");
+    if (!props.semester) throw new MaterialValidationError("Semester is required");
+    if (!props.type) throw new MaterialValidationError("Material type is required");
+    if (!props.fileUrl) throw new MaterialValidationError("File URL is required");
+    if (!props.thumbnailUrl) throw new MaterialValidationError("Thumbnail URL is required");
+    if (!props.difficulty) throw new MaterialValidationError("Difficulty level is required");
+    if (!props.estimatedTime) throw new MaterialValidationError("Estimated time is required");
+    if (props.isNewMaterial === undefined) throw new MaterialValidationError("isNewMaterial flag is required");
+    if (props.isRestricted === undefined) throw new MaterialValidationError("isRestricted flag is required");
+    if (!props.uploadedBy) throw new MaterialValidationError("Uploaded by (User ID) is required");
+
     const now = new Date().toISOString();
     return new Material({
       ...props,
@@ -57,21 +52,42 @@ export class Material {
     });
   }
 
+  toJSON() {
+    return {
+      id: this.id,
+      title: this.title,
+      description: this.description,
+      subject: this.subject,
+      course: this.course,
+      semester: this.semester,
+      type: this.type,
+      fileUrl: this.fileUrl,
+      thumbnailUrl: this.thumbnailUrl,
+      tags: this.tags,
+      difficulty: this.difficulty,
+      estimatedTime: this.estimatedTime,
+      isNewMaterial: this.isNewMaterial,
+      isRestricted: this.isRestricted,
+      uploadedBy: this.uploadedBy,
+      uploadedAt: this.uploadedAt,
+      views: this.views,
+      downloads: this.downloads,
+      rating: this.rating,
+    };
+  }
+
   static update(existingProps: MaterialProps, updateData: Partial<MaterialProps>): Material {
-    // Merge existing props with update data
     const updatedProps: MaterialProps = {
       ...existingProps,
       ...updateData,
-      // Ensure id is preserved
       id: existingProps.id,
-      // Preserve immutable fields
       uploadedAt: existingProps.uploadedAt,
       uploadedBy: existingProps.uploadedBy,
       views: existingProps.views,
       downloads: existingProps.downloads,
       rating: existingProps.rating,
     };
-    
+
     return new Material(updatedProps);
   }
-} 
+}

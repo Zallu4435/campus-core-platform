@@ -1,4 +1,4 @@
-import { MaterialType, MaterialDifficulty, MaterialProps, CreateMaterialProps, UpdateMaterialProps } from "../entities/MaterialTypes";
+import { MaterialType, MaterialDifficulty, MaterialProps, CreateMaterialProps, UpdateMaterialProps } from "../../../domain/materials/entities/MaterialTypes";
 
 export interface GetMaterialsRequestDTO {
   subject?: string;

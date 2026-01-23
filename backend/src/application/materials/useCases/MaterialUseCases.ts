@@ -1,9 +1,21 @@
 import { IMaterialsRepository } from '../repositories/IMaterialsRepository';
-import { GetMaterialsRequestDTO, GetMaterialByIdRequestDTO, CreateMaterialRequestDTO, UpdateMaterialRequestDTO, DeleteMaterialRequestDTO } from '../../../domain/materials/dtos/MaterialRequestDTOs';
-import { GetMaterialsResponseDTO, GetMaterialByIdResponseDTO, CreateMaterialResponseDTO, UpdateMaterialResponseDTO } from '../../../domain/materials/dtos/MaterialResponseDTOs';
-import { Material, MaterialProps } from '../../../domain/materials/entities/Material';
-import { MaterialFilter } from '../../../domain/materials/entities/MaterialTypes';
+import {
+  GetMaterialsRequestDTO,
+  GetMaterialByIdRequestDTO,
+  CreateMaterialRequestDTO,
+  UpdateMaterialRequestDTO,
+  DeleteMaterialRequestDTO
+} from '../dtos/MaterialRequestDTOs';
+import {
+  GetMaterialsResponseDTO,
+  GetMaterialByIdResponseDTO,
+  CreateMaterialResponseDTO,
+  UpdateMaterialResponseDTO
+} from '../dtos/MaterialResponseDTOs';
+import { Material } from '../../../domain/materials/entities/Material';
+import { MaterialFilter, MaterialSortOptions } from '../../../domain/materials/entities/MaterialTypes';
 import { MaterialNotFoundError, MaterialValidationError } from '../../../domain/materials/errors/MaterialErrors';
+import { MATERIAL_CONSTANTS } from '../constants/MaterialConstants';
 import {
   IGetMaterialsUseCase,
   IGetMaterialByIdUseCase,
@@ -12,127 +24,74 @@ import {
   IDeleteMaterialUseCase
 } from './IMaterialUseCases';
 
-
 export class GetMaterialsUseCase implements IGetMaterialsUseCase {
   constructor(private _repo: IMaterialsRepository) { }
+
   async execute(params: GetMaterialsRequestDTO): Promise<GetMaterialsResponseDTO> {
-    const filter: MaterialFilter = {};
-    
-    if (params.subject && params.subject !== 'All Subjects' && params.subject !== 'all' && params.subject !== 'All') {
-      const normalizedSubject = params.subject
-        .split('_')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
+    const {
+      page = MATERIAL_CONSTANTS.PAGINATION.DEFAULT_PAGE,
+      limit = MATERIAL_CONSTANTS.PAGINATION.DEFAULT_LIMIT,
+      subject,
+      course,
+      semester,
+      search,
+      status,
+      dateRange,
+      startDate,
+      endDate
+    } = params;
 
-      filter.subject = normalizedSubject;
-    }
-    if (params.course && params.course !== 'All Courses' && params.course !== 'all') {
-      let normalizedCourse = params.course;
+    const filter: MaterialFilter = {
+      subject: (subject && !MATERIAL_CONSTANTS.SUBJECTS.ALL.includes(subject)) ? subject : undefined,
+      course: (course && !MATERIAL_CONSTANTS.COURSES.ALL.includes(course)) ? course : undefined,
+      semester,
+      search,
+    };
 
-      if (normalizedCourse.toLowerCase().includes('b.tech')) {
-        normalizedCourse = normalizedCourse.replace(/b\.tech/gi, 'B.Tech.');
-      } else if (normalizedCourse.toLowerCase().includes('b.sc')) {
-        normalizedCourse = normalizedCourse.replace(/b\.sc/gi, 'B.Sc.');
-      } else if (normalizedCourse.toLowerCase().includes('m.sc')) {
-        normalizedCourse = normalizedCourse.replace(/m\.sc/gi, 'M.Sc.');
-      }
-
-      normalizedCourse = normalizedCourse
-        .split('_')
-        .map(word => {
-          if (word === 'B.Tech.' || word === 'B.Sc.' || word === 'M.Sc.') {
-            return word;
-          }
-          if (word.toLowerCase() === 'cs') {
-            return 'CS';
-          }
-          return word.charAt(0).toUpperCase() + word.slice(1);
-        })
-        .join(' ');
-
-      normalizedCourse = normalizedCourse.replace(/\.\./g, '.');
-
-      filter.course = normalizedCourse;
-    }
-    if (
-      params.semester !== undefined &&
-      params.semester !== null &&
-      params.semester.toString() !== 'All Semesters' &&
-      params.semester.toString() !== 'all'
-    ) {
-      const semesterValue = typeof params.semester === 'string' ? parseInt(params.semester, 10) : params.semester;
-      if (!isNaN(semesterValue) && semesterValue > 0) {
-        filter.semester = semesterValue;
-      }
+    if (status && status !== 'all') {
+      filter.isRestricted = status === 'restricted';
     }
 
-    if (params.search && params.search.trim()) {
-      const searchRegex = new RegExp(params.search.trim(), 'i');
-      filter.$or = [
-        { title: searchRegex },
-        { description: searchRegex },
-        { subject: searchRegex },
-        { course: searchRegex },
-        { tags: searchRegex }
-      ];
-    }
-
-    if (params.status && params.status !== 'all') {
-      if (params.status === 'restricted') {
-        filter.isRestricted = true;
-      } else if (params.status === 'unrestricted') {
-        filter.isRestricted = false;
-      }
-    }
-
-    if (params.dateRange && params.dateRange !== 'all') {
+    if (dateRange && dateRange !== 'all') {
       const now = new Date();
-      let startDate: Date;
-      let endDate: Date;
+      let start: Date;
+      let end: Date = now;
 
-      switch (params.dateRange) {
-        case 'last_week':
-          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-          endDate = now;
+      switch (dateRange) {
+        case MATERIAL_CONSTANTS.DATE_RANGES.LAST_WEEK:
+          start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
           break;
-        case 'last_month':
-          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-          endDate = now;
+        case MATERIAL_CONSTANTS.DATE_RANGES.LAST_MONTH:
+          start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
           break;
-        case 'last_3_months':
-          startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-          endDate = now;
+        case MATERIAL_CONSTANTS.DATE_RANGES.LAST_3_MONTHS:
+          start = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
           break;
-        case 'custom':
-          if (params.startDate && params.endDate) {
-            startDate = new Date(params.startDate);
-            endDate = new Date(params.endDate);
-            // Set end date to end of day
-            endDate.setHours(23, 59, 59, 999);
+        case MATERIAL_CONSTANTS.DATE_RANGES.CUSTOM:
+          if (startDate && endDate) {
+            start = new Date(startDate);
+            end = new Date(endDate);
+            end.setHours(23, 59, 59, 999);
           } else {
-            startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-            endDate = now;
+            start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
           }
           break;
         default:
-          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-          endDate = now;
+          start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       }
-
-      filter.uploadedAt = {
-        $gte: startDate,
-        $lte: endDate
-      };
+      filter.startDate = start;
+      filter.endDate = end;
     }
 
-    const skip = (params.page - 1) * params.limit;
-    const sort = { uploadedAt: -1 };
-    const materials = await this._repo.find(filter, { skip, limit: params.limit, sort });
+    const skip = (page - 1) * limit;
+    const sort: MaterialSortOptions = { uploadedAt: -1 };
+
+    const materials = await this._repo.find(filter, { skip, limit, sort });
     const total = await this._repo.count(filter);
-    const totalPages = Math.ceil(total / params.limit);
+    const totalPages = Math.ceil(total / limit);
 
     return {
-      materials: materials.map(toMaterialProps),
+      materials: materials.map(m => m.toJSON()),
       totalPages,
     };
   }
@@ -144,7 +103,10 @@ export class GetMaterialByIdUseCase implements IGetMaterialByIdUseCase {
     if (!params.id) throw new MaterialValidationError('Material ID is required');
     const material = await this._repo.findById(params.id);
     if (!material) throw new MaterialNotFoundError(params.id);
-    return { material: toMaterialProps(material) };
+
+    await this._repo.incrementViews(params.id);
+
+    return { material: material.toJSON() };
   }
 }
 
@@ -152,8 +114,8 @@ export class CreateMaterialUseCase implements ICreateMaterialUseCase {
   constructor(private _repo: IMaterialsRepository) { }
   async execute(params: CreateMaterialRequestDTO): Promise<CreateMaterialResponseDTO> {
     const material = Material.create(params);
-    const dbResult = await this._repo.create(material.props);
-    return { material: toMaterialProps(dbResult) };
+    const dbResult = await this._repo.create(material);
+    return { material: dbResult.toJSON() };
   }
 }
 
@@ -165,48 +127,21 @@ export class UpdateMaterialUseCase implements IUpdateMaterialUseCase {
     const existingMaterial = await this._repo.findById(params.id);
     if (!existingMaterial) throw new MaterialNotFoundError(params.id);
 
-    const existingProps = toMaterialProps(existingMaterial);
-
     const { id, ...updateData } = params;
-    const updatedMaterial = Material.update(existingProps, updateData);
-    const dbResult = await this._repo.update(params.id, updatedMaterial.props);
+    const updatedMaterial = Material.update(existingMaterial.props, updateData);
+    const dbResult = await this._repo.update(params.id, updatedMaterial);
     if (!dbResult) throw new MaterialNotFoundError(params.id);
 
-    return { material: toMaterialProps(dbResult) };
+    return { material: dbResult.toJSON() };
   }
 }
 
 export class DeleteMaterialUseCase implements IDeleteMaterialUseCase {
   constructor(private _repo: IMaterialsRepository) { }
   async execute(params: DeleteMaterialRequestDTO): Promise<void> {
-    if (!params.id) throw new Error('Material ID is required');
+    if (!params.id) throw new MaterialValidationError('Material ID is required');
     const material = await this._repo.findById(params.id);
     if (!material) throw new MaterialNotFoundError(params.id);
     await this._repo.delete(params.id);
   }
-} 
-
-
-function toMaterialProps(raw): MaterialProps {
-  return {
-    id: raw._id?.toString() ?? raw.id,
-    title: raw.title,
-    description: raw.description,
-    subject: raw.subject,
-    course: raw.course,
-    semester: raw.semester,
-    type: raw.type,
-    fileUrl: raw.fileUrl,
-    thumbnailUrl: raw.thumbnailUrl,
-    tags: raw.tags,
-    difficulty: raw.difficulty,
-    estimatedTime: raw.estimatedTime,
-    isNewMaterial: raw.isNewMaterial,
-    isRestricted: raw.isRestricted,
-    uploadedBy: raw.uploadedBy,
-    uploadedAt: raw.uploadedAt,
-    views: raw.views,
-    downloads: raw.downloads,
-    rating: raw.rating,
-  };
 }

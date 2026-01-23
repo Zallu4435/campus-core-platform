@@ -25,3 +25,11 @@ export type EnquiryFilter = {
   endDate?: Date;
   search?: string;
 };
+
+export interface EnquirySortOptions {
+  createdAt?: 1 | -1;
+  name?: 1 | -1;
+  email?: 1 | -1;
+  status?: 1 | -1;
+  [key: string]: 1 | -1 | undefined;
+}

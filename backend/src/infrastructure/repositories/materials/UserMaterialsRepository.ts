@@ -1,36 +1,40 @@
 import { IUserMaterialsRepository } from '../../../application/materials/repositories/IUserMaterialsRepository';
 import { MaterialModel } from '../../database/mongoose/material/MaterialModel';
-import { UserMaterialFilter, MaterialProps } from '../../../domain/materials/entities/MaterialTypes';
+import { Material } from '../../../domain/materials/entities/Material';
+import { UserMaterialFilter, MaterialSortOptions } from '../../../domain/materials/entities/MaterialTypes';
+import { MaterialMapper } from './MaterialMapper';
 
 export class UserMaterialsRepository implements IUserMaterialsRepository {
-  async find(filter: UserMaterialFilter, options: { skip?: number; limit?: number; sort? } = {}) {
-    const result = await MaterialModel.find(filter)
-      .sort(options.sort ?? {})
+  async find(filter: UserMaterialFilter, options: { skip?: number; limit?: number; sort?: MaterialSortOptions } = {}): Promise<Material[]> {
+    const mongoFilter = this._buildMongoFilter(filter);
+    const docs = await MaterialModel.find(mongoFilter)
+      .sort(options.sort as any ?? { uploadedAt: -1 })
       .skip(options.skip ?? 0)
-      .limit(options.limit ?? 0)
-      .populate('bookmarks')
-      .populate('likes')
-      .lean();
-    return result as unknown as MaterialProps[];
+      .limit(options.limit ?? 0);
+
+    return docs.map(doc => MaterialMapper.toDomain(doc.toObject()));
   }
 
-  async count(filter: UserMaterialFilter) {
-    return MaterialModel.countDocuments(filter);
+  async count(filter: UserMaterialFilter): Promise<number> {
+    const mongoFilter = this._buildMongoFilter(filter);
+    return MaterialModel.countDocuments(mongoFilter);
   }
 
-  async findById(id: string) {
-    const result = await MaterialModel.findById(id).populate('bookmarks').populate('likes').lean();
-    return result as unknown as MaterialProps;
+  async findById(id: string): Promise<Material | null> {
+    const doc = await MaterialModel.findById(id);
+    return doc ? MaterialMapper.toDomain(doc.toObject()) : null;
   }
 
-  async update(id: string, data: Partial<MaterialProps>) {
-    const result = await MaterialModel.findByIdAndUpdate(id, data, { new: true }).lean();
-    return result as unknown as MaterialProps;
+  async update(id: string, material: Material): Promise<Material | null> {
+    const persistence = MaterialMapper.toPersistence(material);
+    const doc = await MaterialModel.findByIdAndUpdate(id, persistence, { new: true });
+    return doc ? MaterialMapper.toDomain(doc.toObject()) : null;
   }
 
-  async toggleBookmark(materialId: string, userId: string) {
+  async toggleBookmark(materialId: string, userId: string): Promise<void> {
     const material = await MaterialModel.findById(materialId);
     if (!material) throw new Error('Material not found');
+
     const bookmarkIndex = material.bookmarks.findIndex((b) => b.userId === userId);
     if (bookmarkIndex > -1) {
       material.bookmarks.splice(bookmarkIndex, 1);
@@ -40,9 +44,10 @@ export class UserMaterialsRepository implements IUserMaterialsRepository {
     await material.save();
   }
 
-  async toggleLike(materialId: string, userId: string) {
+  async toggleLike(materialId: string, userId: string): Promise<void> {
     const material = await MaterialModel.findById(materialId);
     if (!material) throw new Error('Material not found');
+
     const likeIndex = material.likes.findIndex((l) => l.userId === userId);
     if (likeIndex > -1) {
       material.likes.splice(likeIndex, 1);
@@ -52,13 +57,39 @@ export class UserMaterialsRepository implements IUserMaterialsRepository {
     await material.save();
   }
 
-  async incrementDownloads(materialId: string) {
-    const material = await MaterialModel.findByIdAndUpdate(
-      materialId,
-      { $inc: { downloads: 1 } }, 
-      { new: true, select: 'fileUrl' }
-    );
-    if (!material) throw new Error('Material not found');
-    return material.fileUrl;
+  async isBookmarked(userId: string, materialId: string): Promise<boolean> {
+    const doc = await MaterialModel.findOne({ _id: materialId, 'bookmarks.userId': userId });
+    return !!doc;
   }
-} 
+
+  async isLiked(userId: string, materialId: string): Promise<boolean> {
+    const doc = await MaterialModel.findOne({ _id: materialId, 'likes.userId': userId });
+    return !!doc;
+  }
+
+  async incrementDownloads(materialId: string): Promise<void> {
+    await MaterialModel.findByIdAndUpdate(materialId, { $inc: { downloads: 1 } });
+  }
+
+  private _buildMongoFilter(filter: UserMaterialFilter): Record<string, unknown> {
+    const mongoFilter: Record<string, any> = {};
+
+    if (filter.subject) mongoFilter.subject = { $regex: filter.subject, $options: 'i' };
+    if (filter.course) mongoFilter.course = filter.course;
+    if (filter.semester) mongoFilter.semester = filter.semester;
+    if (filter.type) mongoFilter.type = filter.type;
+    if (filter.difficulty) mongoFilter.difficulty = filter.difficulty;
+
+    if (filter.search) {
+      const searchRegex = new RegExp(filter.search, 'i');
+      mongoFilter.$or = [
+        { title: searchRegex },
+        { subject: searchRegex },
+        { uploadedBy: searchRegex },
+        { course: searchRegex }
+      ];
+    }
+
+    return mongoFilter;
+  }
+}

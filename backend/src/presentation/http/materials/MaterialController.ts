@@ -1,6 +1,17 @@
 import { IHttpRequest, IHttpResponse, HttpErrors, HttpSuccess, IMaterialController } from '../IHttp';
-import { IGetMaterialByIdUseCase, ICreateMaterialUseCase, IUpdateMaterialUseCase, IDeleteMaterialUseCase, IGetMaterialsUseCase } from '../../../application/materials/useCases/IMaterialUseCases';
-import { MaterialUpdateData, UploadedFile } from '../../../domain/materials/entities/MaterialTypes';
+import {
+  IGetMaterialByIdUseCase,
+  ICreateMaterialUseCase,
+  IUpdateMaterialUseCase,
+  IDeleteMaterialUseCase,
+  IGetMaterialsUseCase
+} from '../../../application/materials/useCases/IMaterialUseCases';
+import { GetMaterialsRequestDTO } from '../../../application/materials/dtos/MaterialRequestDTOs';
+
+interface UploadedFile {
+  fieldname: string;
+  path: string;
+}
 
 export class MaterialController implements IMaterialController {
   private _httpErrors: HttpErrors;
@@ -18,139 +29,93 @@ export class MaterialController implements IMaterialController {
   }
 
   async getMaterials(httpRequest: IHttpRequest): Promise<IHttpResponse> {
-      const { query } = httpRequest;
-      
-      const result = await this._getMaterialsUseCase.execute(query);
-      return this._httpSuccess.success_200(result);
+    const query = httpRequest.query as unknown as GetMaterialsRequestDTO;
+    const response = await this._getMaterialsUseCase.execute(query);
+    return this._httpSuccess.success_200(response);
   }
 
   async getMaterialById(httpRequest: IHttpRequest): Promise<IHttpResponse> {
-      const { id } = httpRequest.params;
-      if (!id) {
-        return this._httpErrors.error_400();
-      }
-      const result = await this._getMaterialByIdUseCase.execute({ id });
-      if (!result) {
-        return this._httpErrors.error_404();
-      }
-      return this._httpSuccess.success_200(result);
+    const { id } = httpRequest.params;
+    const response = await this._getMaterialByIdUseCase.execute({ id });
+    return this._httpSuccess.success_200(response);
   }
 
   async createMaterial(httpRequest: IHttpRequest): Promise<IHttpResponse> {
-    if (!httpRequest.body || !httpRequest.files) {
-        return this._httpErrors.error_400();
-      }
-    
+    const { body, files } = httpRequest;
+
     let file: UploadedFile | undefined, thumbnail: UploadedFile | undefined;
-    const files = httpRequest.files as UploadedFile[] | { [fieldname: string]: UploadedFile[] };
-    if (Array.isArray(files)) {
-      file = files.find((f) => f.fieldname === 'file');
-      thumbnail = files.find((f) => f.fieldname === 'thumbnail');
-    } else if (files) {
-      file = files.file?.[0];
-      thumbnail = files.thumbnail?.[0];
+    const fileList = files as UploadedFile[] | { [fieldname: string]: UploadedFile[] };
+
+    if (Array.isArray(fileList)) {
+      file = fileList.find((f) => f.fieldname === 'file');
+      thumbnail = fileList.find((f) => f.fieldname === 'thumbnail');
+    } else if (fileList) {
+      file = fileList.file?.[0];
+      thumbnail = fileList.thumbnail?.[0];
     }
-    
+
     if (!file) {
-      return this._httpErrors.error_400();
+      return this._httpErrors.error_400('Primary file is required');
     }
-    
-    let processedTags: string[] = [];
-    if (httpRequest.body.tags) {
-      if (typeof httpRequest.body.tags === 'string') {
-        try {
-          const parsed = JSON.parse(httpRequest.body.tags);
-          processedTags = Array.isArray(parsed) ? parsed : [httpRequest.body.tags];
-        } catch {
-          processedTags = httpRequest.body.tags.split(',').map(tag => tag.trim()).filter(Boolean);
-        }
-      } else if (Array.isArray(httpRequest.body.tags)) {
-        processedTags = httpRequest.body.tags;
-      }
-    }
-    
+
     const materialData = {
-      ...httpRequest.body,
-      isNewMaterial: httpRequest.body.isNew === 'true',
-      uploadedBy: httpRequest.body.uploadedBy || 'default-user',
-      tags: processedTags,
-      isRestricted: httpRequest.body.isRestricted === 'true',
+      ...body,
       fileUrl: file.path,
-      thumbnailUrl: thumbnail?.path || file.path
+      thumbnailUrl: thumbnail?.path || file.path,
+      tags: this._parseTags(body.tags),
+      uploadedBy: body.uploadedBy || 'admin'
     };
-        
-    const result = await this._createMaterialUseCase.execute(materialData);
-    return this._httpSuccess.success_201(result);
+
+    const response = await this._createMaterialUseCase.execute(materialData);
+    return this._httpSuccess.success_201(response);
   }
 
   async updateMaterial(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const { id } = httpRequest.params;
-    if (!id || !httpRequest.body) {
-      return this._httpErrors.error_400();
-    }
-    
+    const { body, files } = httpRequest;
+
     let file: UploadedFile | undefined, thumbnail: UploadedFile | undefined;
-    const files = httpRequest.files as UploadedFile[] | { [fieldname: string]: UploadedFile[] };
-    
-    if (files) {
-      if (Array.isArray(files)) {
-        file = files.find((f) => f.fieldname === 'file');
-        thumbnail = files.find((f) => f.fieldname === 'thumbnail');
+    const fileList = files as UploadedFile[] | { [fieldname: string]: UploadedFile[] };
+
+    if (fileList) {
+      if (Array.isArray(fileList)) {
+        file = fileList.find((f) => f.fieldname === 'file');
+        thumbnail = fileList.find((f) => f.fieldname === 'thumbnail');
       } else {
-        file = files.file?.[0];
-        thumbnail = files.thumbnail?.[0];
+        file = fileList.file?.[0];
+        thumbnail = fileList.thumbnail?.[0];
       }
     }
-    
-    let processedTags: string[] | undefined;
-    if (httpRequest.body.tags) {
-      if (typeof httpRequest.body.tags === 'string') {
-        try {
-          const parsed = JSON.parse(httpRequest.body.tags);
-          processedTags = Array.isArray(parsed) ? parsed : [httpRequest.body.tags];
-        } catch {
-          processedTags = httpRequest.body.tags.split(',').map(tag => tag.trim()).filter(Boolean);
-        }
-      } else if (Array.isArray(httpRequest.body.tags)) {
-        processedTags = httpRequest.body.tags;
-      }
-    }
-    
-    const updateData: MaterialUpdateData = {
+
+    const updateData = {
       id,
-      ...httpRequest.body,
-      ...(httpRequest.body.isNew !== undefined && { isNewMaterial: httpRequest.body.isNew === 'true' }),
-      ...(processedTags && { tags: processedTags }),
-      ...(httpRequest.body.isRestricted !== undefined && { isRestricted: httpRequest.body.isRestricted === true || httpRequest.body.isRestricted === 'true' })
+      ...body,
+      ...(file && { fileUrl: file.path }),
+      ...(thumbnail && { thumbnailUrl: thumbnail.path }),
+      ...(body.tags && { tags: this._parseTags(body.tags) })
     };
-    
-    if (file?.path) {
-      updateData.fileUrl = file.path;
-    }
-    else if (httpRequest.body.fileUrl) {
-      updateData.fileUrl = httpRequest.body.fileUrl;
-    }
-    
-    if (thumbnail?.path) {
-      updateData.thumbnailUrl = thumbnail.path;
-    }
-    else if (httpRequest.body.thumbnailUrl) {
-      updateData.thumbnailUrl = httpRequest.body.thumbnailUrl;
-    }
-        
-    const result = await this._updateMaterialUseCase.execute(updateData);
-    if (!result) {
-      return this._httpErrors.error_404();
-    }
-    return this._httpSuccess.success_200(result);
+
+    const response = await this._updateMaterialUseCase.execute(updateData);
+    return this._httpSuccess.success_200(response);
   }
 
   async deleteMaterial(httpRequest: IHttpRequest): Promise<IHttpResponse> {
-      const { id } = httpRequest.params;
-      if (!id) {
-        return this._httpErrors.error_400();
-      }
-      await this._deleteMaterialUseCase.execute({ id });
-      return this._httpSuccess.success_200({ message: 'Material deleted successfully' });
+    const { id } = httpRequest.params;
+    await this._deleteMaterialUseCase.execute({ id });
+    return this._httpSuccess.success_200({ message: 'Material deleted successfully' });
   }
-} 
+
+  private _parseTags(tags: unknown): string[] {
+    if (!tags) return [];
+    if (Array.isArray(tags)) return tags as string[];
+    if (typeof tags === 'string') {
+      try {
+        const parsed = JSON.parse(tags);
+        return Array.isArray(parsed) ? parsed : [tags];
+      } catch {
+        return tags.split(',').map(tag => tag.trim()).filter(Boolean);
+      }
+    }
+    return [];
+  }
+}
