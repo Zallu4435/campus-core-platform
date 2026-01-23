@@ -1,5 +1,3 @@
-import { Course } from "../entities/Course";
-
 interface PaginatedResponseDTO<T> {
   data: T[];
   totalItems: number;
@@ -14,6 +12,8 @@ export interface CourseSummaryDTO {
   faculty: string;
   term: string;
   credits: number;
+  currentEnrollment: number;
+  maxEnrollment: number;
 }
 
 export interface GetCoursesResponseDTO extends PaginatedResponseDTO<CourseSummaryDTO> {

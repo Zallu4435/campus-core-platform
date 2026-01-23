@@ -1,5 +1,5 @@
 import { CourseErrorType } from "../enums/CourseErrorType";
-import { EnrollmentProps, EnrollmentStatus } from "./coursetypes";
+import { EnrollmentProps, EnrollmentStatus } from "../types";
 
 export class Enrollment {
   private idValue?: string;

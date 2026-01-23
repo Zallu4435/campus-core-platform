@@ -1,11 +1,13 @@
-import { EnrollmentProps, EnrollmentStatus, CourseProps } from '../entities/coursetypes';
+import { EnrollmentProps, EnrollmentStatus, CourseProps } from '../../../domain/courses/types';
 
 export interface GetEnrollmentsRequestDTO {
   page: number;
   limit: number;
   status?: string;
   specialization?: string;
+  faculty?: string;
   term?: string;
+  search?: string;
 }
 
 export interface ApproveEnrollmentRequestDTO {
@@ -56,4 +58,23 @@ export interface CourseRequestDetailsDTO {
 
 export interface GetCourseRequestDetailsResponseDTO {
   courseRequest: CourseRequestDetailsDTO;
+}
+
+export interface EnrollmentDetailsDTO {
+  id: string;
+  studentId: string;
+  studentEmail: string;
+  studentFirstName: string;
+  studentLastName: string;
+  courseId: string;
+  courseTitle: string;
+  courseSpecialization?: string;
+  courseTerm?: string;
+  courseFaculty?: string;
+  courseCredits?: number;
+  status: string;
+  requestedAt: Date;
+  reason?: string;
+  createdAt: Date;
+  updatedAt: Date;
 }

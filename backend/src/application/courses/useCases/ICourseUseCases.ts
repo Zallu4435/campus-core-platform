@@ -4,31 +4,31 @@ import {
   CreateCourseRequestDTO,
   UpdateCourseRequestDTO,
   DeleteCourseRequestDTO,
-} from "../../../domain/courses/dtos/CourseRequestDTOs";
+} from "../dtos/CourseRequestDTOs";
 import {
   GetCoursesResponseDTO,
   GetCourseByIdResponseDTO,
   CreateCourseResponseDTO,
   UpdateCourseResponseDTO,
   CourseSummaryDTO,
-} from "../../../domain/courses/dtos/CourseResponseDTOs";
+} from "../dtos/CourseResponseDTOs";
 
 export interface IGetCoursesUseCase {
-  execute(params: GetCoursesRequestDTO): Promise<{ success: boolean; data: GetCoursesResponseDTO }>;
+  execute(params: GetCoursesRequestDTO): Promise<GetCoursesResponseDTO>;
 }
 
 export interface IGetCourseByIdUseCase {
-  execute(params: GetCourseByIdRequestDTO): Promise<{ success: boolean; data: GetCourseByIdResponseDTO }>; 
+  execute(params: GetCourseByIdRequestDTO): Promise<GetCourseByIdResponseDTO>;
 }
 
 export interface ICreateCourseUseCase {
-  execute(params: CreateCourseRequestDTO): Promise<{ success: boolean; data: CreateCourseResponseDTO }>;
+  execute(params: CreateCourseRequestDTO): Promise<CreateCourseResponseDTO>;
 }
 
 export interface IUpdateCourseUseCase {
-  execute(params: UpdateCourseRequestDTO): Promise<{ success: boolean; data: UpdateCourseResponseDTO }>; 
+  execute(params: UpdateCourseRequestDTO): Promise<UpdateCourseResponseDTO>;
 }
 
 export interface IDeleteCourseUseCase {
-  execute(params: DeleteCourseRequestDTO): Promise<{ success: boolean; data: void }>;
+  execute(params: DeleteCourseRequestDTO): Promise<void>;
 }

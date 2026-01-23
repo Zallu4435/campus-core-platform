@@ -1,6 +1,6 @@
 import { IHttpRequest, IHttpResponse, ICourseEnrollmentController, HttpSuccess, HttpErrors } from "../IHttp";
 import { IGetEnrollmentsUseCase, IApproveEnrollmentUseCase, IRejectEnrollmentUseCase, IGetCourseRequestDetailsUseCase } from "../../../application/courses/useCases/IEnrollmentUseCases";
-import { GetEnrollmentsRequestDTO, ApproveEnrollmentRequestDTO, RejectEnrollmentRequestDTO, GetCourseRequestDetailsRequestDTO } from "../../../domain/courses/dtos/EnrollmentRequestDTOs";
+import { GetEnrollmentsRequestDTO, ApproveEnrollmentRequestDTO, RejectEnrollmentRequestDTO, GetCourseRequestDetailsRequestDTO } from "../../../application/courses/dtos/EnrollmentRequestDTOs";
 
 export class EnrollmentController implements ICourseEnrollmentController {
   private _httpSuccess = new HttpSuccess();
@@ -11,7 +11,7 @@ export class EnrollmentController implements ICourseEnrollmentController {
     private readonly _approveEnrollmentUseCase: IApproveEnrollmentUseCase,
     private readonly _rejectEnrollmentUseCase: IRejectEnrollmentUseCase,
     private readonly _getCourseRequestDetailsUseCase: IGetCourseRequestDetailsUseCase
-  ) {}
+  ) { }
 
   async getEnrollments(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const { page = 1, limit = 10, status } = httpRequest.query;

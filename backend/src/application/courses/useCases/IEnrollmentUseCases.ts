@@ -5,7 +5,7 @@ import {
   GetCourseRequestDetailsRequestDTO,
   GetEnrollmentsResponseDTO,
   GetCourseRequestDetailsResponseDTO,
-} from "../../../domain/courses/dtos/EnrollmentRequestDTOs";
+} from "../dtos/EnrollmentRequestDTOs";
 
 export interface IGetEnrollmentsUseCase {
   execute(params: GetEnrollmentsRequestDTO): Promise<{ success: boolean; data: GetEnrollmentsResponseDTO }>;
@@ -13,7 +13,7 @@ export interface IGetEnrollmentsUseCase {
 
 export interface IApproveEnrollmentUseCase {
   execute(params: ApproveEnrollmentRequestDTO): Promise<{ success: boolean; data: void }>;
-} 
+}
 
 export interface IRejectEnrollmentUseCase {
   execute(params: RejectEnrollmentRequestDTO): Promise<{ success: boolean; data: void }>;
