@@ -1,4 +1,4 @@
-import { EnquiryProps } from "../entities/EnquiryTypes";
+import { EnquiryProps } from "../../../domain/enquiry/entities/EnquiryTypes";
 
 export interface CreateEnquiryResponseDTO {
   enquiry: EnquiryProps;

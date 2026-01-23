@@ -1,7 +1,17 @@
-import mongoose, { Schema } from "mongoose";
-import { EnquiryStatus, IEnquiry } from "../../../../domain/enquiry/entities/EnquiryTypes";
+import mongoose, { Schema, Document } from "mongoose";
+import { EnquiryStatus } from "../../../../domain/enquiry/entities/EnquiryTypes";
 
-const enquirySchema = new Schema<IEnquiry>(
+export interface IEnquiryPersistence extends Document {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  status: EnquiryStatus;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const enquirySchema = new Schema<IEnquiryPersistence>(
   {
     name: {
       type: String,
@@ -40,4 +50,4 @@ enquirySchema.index({ createdAt: -1 });
 enquirySchema.index({ email: 1 });
 enquirySchema.index({ subject: "text", message: "text" });
 
-export const Enquiry = mongoose.model<IEnquiry>("Enquiry", enquirySchema); 
+export const Enquiry = mongoose.model<IEnquiryPersistence>("Enquiry", enquirySchema);

@@ -1,4 +1,4 @@
-import { EnquiryStatus } from "../entities/EnquiryTypes";
+import { EnquiryStatus } from "../../../domain/enquiry/entities/EnquiryTypes";
 
 export interface CreateEnquiryRequestDTO {
   name: string;

@@ -1,10 +1,11 @@
-import { EnquiryProps, IEnquiry } from "../../../domain/enquiry/entities/EnquiryTypes";
+import { Enquiry } from "../../../domain/enquiry/entities/Enquiry";
+import { EnquiryFilter } from "../../../domain/enquiry/entities/EnquiryTypes";
 
 export interface IEnquiryRepository {
-  create(data: EnquiryProps): Promise<IEnquiry>;
-  find(filter, options: { skip?: number; limit?: number; sort? }): Promise<IEnquiry[]>;
-  count(filter): Promise<number>;
-  findById(id: string): Promise<IEnquiry | null>;
-  update(id: string, data: EnquiryProps): Promise<IEnquiry | null>;
+  create(enquiry: Enquiry): Promise<Enquiry>;
+  find(filter: EnquiryFilter, options: { skip?: number; limit?: number; sort?}): Promise<Enquiry[]>;
+  count(filter: EnquiryFilter): Promise<number>;
+  findById(id: string): Promise<Enquiry | null>;
+  update(id: string, enquiry: Enquiry): Promise<Enquiry | null>;
   delete(id: string): Promise<void>;
-} 
+}

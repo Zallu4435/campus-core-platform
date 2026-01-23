@@ -1,5 +1,3 @@
-import { Document } from "mongoose";
-
 export enum EnquiryStatus {
   PENDING = "pending",
   IN_PROGRESS = "in_progress",
@@ -18,29 +16,12 @@ export interface EnquiryProps {
   updatedAt?: Date;
 }
 
-export interface IEnquiry extends Document {
-  name: string;
-  email: string;
-  subject: string;
-  message: string;
-  status: EnquiryStatus;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export type CreateEnquiryProps = Omit<EnquiryProps, 'id' | 'createdAt' | 'updatedAt'>;
-export type UpdateEnquiryProps = Partial<Omit<EnquiryProps, 'createdAt' | 'updatedAt'>> & { id: string }; 
+export type CreateEnquiryProps = Omit<EnquiryProps, "id" | "createdAt" | "updatedAt">;
+export type UpdateEnquiryProps = Partial<Omit<EnquiryProps, "createdAt" | "updatedAt">> & { id: string };
 
 export type EnquiryFilter = {
   status?: string;
-  createdAt?: {
-    $gte?: Date;
-    $lte?: Date;
-  };
-  $or?: Array<{
-    name?: { $regex: string; $options: string };
-    email?: { $regex: string; $options: string };
-    subject?: { $regex: string; $options: string };
-    message?: { $regex: string; $options: string };
-  }>;
+  startDate?: Date;
+  endDate?: Date;
+  search?: string;
 };

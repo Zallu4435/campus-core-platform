@@ -5,7 +5,7 @@ import {
   UpdateEnquiryStatusRequestDTO,
   DeleteEnquiryRequestDTO,
   SendEnquiryReplyRequestDTO,
-} from "../../../domain/enquiry/dtos/EnquiryRequestDTOs";
+} from "../dtos/EnquiryRequestDTOs";
 import {
   CreateEnquiryResponseDTO,
   GetEnquiriesResponseDTO,
@@ -13,7 +13,7 @@ import {
   UpdateEnquiryStatusResponseDTO,
   DeleteEnquiryResponseDTO,
   SendEnquiryReplyResponseDTO,
-} from "../../../domain/enquiry/dtos/EnquiryResponseDTOs";
+} from "../dtos/EnquiryResponseDTOs";
 
 export interface ICreateEnquiryUseCase {
   execute(params: CreateEnquiryRequestDTO): Promise<CreateEnquiryResponseDTO>;

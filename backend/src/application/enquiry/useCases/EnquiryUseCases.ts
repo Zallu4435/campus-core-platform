@@ -5,7 +5,7 @@ import {
   UpdateEnquiryStatusRequestDTO,
   DeleteEnquiryRequestDTO,
   SendEnquiryReplyRequestDTO,
-} from "../../../domain/enquiry/dtos/EnquiryRequestDTOs";
+} from "../dtos/EnquiryRequestDTOs";
 import {
   CreateEnquiryResponseDTO,
   GetEnquiriesResponseDTO,
@@ -13,11 +13,12 @@ import {
   UpdateEnquiryStatusResponseDTO,
   DeleteEnquiryResponseDTO,
   SendEnquiryReplyResponseDTO,
-} from "../../../domain/enquiry/dtos/EnquiryResponseDTOs";
+} from "../dtos/EnquiryResponseDTOs";
 import { IEnquiryRepository } from "../repositories/IEnquiryRepository";
-import { Enquiry, EnquiryProps } from "../../../domain/enquiry/entities/Enquiry";
+import { Enquiry } from "../../../domain/enquiry/entities/Enquiry";
 import { EnquiryFilter, EnquiryStatus } from "../../../domain/enquiry/entities/EnquiryTypes";
 import { IEmailService } from "../../auth/service/IEmailService";
+import { ENQUIRY_CONSTANTS } from "../constants/EnquiryConstants";
 import {
   EnquiryNotFoundError,
   InvalidEnquiryIdError,
@@ -34,26 +35,11 @@ import {
   ISendEnquiryReplyUseCase
 } from './IEnquiryUseCases';
 
-const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; 
-
-function toEnquiryProps(raw): EnquiryProps {
-  return {
-    id: raw._id?.toString() ?? raw.id,
-    name: raw.name,
-    email: raw.email,
-    subject: raw.subject,
-    message: raw.message,
-    status: raw.status,
-    createdAt: raw.createdAt,
-    updatedAt: raw.updatedAt,
-  };
-}
-
 export class CreateEnquiryUseCase implements ICreateEnquiryUseCase {
-  constructor(private _enquiryRepository: IEnquiryRepository) {}
+  constructor(private _enquiryRepository: IEnquiryRepository) { }
 
   async execute(params: CreateEnquiryRequestDTO): Promise<CreateEnquiryResponseDTO> {
-    if (!emailRegex.test(params.email)) {
+    if (!ENQUIRY_CONSTANTS.REGEX.EMAIL.test(params.email)) {
       throw new InvalidEmailError(params.email);
     }
 
@@ -61,50 +47,36 @@ export class CreateEnquiryUseCase implements ICreateEnquiryUseCase {
       ...params,
       status: EnquiryStatus.PENDING,
     });
-    
-    const dbResult = await this._enquiryRepository.create(enquiry.props);
-    
+
+    const dbResult = await this._enquiryRepository.create(enquiry);
+
     return {
-      enquiry: toEnquiryProps(dbResult),
+      enquiry: dbResult.props,
     };
   }
 }
 
 export class GetEnquiriesUseCase implements IGetEnquiriesUseCase {
-  constructor(private _enquiryRepository: IEnquiryRepository) {}
+  constructor(private _enquiryRepository: IEnquiryRepository) { }
 
   async execute(params: GetEnquiriesRequestDTO): Promise<GetEnquiriesResponseDTO> {
-    const { page = 1, limit = 10, status, startDate, endDate, search } = params;
+    const {
+      page = ENQUIRY_CONSTANTS.PAGINATION.DEFAULT_PAGE,
+      limit = ENQUIRY_CONSTANTS.PAGINATION.DEFAULT_LIMIT,
+      status,
+      startDate,
+      endDate,
+      search
+    } = params;
+
     const skip = (page - 1) * limit;
 
-    const filter: EnquiryFilter = {};
-
-    if (status && typeof status === 'string') {
-      const statusStr = status.toLowerCase();
-      if (statusStr !== "all" && statusStr !== "all statuses" && Object.values(EnquiryStatus).includes(statusStr as EnquiryStatus)) {
-        filter.status = statusStr;
-      }
-    }
-
-    if (startDate && endDate) {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
-        filter.createdAt = {
-          $gte: start,
-          $lte: end,
-        };
-      }
-    }
-
-    if (search) {
-      filter.$or = [
-        { name: { $regex: search, $options: "i" } },
-        { email: { $regex: search, $options: "i" } },
-        { subject: { $regex: search, $options: "i" } },
-        { message: { $regex: search, $options: "i" } },
-      ];
-    }
+    const filter: EnquiryFilter = {
+      status,
+      startDate: startDate ? new Date(startDate) : undefined,
+      endDate: endDate ? new Date(endDate) : undefined,
+      search,
+    };
 
     const sort = { createdAt: -1 };
     const enquiries = await this._enquiryRepository.find(filter, { skip, limit, sort });
@@ -112,7 +84,7 @@ export class GetEnquiriesUseCase implements IGetEnquiriesUseCase {
     const totalPages = Math.ceil(total / limit);
 
     return {
-      enquiries: enquiries.map(toEnquiryProps),
+      enquiries: enquiries.map(e => e.props),
       total,
       page,
       limit,
@@ -122,7 +94,7 @@ export class GetEnquiriesUseCase implements IGetEnquiriesUseCase {
 }
 
 export class GetEnquiryByIdUseCase implements IGetEnquiryByIdUseCase {
-  constructor(private _enquiryRepository: IEnquiryRepository) {}
+  constructor(private _enquiryRepository: IEnquiryRepository) { }
 
   async execute(params: GetEnquiryByIdRequestDTO): Promise<GetEnquiryByIdResponseDTO> {
     if (!params.id) {
@@ -135,13 +107,13 @@ export class GetEnquiryByIdUseCase implements IGetEnquiryByIdUseCase {
     }
 
     return {
-      enquiry: toEnquiryProps(enquiry),
+      enquiry: enquiry.props,
     };
   }
 }
 
 export class UpdateEnquiryStatusUseCase implements IUpdateEnquiryStatusUseCase {
-  constructor(private _enquiryRepository: IEnquiryRepository) {}
+  constructor(private _enquiryRepository: IEnquiryRepository) { }
 
   async execute(params: UpdateEnquiryStatusRequestDTO): Promise<UpdateEnquiryStatusResponseDTO> {
     if (!params.id) {
@@ -153,22 +125,21 @@ export class UpdateEnquiryStatusUseCase implements IUpdateEnquiryStatusUseCase {
       throw new EnquiryNotFoundError(params.id);
     }
 
-    const existingProps = toEnquiryProps(existingEnquiry);
-    const updatedEnquiry = Enquiry.update(existingProps, { status: params.status });
-    
-    const dbResult = await this._enquiryRepository.update(params.id, updatedEnquiry.props);
+    const updatedEnquiry = existingEnquiry.updateStatus(params.status);
+
+    const dbResult = await this._enquiryRepository.update(params.id, updatedEnquiry);
     if (!dbResult) {
       throw new EnquiryNotFoundError(params.id);
     }
 
     return {
-      enquiry: toEnquiryProps(dbResult),
+      enquiry: dbResult.props,
     };
   }
 }
 
 export class DeleteEnquiryUseCase implements IDeleteEnquiryUseCase {
-  constructor(private _enquiryRepository: IEnquiryRepository) {}
+  constructor(private _enquiryRepository: IEnquiryRepository) { }
 
   async execute(params: DeleteEnquiryRequestDTO): Promise<DeleteEnquiryResponseDTO> {
     if (!params.id) {
@@ -184,7 +155,7 @@ export class DeleteEnquiryUseCase implements IDeleteEnquiryUseCase {
 
     return {
       success: true,
-      message: "Enquiry deleted successfully",
+      message: ENQUIRY_CONSTANTS.MESSAGES.DELETE_SUCCESS,
     };
   }
 }
@@ -193,7 +164,7 @@ export class SendEnquiryReplyUseCase implements ISendEnquiryReplyUseCase {
   constructor(
     private _enquiryRepository: IEnquiryRepository,
     private _emailService: IEmailService
-  ) {}
+  ) { }
 
   async execute(params: SendEnquiryReplyRequestDTO): Promise<SendEnquiryReplyResponseDTO> {
     if (!params.id) {
@@ -216,16 +187,15 @@ export class SendEnquiryReplyUseCase implements ISendEnquiryReplyUseCase {
         originalSubject: enquiry.subject,
         originalMessage: enquiry.message,
         replyMessage: params.replyMessage,
-        adminName: "Support Team"
+        adminName: ENQUIRY_CONSTANTS.MESSAGES.SUPPORT_TEAM_NAME
       });
 
       return {
         success: true,
-        message: "Reply sent successfully",
+        message: ENQUIRY_CONSTANTS.MESSAGES.REPLY_SUCCESS,
       };
     } catch (error) {
-      console.error("Error sending reply:", error);
-      throw new EnquiryReplyFailedError("Failed to send reply");
+      throw new EnquiryReplyFailedError(ENQUIRY_CONSTANTS.MESSAGES.REPLY_FAILED);
     }
   }
-} 
+}

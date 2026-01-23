@@ -1,9 +1,10 @@
-import { EnquiryStatus, EnquiryProps, CreateEnquiryProps, UpdateEnquiryProps } from "./EnquiryTypes";
+import { EnquiryStatus, EnquiryProps, CreateEnquiryProps } from "./EnquiryTypes";
+import { EnquiryValidationError } from "../errors/EnquiryErrors";
 
 export type { EnquiryProps };
 
 export class Enquiry {
-  constructor(public props: EnquiryProps) {}
+  constructor(public props: EnquiryProps) { }
 
   // Getters
   get id() { return this.props.id; }
@@ -16,18 +17,10 @@ export class Enquiry {
   get updatedAt() { return this.props.updatedAt; }
 
   static create(props: CreateEnquiryProps): Enquiry {
-    // Basic validation
-    const missingFields = [];
-    if (!props.name || props.name.trim().length === 0) missingFields.push('name');
-    if (!props.email || props.email.trim().length === 0) missingFields.push('email');
-    if (!props.subject || props.subject.trim().length === 0) missingFields.push('subject');
-    if (!props.message || props.message.trim().length === 0) missingFields.push('message');
-    
-    if (missingFields.length > 0) {
-      console.error('[Enquiry.create] Missing required fields:', missingFields);
-      console.error('[Enquiry.create] Props received:', props);
-      throw new Error("Missing required fields for enquiry creation");
-    }
+    if (!props.name || props.name.trim().length === 0) throw new EnquiryValidationError("name", "Name is required");
+    if (!props.email || props.email.trim().length === 0) throw new EnquiryValidationError("email", "Email is required");
+    if (!props.subject || props.subject.trim().length === 0) throw new EnquiryValidationError("subject", "Subject is required");
+    if (!props.message || props.message.trim().length === 0) throw new EnquiryValidationError("message", "Message is required");
 
     const now = new Date();
     return new Enquiry({
@@ -40,22 +33,17 @@ export class Enquiry {
   }
 
   static update(existingProps: EnquiryProps, updateData: Partial<EnquiryProps>): Enquiry {
-    // Merge existing props with update data
     const updatedProps: EnquiryProps = {
       ...existingProps,
       ...updateData,
-      // Ensure id is preserved
       id: existingProps.id,
-      // Preserve immutable fields
       createdAt: existingProps.createdAt,
-      // Update the updatedAt timestamp
       updatedAt: new Date(),
     };
-    
+
     return new Enquiry(updatedProps);
   }
 
-  // Instance methods
   updateStatus(status: EnquiryStatus): Enquiry {
     return new Enquiry({
       ...this.props,
@@ -76,4 +64,4 @@ export class Enquiry {
       updatedAt: this.updatedAt,
     };
   }
-} 
+}
