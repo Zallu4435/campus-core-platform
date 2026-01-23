@@ -38,6 +38,7 @@ export interface IVagoNowSection extends ISiteSectionBase {
   image?: string;
   link?: string;
   category?: string;
+  description?: string; // Optional if needed for base compat
 }
 
 export interface ILeadershipSection extends ISiteSectionBase {
@@ -79,4 +80,24 @@ export interface SiteSectionFilter {
     $lte?: Date;
   };
   [key: string]: unknown;
+}
+
+// Request Types
+export type CreateSiteSectionRequest = ISiteSection;
+
+export interface UpdateSiteSectionRequest {
+  id: string;
+  title?: string;
+  description?: string;
+  content?: string;
+  bio?: string;
+  image?: string;
+  photo?: string;
+  link?: string;
+  position?: string;
+  category?: string;
+}
+
+export interface DeleteSiteSectionRequest {
+  id: string;
 }

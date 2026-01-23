@@ -8,7 +8,7 @@ import {
   GetMessageDetailsRequestDTO,
   GetAllAdminsRequestDTO,
   FetchUsersRequestDTO,
-} from "../../../domain/communication/dtos/CommunicationRequestDTOs";
+} from "../dtos/CommunicationRequestDTOs";
 import {
   GetInboxMessagesResponseDTO,
   GetSentMessagesResponseDTO,
@@ -16,12 +16,9 @@ import {
   MarkMessageAsReadResponseDTO,
   DeleteMessageResponseDTO,
   GetMessageDetailsResponseDTO,
-  AdminSentMessageResponseDTO,
   GetAllAdminsResponseDTO,
-  FetchUsersResponseDTO,
-  ResponseDTO
-} from "../../../domain/communication/dtos/CommunicationResponseDTOs";
-import { UserRole } from '../../../domain/communication/entities/Communication';
+  FetchUsersResponseDTO
+} from "../dtos/CommunicationResponseDTOs";
 import {
   IGetInboxMessagesUseCase,
   IGetSentMessagesUseCase,
@@ -32,31 +29,35 @@ import {
   IGetAllAdminsUseCase,
   IFetchUsersUseCase
 } from "./ICommunicationUseCases";
+import { CommunicationConstants } from '../constants/CommunicationConstants';
+import { CommunicationDTOMapper } from '../dtos/CommunicationDTOMapper';
+import { Message, Attachment } from '../../../domain/communication/entities/Communication';
+import { CommunicationError, MessageNotFoundError, InvalidRecipientError, SenderNotFoundError } from '../../../domain/communication/errors/CommunicationErrors';
 
-
- 
 export class GetInboxMessagesUseCase implements IGetInboxMessagesUseCase {
   constructor(private readonly _repository: ICommunicationRepository) { }
 
-  async execute(params: GetInboxMessagesRequestDTO): Promise<ResponseDTO<GetInboxMessagesResponseDTO>> {
-    if (!params.userId || params.userId.trim() === "") {
-      return { success: false, data: { error: "Invalid user ID" } };
+  async execute(params: GetInboxMessagesRequestDTO): Promise<GetInboxMessagesResponseDTO> {
+    const { userId, page, limit, search, status } = params;
+
+    if (!userId || userId.trim() === "") {
+      throw new CommunicationError(CommunicationConstants.ERRORS.INVALID_USER_ID);
     }
-    if (isNaN(params.page) || params.page < 1 || isNaN(params.limit) || params.limit < 1) {
-      return { success: false, data: { error: "Invalid page or limit parameters" } };
+    if (isNaN(page) || page < 1 || isNaN(limit) || limit < 1) {
+      throw new CommunicationError(CommunicationConstants.ERRORS.INVALID_PAGE_LIMIT);
     }
-    const { messages, totalItems, totalPages, page, limit, userId } = await this._repository.getInboxMessages(params.userId, params.page, params.limit, params.search, params.status);
-    const mappedMessages = messages.map((message) => mapMessageToDTO(message, false));
+
+    const result = await this._repository.getInboxMessages(userId, page, limit, search, status);
+
+    const mappedMessages = result.messages.map((message) => CommunicationDTOMapper.toMessageSummaryDTO(message));
+
     return {
-      success: true,
-      data: {
-        messages: mappedMessages,
-        pagination: {
-          total: totalItems,
-          page,
-          limit,
-          totalPages
-        }
+      messages: mappedMessages,
+      pagination: {
+        total: result.totalItems,
+        page: result.page,
+        limit: result.limit,
+        totalPages: result.totalPages
       }
     };
   }
@@ -65,43 +66,36 @@ export class GetInboxMessagesUseCase implements IGetInboxMessagesUseCase {
 export class GetSentMessagesUseCase implements IGetSentMessagesUseCase {
   constructor(private readonly _repository: ICommunicationRepository) { }
 
-  async execute(params: GetSentMessagesRequestDTO): Promise<ResponseDTO<GetSentMessagesResponseDTO>> {
-    if (!params.userId || params.userId.trim() === "") {
-      return { success: false, data: { error: "Invalid user ID" } };
+  async execute(params: GetSentMessagesRequestDTO): Promise<GetSentMessagesResponseDTO> {
+    const { userId, page, limit, search, status } = params;
+
+    if (!userId || userId.trim() === "") {
+      throw new CommunicationError(CommunicationConstants.ERRORS.INVALID_USER_ID);
     }
-    if (isNaN(params.page) || params.page < 1 || isNaN(params.limit) || params.limit < 1) {
-      return { success: false, data: { error: "Invalid page or limit parameters" } };
+    if (isNaN(page) || page < 1 || isNaN(limit) || limit < 1) {
+      throw new CommunicationError(CommunicationConstants.ERRORS.INVALID_PAGE_LIMIT);
     }
-    const { messages, totalItems, totalPages, page, limit, userId } = await this._repository.getSentMessages(params.userId, params.page, params.limit, params.search, params.status);
-    
-    if (!messages || !Array.isArray(messages)) {
-      console.error('Repository returned invalid messages:', messages);
-      return { 
-        success: false, 
-        data: { error: "Failed to retrieve messages from database" } 
-      };
+
+    const result = await this._repository.getSentMessages(userId, page, limit, search, status);
+
+    if (!result.messages || !Array.isArray(result.messages)) {
+      throw new CommunicationError(CommunicationConstants.ERRORS.FAILED_TO_RETRIEVE_MESSAGES);
     }
 
     try {
-      const mappedMessages = messages.map((message) => mapMessageToAdminSentDTO(message));
-    return {
-      success: true,
-      data: {
+      const mappedMessages = result.messages.map((message) => CommunicationDTOMapper.toAdminSentMessageDTO(message));
+      return {
         messages: mappedMessages,
         pagination: {
-          total: totalItems,
-          page,
-          limit,
-          totalPages
+          total: result.totalItems,
+          page: result.page,
+          limit: result.limit,
+          totalPages: result.totalPages
         }
-      }
-    };
-    } catch (error) {
-      console.error('Error mapping messages to DTO:', error);
-      return { 
-        success: false, 
-        data: { error: "Failed to process message data" } 
       };
+    } catch (error) {
+      if (error instanceof Error) throw new CommunicationError(error.message);
+      throw new CommunicationError(CommunicationConstants.ERRORS.FAILED_TO_PROCESS_DATA);
     }
   }
 }
@@ -109,45 +103,50 @@ export class GetSentMessagesUseCase implements IGetSentMessagesUseCase {
 export class SendMessageUseCase implements ISendMessageUseCase {
   constructor(private readonly _repository: ICommunicationRepository) { }
 
-  async execute(params: SendMessageRequestDTO): Promise<ResponseDTO<SendMessageResponseDTO>> {
-    try {
+  async execute(params: SendMessageRequestDTO): Promise<SendMessageResponseDTO> {
     if (!params.senderId || params.senderId.trim() === "") {
-      return { success: false, data: { error: "Invalid sender ID" } };
+      throw new CommunicationError(CommunicationConstants.ERRORS.INVALID_SENDER_ID);
     }
     if (!params.subject || !params.content || !params.to.length) {
-      return { success: false, data: { error: "Missing required fields" } };
+      throw new CommunicationError(CommunicationConstants.ERRORS.MISSING_REQUIRED_FIELDS);
     }
 
-      let sentMessage;
+    let sentMessage: Message;
+    const attachments: Attachment[] = params.attachments || [];
 
-      if (params.senderRole === 'user') {
+    try {
+      if (params.senderRole === CommunicationConstants.ROLES.STUDENT || params.senderRole === 'user') {
         sentMessage = await this._repository.sendUserMessage(
           params.senderId,
           params.senderRole,
           params.to,
           params.subject,
           params.content,
-          params.attachments
+          attachments
         );
       } else {
         sentMessage = await this._repository.sendMessage(
-      params.senderId,
-      params.senderRole,
-      params.to,
-      params.subject,
-      params.content,
-      params.attachments
-    );
+          params.senderId,
+          params.senderRole,
+          params.to,
+          params.subject,
+          params.content,
+          attachments
+        );
       }
 
-      const mappedMessage = mapMessageToDTO(sentMessage, false);
+      // We assume sendUserMessage/sendMessage throws infrastructure errors if any.
+      // If not, we should catch inside repository or let bubble.
 
-    return {
-      success: true,
-        data: mappedMessage
-    };
+      const mappedMessage = CommunicationDTOMapper.toMessageDetailsDTO(sentMessage);
+
+      // Cast because SendMessageResponseDTO is subset/similar to GetMessageDetailsResponseDTO returning from mapper
+      return mappedMessage as unknown as SendMessageResponseDTO;
+
     } catch (error) {
-      throw error;
+      // Re-throw known domain errors or convert infrastructure errors
+      if (error instanceof Error) throw error;
+      throw new CommunicationError("Failed to send message");
     }
   }
 }
@@ -155,138 +154,84 @@ export class SendMessageUseCase implements ISendMessageUseCase {
 export class MarkMessageAsReadUseCase implements IMarkMessageAsReadUseCase {
   constructor(private readonly _repository: ICommunicationRepository) { }
 
-  async execute(params: MarkMessageAsReadRequestDTO): Promise<ResponseDTO<MarkMessageAsReadResponseDTO>> {
+  async execute(params: MarkMessageAsReadRequestDTO): Promise<MarkMessageAsReadResponseDTO> {
     if (!params.messageId || params.messageId.trim() === "" || !params.userId || params.userId.trim() === "") {
-      return { success: false, data: { error: "Invalid message ID or user ID" } };
+      throw new CommunicationError(CommunicationConstants.ERRORS.INVALID_MESSAGE_ID);
     }
+    // Check existence if strict
+    // await this._repository.getMessageDetails...
+    // Repository method logic handles update, if no match it's no-op in Mongo or throws?
+    // User requested "throw error from Usecase".
+
+    // For marking as read, strict validation often requires checking if message exists first.
+    // However, for performance, fire-and-forget is common.
+    // Clean Architecture Strict option:
+    const message = await this._repository.getMessageDetails(params.messageId);
+    if (!message) throw new MessageNotFoundError(params.messageId);
+
+    // Authorization check could also be here: assertIsRecipient(message, userId)
+
     await this._repository.markMessageAsRead(params.messageId, params.userId);
-    return { success: true, data: { success: true, message: "Message marked as read" } };
+    return { success: true, message: CommunicationConstants.MESSAGES.MARKED_AS_READ };
   }
 }
 
 export class DeleteMessageUseCase implements IDeleteMessageUseCase {
   constructor(private readonly _repository: ICommunicationRepository) { }
 
-  async execute(params: DeleteMessageRequestDTO): Promise<ResponseDTO<DeleteMessageResponseDTO>> {
+  async execute(params: DeleteMessageRequestDTO): Promise<DeleteMessageResponseDTO> {
     if (!params.messageId || params.messageId.trim() === "" || !params.userId || params.userId.trim() === "") {
-      return { success: false, data: { error: "Invalid message ID or user ID" } };
+      throw new CommunicationError(CommunicationConstants.ERRORS.INVALID_MESSAGE_ID);
     }
+
+    // Check existence
+    const message = await this._repository.getMessageDetails(params.messageId);
+    if (!message) throw new MessageNotFoundError(params.messageId);
+
     await this._repository.deleteMessage(params.messageId, params.userId);
-    return { success: true, data: { success: true, message: "Message deleted successfully" } };
+    return { success: true, message: CommunicationConstants.MESSAGES.DELETED_SUCCESSFULLY };
   }
 }
 
 export class GetMessageDetailsUseCase implements IGetMessageDetailsUseCase {
   constructor(private readonly _repository: ICommunicationRepository) { }
 
-  async execute(params: GetMessageDetailsRequestDTO): Promise<ResponseDTO<GetMessageDetailsResponseDTO>> {
+  async execute(params: GetMessageDetailsRequestDTO): Promise<GetMessageDetailsResponseDTO> {
     if (!params.messageId || params.messageId.trim() === "") {
-      return { success: false, data: { error: "Invalid message ID" } };
+      throw new CommunicationError(CommunicationConstants.ERRORS.INVALID_MESSAGE_ID);
     }
     const message = await this._repository.getMessageDetails(params.messageId);
     if (!message) {
-      return { success: false, data: { error: "Message not found" } };
+      throw new MessageNotFoundError(params.messageId);
     }
-    return { success: true, data: mapMessageToDTO(message, false) };
+    // Access control check
+    if (!message.canAccess(params.userId)) {
+      throw new CommunicationError(CommunicationConstants.ERRORS.UNAUTHORIZED);
+    }
+
+    return CommunicationDTOMapper.toMessageDetailsDTO(message);
   }
 }
-
 
 export class GetAllAdminsUseCase implements IGetAllAdminsUseCase {
   constructor(private readonly _repository: ICommunicationRepository) { }
 
-  async execute(params: GetAllAdminsRequestDTO): Promise<ResponseDTO<GetAllAdminsResponseDTO>> {
-    try {
+  async execute(params: GetAllAdminsRequestDTO): Promise<GetAllAdminsResponseDTO> {
     const admins = await this._repository.getAllAdmins(params.search);
-      return { success: true, data: { admins } };
-    } catch (error) {
-      throw error;
-    }
+    return { admins };
   }
 }
 
 export class FetchUsersUseCase implements IFetchUsersUseCase {
   constructor(private readonly _repository: ICommunicationRepository) { }
 
-  async execute(params: FetchUsersRequestDTO): Promise<ResponseDTO<FetchUsersResponseDTO>> {
+  async execute(params: FetchUsersRequestDTO): Promise<FetchUsersResponseDTO> {
     const users = await this._repository.fetchUsers(params.type, params.search);
     const mappedUsers = users.map((user) => ({
-      id: user._id,  
+      id: user._id,
       email: user.email,
       name: user.name
     }));
-    return { success: true, data: { users: mappedUsers } };
+    return { users: mappedUsers };
   }
-}
-
-export function mapMessageToDTO(message, hideRecipients: boolean = false): GetMessageDetailsResponseDTO {
-  if (!message) {
-    throw new Error('Message object is undefined or null');
-  }
-
-  const recipients = Array.isArray(message.recipients) ? message.recipients : [];
-  const attachments = Array.isArray(message.attachments) ? message.attachments : [];
-
-  const mappedRecipients = recipients.map((r) => ({
-    _id: r._id.toString(),
-    name: r.name,
-    email: r.email,
-    role: r.role as UserRole
-  }));
-
-      return {
-      _id: message._id.toString(),
-      subject: message.subject,
-      content: message.content,
-      sender: message.sender ? {
-        _id: message.sender._id.toString(),
-        name: message.sender.name,
-        email: message.sender.email,
-        role: message.sender.role as UserRole
-      } : undefined,
-      recipients: mappedRecipients,
-      recipientCount: recipients.length,
-      isBroadcast: message.isBroadcast || false,
-      attachments,
-      createdAt: message.createdAt,
-      updatedAt: message.updatedAt
-    };
-}
-
-export function mapMessageToAdminSentDTO(message): AdminSentMessageResponseDTO {
-  if (!message) {
-    throw new Error('Message object is undefined or null');
-  }
-
-  const recipients = Array.isArray(message.recipients) ? message.recipients : [];
-  const attachments = Array.isArray(message.attachments) ? message.attachments : [];
-
-  let recipientsDisplay = '';
-  if (recipients.length > 0) {
-    if (message.isBroadcast || recipients.length > 10) {
-      if (recipients.some(r => r.role === 'student')) {
-          recipientsDisplay = 'All Students';
-      } else if (recipients.some(r => r.role === 'admin')) {
-          recipientsDisplay = 'All Admins';
-        } else {
-          recipientsDisplay = 'All Users';
-        }
-    } else if (recipients.length === 1) {
-      recipientsDisplay = recipients[0].email;
-    } else {
-      recipientsDisplay = 'Multiple Recipients';
-    }
-  }
-
-  return {
-    _id: message._id.toString(),
-    subject: message.subject,
-    content: message.content,
-    recipients: recipientsDisplay,
-    recipientCount: recipients.length,
-    isBroadcast: message.isBroadcast || false,
-    attachments,
-    createdAt: message.createdAt,
-    updatedAt: message.updatedAt
-  };
 }

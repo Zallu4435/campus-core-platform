@@ -1,4 +1,5 @@
-import { UserInfo } from "../entities/Communication";
+import { UserInfo } from "../../../domain/communication/entities/Communication";
+import { UserRole, MessageStatus } from "../../../domain/communication/enums/CommunicationEnums";
 
 export interface MessageSummaryDTO {
   _id: string;
@@ -90,7 +91,7 @@ export interface AdminSentMessageResponseDTO {
   _id: string;
   subject: string;
   content: string;
-  recipients: string; 
+  recipients: string;
   recipientCount: number;
   isBroadcast: boolean;
   attachments?: Array<{
@@ -113,9 +114,6 @@ export interface FetchUsersResponseDTO {
     email: string;
     name: string;
   }>;
-} 
-
-export interface ResponseDTO<T> {
-  success: boolean;
-  data: T | { error: string };
 }
+
+

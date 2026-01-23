@@ -1,16 +1,4 @@
-export enum UserRole {
-  Admin = 'admin',
-  Student = 'student',
-  Faculty = 'faculty',
-  Staff = 'staff'
-}
-
-export enum MessageStatus {
-  Unread = 'unread',
-  Read = 'read',
-  Delivered = 'delivered',
-  Opened = 'opened'
-}
+import { UserRole, MessageStatus } from '../enums/CommunicationEnums';
 
 export interface UserInfo {
   _id: string;
@@ -42,28 +30,6 @@ export class Message {
     public readonly updatedAt: string
   ) { }
 
-  static create(
-    subject: string,
-    content: string,
-    sender: UserInfo,
-    recipients: UserInfo[],
-    isBroadcast: boolean,
-    attachments: Attachment[] = []
-  ): Message {
-    const now = new Date().toISOString();
-    return new Message(
-      crypto.randomUUID(),
-      subject,
-      content,
-      sender,
-      recipients,
-      isBroadcast,
-      attachments,
-      now,
-      now
-    );
-  }
-
   markAsRead(userId: string): void {
     const recipient = this.recipients.find(r => r._id.toString() === userId);
     if (recipient) {
@@ -82,53 +48,4 @@ export class Message {
   canAccess(userId: string): boolean {
     return this.isSender(userId) || this.isRecipient(userId);
   }
-}
-
-
-export interface CommunicationFilter {
-  "recipients._id"?: string;
-  "recipients.status"?: MessageStatus;
-  "sender._id"?: string;
-  $and?: Array<{
-    "recipients._id"?: string;
-    "recipients.status"?: MessageStatus;
-    $or?: Array<{
-      subject?: { $regex: string; $options: string };
-      content?: { $regex: string; $options: string };
-    }>;
-  }>;
-  $or?: Array<{
-    subject?: { $regex: string; $options: string };
-    content?: { $regex: string; $options: string };
-    firstName?: { $regex: string; $options: string };
-    lastName?: { $regex: string; $options: string };
-    email?: { $regex: string; $options: string };
-  }>;
-  role?: UserRole;
-  year?: string;
-  [key: string]: unknown;
-}
-
-export interface GetAdminQuery {
-  firstName?: { $regex: string; $options: string };
-  lastName?: { $regex: string; $options: string };
-  email?: { $regex: string; $options: string };
-  $or?: Array<{
-    firstName?: { $regex: string; $options: string };
-    lastName?: { $regex: string; $options: string };
-    email?: { $regex: string; $options: string };
-  }>;
-}
-
-export interface GetUserQuery {
-  firstName?: { $regex: string; $options: string };
-  lastName?: { $regex: string; $options: string };
-  email?: { $regex: string; $options: string };
-  $or?: Array<{
-    firstName?: { $regex: string; $options: string };
-    lastName?: { $regex: string; $options: string };
-    email?: { $regex: string; $options: string };
-  }>;
-  role?: UserRole;
-  [key: string]: unknown;
 }

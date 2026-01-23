@@ -1,9 +1,8 @@
-import { Message, UserInfo } from "../../../domain/communication/entities/Communication";
-import { IMessage } from "../../../infrastructure/database/mongoose/communication/communication.model";
+import { Message, UserInfo, Attachment } from "../../../domain/communication/entities/Communication";
 
 export interface ICommunicationRepository {
   getInboxMessages(userId: string, page: number, limit: number, search?: string, status?: string): Promise<{
-    messages: IMessage[];
+    messages: Message[];
     totalItems: number;
     totalPages: number;
     page: number;
@@ -13,37 +12,35 @@ export interface ICommunicationRepository {
     search?: string;
   }>;
   getSentMessages(userId: string, page: number, limit: number, search?: string, status?: string): Promise<{
-    messages: IMessage[];
+    messages: Message[];
     totalItems: number;
     totalPages: number;
     page: number;
     limit: number;
     userId: string;
-    status?: string;
     search?: string;
   }>;
-  sendMessage(senderId: string, senderRole: string, to: Array<{ value: string; label: string }>, subject: string, content: string, attachments?: Array<{
-    filename: string;
-    path: string;
-    contentType: string;
-    size: number;
-  }>): Promise<IMessage>;
-  sendUserMessage(senderId: string, senderRole: string, to: Array<{ value: string; label: string }>, subject: string, content: string, attachments?: Array<{
-    filename: string;
-    path: string;
-    contentType: string;
-    size: number;
-  }>): Promise<IMessage>;
+  sendMessage(
+    senderId: string,
+    senderRole: string,
+    to: Array<{ value: string; label: string }>,
+    subject: string,
+    content: string,
+    attachments?: Attachment[]
+  ): Promise<Message>;
+
+  sendUserMessage(
+    senderId: string,
+    senderRole: string,
+    to: Array<{ value: string; label: string }>,
+    subject: string,
+    content: string,
+    attachments?: Attachment[]
+  ): Promise<Message>;
+
   deleteMessage(messageId: string, userId: string): Promise<void>;
-  getMessageDetails(messageId: string): Promise<IMessage | null>;
+  getMessageDetails(messageId: string): Promise<Message | null>;
   markMessageAsRead(messageId: string, userId: string): Promise<void>;
   getAllAdmins(search?: string): Promise<UserInfo[]>;
   fetchUsers(type: string, search?: string): Promise<UserInfo[]>;
-
-  findUserById(userId: string, role: string): Promise<UserInfo | null>;
-  findMessageById(messageId: string): Promise<Message | null>;
-  createMessage(message: Message): Promise<void>;
-  updateMessageRecipientStatus(messageId: string, userId: string, status: string): Promise<void>;
-  findAdmins(search?: string): Promise<UserInfo[]>;
-  findUsersByType(type: string, search?: string, requesterId?: string): Promise<UserInfo[]>;
-} 
+}

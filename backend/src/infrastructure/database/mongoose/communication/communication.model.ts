@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { UserRole, MessageStatus } from '../../../../domain/communication/enums/CommunicationEnums';
 
 export interface IMessage extends Document {
   subject: string;
@@ -7,14 +8,14 @@ export interface IMessage extends Document {
     _id: mongoose.Types.ObjectId;
     name: string;
     email: string;
-    role: string;
+    role: UserRole;
   };
   recipients: Array<{
     _id: mongoose.Types.ObjectId;
     name: string;
     email: string;
-    role: string;
-    status: 'read' | 'unread';
+    role: UserRole;
+    status: MessageStatus;
   }>;
   isBroadcast: boolean;
   attachments: Array<{
@@ -30,19 +31,19 @@ export interface IMessage extends Document {
 
 const MessageSchema = new Schema<IMessage>({
   subject: { type: String, required: true, trim: true },
-  content: { type: String, required: true, trim: true }, 
+  content: { type: String, required: true, trim: true },
   sender: {
     _id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     name: { type: String, required: true, trim: true },
     email: { type: String, required: true, trim: true },
-    role: { type: String, required: true, trim: true },
+    role: { type: String, required: true, enum: Object.values(UserRole) },
   },
   recipients: [{
     _id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     name: { type: String, required: true, trim: true },
     email: { type: String, required: true, trim: true },
-    role: { type: String, required: true, trim: true },
-    status: { type: String, enum: ['read', 'unread'], default: 'unread' },
+    role: { type: String, required: true, enum: Object.values(UserRole) },
+    status: { type: String, enum: Object.values(MessageStatus), default: MessageStatus.Unread },
   }],
   isBroadcast: { type: Boolean, default: false },
   attachments: [{

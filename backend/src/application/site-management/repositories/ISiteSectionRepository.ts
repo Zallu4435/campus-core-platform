@@ -1,10 +1,10 @@
-import { 
-  CreateSiteSectionRequest, 
-  UpdateSiteSectionRequest, 
-  DeleteSiteSectionRequest 
-} from '../../../domain/site-management/entities/SiteSection';
-import { ISiteSectionDocument } from '../../../domain/site-management/entities/SiteSectionTypes';
- 
+import {
+  CreateSiteSectionRequest,
+  UpdateSiteSectionRequest,
+  DeleteSiteSectionRequest,
+  ISiteSectionDocument
+} from '../../../domain/site-management/entities/SiteSectionTypes';
+
 export interface ISiteSectionRepository {
   getSections(query): Promise<ISiteSectionDocument[]>;
   getSectionById(id: string): Promise<ISiteSectionDocument | null>;

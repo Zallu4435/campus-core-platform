@@ -1,4 +1,4 @@
-import { SiteSectionKey } from '../entities/SiteSectionTypes';
+import { SiteSectionKey } from '../../../domain/site-management/entities/SiteSectionTypes';
 
 // Request DTOs for user-side
 export interface GetUserSiteSectionsRequestDTO {

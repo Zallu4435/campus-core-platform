@@ -10,17 +10,14 @@ export class SiteSectionMapper {
      * Convert persistence document to domain entity
      */
     static toDomain(doc: ISiteSectionDocument): ISiteSection {
+        const docObj = doc.toObject ? doc.toObject() : doc;
         return {
+            ...docObj,
             id: doc._id.toString(),
             sectionKey: doc.sectionKey as SiteSectionKey,
-            title: doc.title,
-            description: doc.description,
             image: doc.image || '',
             link: doc.link || '',
-            category: doc.category,
-            createdAt: doc.createdAt,
-            updatedAt: doc.updatedAt,
-        } as ISiteSection;
+        } as unknown as ISiteSection;
     }
 
     /**
@@ -40,16 +37,13 @@ export class SiteSectionMapper {
      */
     static toDTO(domain: ISiteSection): SiteSectionDTO {
         return {
+            ...domain,
             id: domain.id,
-            sectionKey: domain.sectionKey,
-            title: domain.title,
-            description: domain.description,
             image: domain.image || '',
             link: domain.link || '',
-            category: domain.category,
             createdAt: domain.createdAt instanceof Date ? domain.createdAt.toISOString() : domain.createdAt,
             updatedAt: domain.updatedAt instanceof Date ? domain.updatedAt.toISOString() : domain.updatedAt,
-        } as SiteSectionDTO;
+        } as unknown as SiteSectionDTO;
     }
 
     /**

@@ -1,4 +1,4 @@
-import { GetUserSiteSectionsRequestDTO, GetUserSiteSectionsResponseDTO } from "../dtos/UserSiteSectionDTOs";
+import { GetUserSiteSectionsRequestDTO, GetUserSiteSectionsResponseDTO, UserSiteSectionDTO } from "../dtos/UserSiteSectionDTOs";
 import { SiteSectionFilter } from "../../../domain/site-management/entities/SiteSectionTypes";
 import { IUserSiteSectionRepository } from "../repositories/IUserSiteSectionRepository";
 import { IGetUserSiteSectionsUseCase } from "./IUserSiteSectionUseCases";
@@ -41,7 +41,7 @@ export class GetUserSiteSectionsUseCase implements IGetUserSiteSectionsUseCase {
     return {
       success: true,
       data: {
-        sections: docs.map((doc) => SiteSectionMapper.docToDTO(doc)),
+        sections: docs.map((doc) => SiteSectionMapper.docToDTO(doc) as unknown as UserSiteSectionDTO),
         total,
         page,
         limit,

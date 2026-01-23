@@ -1,4 +1,4 @@
-import { SiteSectionKey, ISiteSection, IHighlightSection, IVagoNowSection, ILeadershipSection } from '../entities/SiteSectionTypes';
+import { SiteSectionKey, ISiteSection, IHighlightSection, IVagoNowSection, ILeadershipSection } from '../../../domain/site-management/entities/SiteSectionTypes';
 
 // Request DTOs
 export interface GetSiteSectionsRequestDTO {
@@ -37,7 +37,7 @@ export interface DeleteSiteSectionRequestDTO {
 }
 
 // Response DTOs
-export type SiteSectionDTO = ISiteSection;
+export type SiteSectionDTO = ISiteSection & { id: string };
 
 export interface GetSiteSectionsResponseDTO {
   sections: SiteSectionDTO[];
