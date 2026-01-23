@@ -8,7 +8,7 @@ import {
   GetSiteSectionByIdResponseDTO,
   CreateSiteSectionResponseDTO,
   UpdateSiteSectionResponseDTO,
-} from "../../../domain/site-management/dtos/SiteSectionDTOs";
+} from "../dtos/SiteSectionDTOs";
 
 export interface IGetSiteSectionsUseCase {
   execute(params: GetSiteSectionsRequestDTO): Promise<{ success: boolean; data: GetSiteSectionsResponseDTO }>;

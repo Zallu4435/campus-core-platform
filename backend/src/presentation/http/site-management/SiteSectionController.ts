@@ -6,28 +6,30 @@ import {
   IUpdateSiteSectionUseCase,
   IDeleteSiteSectionUseCase
 } from "../../../application/site-management/useCases/ISiteSectionUseCases";
-import {
-  GetSiteSectionsRequestDTO,
-  GetSiteSectionByIdRequestDTO,
-  CreateSiteSectionRequestDTO,
-  UpdateSiteSectionRequestDTO,
-  DeleteSiteSectionRequestDTO
-} from "../../../domain/site-management/dtos/SiteSectionDTOs";
+import { SITE_MANAGEMENT_CONSTANTS } from "../../../application/site-management/constants/SiteManagementConstants";
+import { HttpSuccess, HttpErrors } from "../../http/IHttp";
+import { SiteSectionKey } from "../../../domain/site-management/entities/SiteSectionTypes";
 
 export class SiteSectionController {
+  private _httpSuccess: HttpSuccess;
+  private _httpErrors: HttpErrors;
+
   constructor(
     private readonly _getSiteSectionsUseCase: IGetSiteSectionsUseCase,
     private readonly _getSiteSectionByIdUseCase: IGetSiteSectionByIdUseCase,
     private readonly _createSiteSectionUseCase: ICreateSiteSectionUseCase,
     private readonly _updateSiteSectionUseCase: IUpdateSiteSectionUseCase,
     private readonly _deleteSiteSectionUseCase: IDeleteSiteSectionUseCase
-  ) { }
+  ) {
+    this._httpSuccess = new HttpSuccess();
+    this._httpErrors = new HttpErrors();
+  }
 
   async getSections(httpRequest: IHttpRequest): Promise<IHttpResponse> {
-    const { 
-      sectionKey, 
-      page = 1, 
-      limit = 10, 
+    const {
+      sectionKey,
+      page = SITE_MANAGEMENT_CONSTANTS.DEFAULT_QUERY_PARAMS.PAGE,
+      limit = SITE_MANAGEMENT_CONSTANTS.DEFAULT_QUERY_PARAMS.LIMIT,
       search,
       category,
       dateRange,
@@ -35,91 +37,66 @@ export class SiteSectionController {
       endDate,
       status
     } = httpRequest.query;
-    const pageNum = Number(page);
-    const limitNum = Number(limit);
-    if (isNaN(pageNum) || pageNum < 1) {
-      return {
-        statusCode: 400,
-        body: { error: "Page must be a positive number" }
-      };
-    }
-    if (isNaN(limitNum) || limitNum < 1 || limitNum > 100) {
-      return {
-        statusCode: 400,
-        body: { error: "Limit must be between 1 and 100" }
-      };
-    }
-    const params: GetSiteSectionsRequestDTO = {
-      sectionKey: sectionKey,
-      page: pageNum,
-      limit: limitNum,
+
+    const result = await this._getSiteSectionsUseCase.execute({
+      sectionKey: sectionKey as SiteSectionKey,
+      page: Number(page),
+      limit: Number(limit),
       search: search as string,
       category: category as string,
       dateRange: dateRange as string,
       startDate: startDate as string,
       endDate: endDate as string,
       status: status as string,
-    };
-    const result = await this._getSiteSectionsUseCase.execute(params);
+    });
+
     if (!result.success) {
-      return { statusCode: 400, body: { error: "Failed to get site sections" } };
+      return this._httpErrors.error_400();
     }
-    return { statusCode: 200, body: { data: result.data } };
+    return this._httpSuccess.success_200(result.data);
   }
 
   async getSectionById(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const { id } = httpRequest.params;
-    const params: GetSiteSectionByIdRequestDTO = { id };
-    const result = await this._getSiteSectionByIdUseCase.execute(params);
+    const result = await this._getSiteSectionByIdUseCase.execute({ id });
     if (!result.success) {
-      return { statusCode: 400, body: { error: "Failed to get site section" } };
+      return this._httpErrors.error_404();
     }
-    if (!result.data) {
-      return { statusCode: 404, body: { error: "Site section not found" } };
-    }
-    return { statusCode: 200, body: { data: result.data } };
+    return this._httpSuccess.success_200(result.data);
   }
 
   async createSection(httpRequest: IHttpRequest): Promise<IHttpResponse> {
-    let params: CreateSiteSectionRequestDTO = httpRequest.body;
-    if (httpRequest.file) {
-      if (params.sectionKey !== 'leadership') {
-        params = { ...params, image: httpRequest.file.path };
-      }
-    }
-    const result = await this._createSiteSectionUseCase.execute(params);
+    const result = await this._createSiteSectionUseCase.execute({
+      ...httpRequest.body,
+      image: httpRequest.file?.path
+    });
+
     if (!result.success) {
-      return { statusCode: 400, body: { error: "Failed to create site section" } };
+      return this._httpErrors.error_400();
     }
-    return { statusCode: 201, body: { data: result.data } };
+    return this._httpSuccess.success_201(result.data);
   }
 
   async updateSection(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const { id } = httpRequest.params;
-    let params: UpdateSiteSectionRequestDTO = {
+    const result = await this._updateSiteSectionUseCase.execute({
       id,
       ...httpRequest.body,
-    };
-    if (httpRequest.file) {
-      params = { ...params, image: httpRequest.file.path };
-    }
-    const result = await this._updateSiteSectionUseCase.execute(params);
+      image: httpRequest.file?.path || httpRequest.body.image
+    });
+
     if (!result.success) {
-      return { statusCode: 400, body: { error: "Failed to update site section" } };
+      return this._httpErrors.error_400();
     }
-    if (!result.data) {
-      return { statusCode: 404, body: { error: "Site section not found" } };
-    }
-    return { statusCode: 200, body: { data: result.data } };
+    return this._httpSuccess.success_200(result.data);
   }
 
   async deleteSection(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const { id } = httpRequest.params;
-    const params: DeleteSiteSectionRequestDTO = { id };
-    const result = await this._deleteSiteSectionUseCase.execute(params);
+    const result = await this._deleteSiteSectionUseCase.execute({ id });
     if (!result.success) {
-      return { statusCode: 400, body: { error: "Failed to delete site section" } };
+      return this._httpErrors.error_400();
     }
-    return { statusCode: 204, body: { data: null } };
+    return this._httpSuccess.success_200(null);
   }
 }

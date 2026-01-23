@@ -57,19 +57,26 @@ export interface ISiteSectionDocument extends Document {
   image: string;
   link: string;
   category?: string;
+  content?: string;
+  position?: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
-export type ISiteSection = IHighlightSection | IVagoNowSection | ILeadershipSection; 
+export type ISiteSection = IHighlightSection | IVagoNowSection | ILeadershipSection;
 
 export interface SiteSectionFilter {
-  sectionKey?: string;
+  sectionKey?: SiteSectionKey;
   $or?: Array<{
-    title?: { $regex: string; $options: string };
-    description?: { $regex: string; $options: string };
-    category?: { $regex: string; $options: string };
+    title?: { $regex: string; $options: string } | RegExp;
+    description?: { $regex: string; $options: string } | RegExp;
+    category?: { $regex: string; $options: string } | RegExp;
   }>;
-  category?: string;
-  [key: string]: unknown; 
+  category?: string | { $regex: string; $options: string } | RegExp;
+  isActive?: boolean;
+  createdAt?: {
+    $gte?: Date;
+    $lte?: Date;
+  };
+  [key: string]: unknown;
 }
