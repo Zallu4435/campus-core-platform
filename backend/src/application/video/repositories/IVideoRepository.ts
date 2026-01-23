@@ -1,9 +1,4 @@
-import { IVideoBase, IVideo } from "../../../domain/video/entities/VideoTypes";
-
-export interface IRepoVideo extends Omit<IVideo, 'diplomaId'> {
-    _id?: string;
-    diplomaId?: string | IRepoDiploma;
-}
+import { Video, VideoFilter } from "../../../domain/video/entities/Video";
 
 export interface IRepoDiploma {
     _id?: string;
@@ -22,14 +17,14 @@ export interface IRepoDiploma {
 }
 
 export interface IVideoRepository {
-    findVideos(query, page: number, limit: number);
-    countVideos(query): Promise<number>;
+    findVideos(query: VideoFilter, page: number, limit: number): Promise<Video[]>;
+    countVideos(query: VideoFilter): Promise<number>;
     findDiplomaByCategory(category: string): Promise<IRepoDiploma | null>;
-    getVideoById(id: string): Promise<IRepoVideo | null>;
-    createVideo(video: IVideoBase & { diplomaId: string; videoFile?: Express.Multer.File }): Promise<IRepoVideo>;
-    updateVideo(id: string, video: Partial<IVideoBase> & { diplomaId?: string; videoFile?: Express.Multer.File }): Promise<IRepoVideo | null>;
+    getVideoById(id: string): Promise<Video | null>;
+    createVideo(video: Partial<Video>): Promise<Video>;
+    updateVideo(id: string, video: Partial<Video>): Promise<Video | null>;
     deleteVideo(id: string): Promise<void>;
     findDiplomaById(id: string): Promise<IRepoDiploma | null>;
     addVideoToDiploma(diplomaId: string, videoId: string): Promise<void>;
     removeVideoFromDiploma(diplomaId: string, videoId: string): Promise<void>;
-} 
+}

@@ -1,45 +1,42 @@
-import { VideoErrorType } from '../enums/VideoErrorType';
+export class VideoDomainError extends Error {
+    public readonly statusCode: number;
+    public readonly code: string;
 
-export class DomainError extends Error {
-    constructor(message: string, public readonly name: string = "DomainError") {
+    constructor(message: string, statusCode: number = 500, code: string = 'INTERNAL_SERVER_ERROR') {
         super(message);
         Object.setPrototypeOf(this, new.target.prototype);
-        this.name = name;
+        this.name = this.constructor.name;
+        this.statusCode = statusCode;
+        this.code = code;
     }
 }
 
-export class InvalidVideoIdError extends DomainError {
-    constructor() {
-        super(VideoErrorType.InvalidVideoId, 'InvalidVideoIdError');
+export class VideoNotFoundError extends VideoDomainError {
+    constructor(id?: string) {
+        super(id ? `Video with ID ${id} not found` : 'Video not found', 404, 'VIDEO_NOT_FOUND');
     }
 }
 
-export class VideoNotFoundError extends DomainError {
+export class InvalidVideoIdError extends VideoDomainError {
     constructor() {
-        super(VideoErrorType.VideoNotFound, 'VideoNotFoundError');
+        super('Invalid video ID format', 400, 'INVALID_VIDEO_ID');
     }
 }
 
-export class InvalidModuleNumberError extends DomainError {
+export class InvalidDiplomaIdError extends VideoDomainError {
     constructor() {
-        super(VideoErrorType.InvalidModuleNumber, 'InvalidModuleNumberError');
+        super('Invalid diploma ID or category', 400, 'INVALID_DIPLOMA_ID');
     }
 }
 
-export class InvalidStatusError extends DomainError {
-    constructor() {
-        super(VideoErrorType.InvalidStatus, 'InvalidStatusError');
+export class VideoUploadError extends VideoDomainError {
+    constructor(message: string = 'Failed to upload video') {
+        super(message, 500, 'VIDEO_UPLOAD_FAILED');
     }
 }
 
-export class InvalidDurationError extends DomainError {
-    constructor() {
-        super(VideoErrorType.InvalidDuration, 'InvalidDurationError');
+export class InvalidVideoDataError extends VideoDomainError {
+    constructor(message: string) {
+        super(message, 400, 'INVALID_VIDEO_DATA');
     }
 }
-
-export class InvalidDiplomaIdError extends DomainError {
-    constructor() {
-        super(VideoErrorType.InvalidDiplomaId, 'InvalidDiplomaIdError');
-    }
-} 

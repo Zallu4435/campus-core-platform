@@ -12,6 +12,7 @@ import {
 } from "../../../application/academics/useCases/IAcademicUseCases";
 import { IHttpRequest, IHttpResponse, HttpSuccess, HttpErrors } from "../IHttp";
 import { IAcademicController } from "../IHttp"
+import { InvalidActionError } from "../../../domain/academics/errors/AcademicErrors";
 
 export class AcademicController implements IAcademicController {
     private _httpSuccess: HttpSuccess;
@@ -38,9 +39,6 @@ export class AcademicController implements IAcademicController {
             return this._httpErrors.error_401();
         }
         const result = await this._getStudentInfoUseCase.execute({ userId: httpRequest.user.userId });
-        if (!result.success) {
-            return this._httpErrors.error_400();
-        }
         return this._httpSuccess.success_200(result.data);
     }
 
@@ -51,9 +49,6 @@ export class AcademicController implements IAcademicController {
         const result = await this._getGradeInfoUseCase.execute({
             userId: httpRequest.user.userId,
         });
-        if (!result.success) {
-            return this._httpErrors.error_400();
-        }
         return this._httpSuccess.success_200(result.data);
     }
 
@@ -67,9 +62,6 @@ export class AcademicController implements IAcademicController {
             limit: defaultLimit,
             userId
         });
-        if (!result.success) {
-            return this._httpErrors.error_400();
-        }
         return this._httpSuccess.success_200(result.data);
     }
 
@@ -83,9 +75,6 @@ export class AcademicController implements IAcademicController {
             startTerm: startTerm ? String(startTerm) : undefined,
             endTerm: endTerm ? String(endTerm) : undefined,
         });
-        if (!result.success) {
-            return this._httpErrors.error_400();
-        }
         return this._httpSuccess.success_200(result.data);
     }
 
@@ -94,9 +83,6 @@ export class AcademicController implements IAcademicController {
             return this._httpErrors.error_401();
         }
         const result = await this._getProgramInfoUseCase.execute({ userId: httpRequest.user.userId });
-        if (!result.success) {
-            return this._httpErrors.error_400();
-        }
         return this._httpSuccess.success_200(result.data);
     }
 
@@ -107,9 +93,6 @@ export class AcademicController implements IAcademicController {
         const result = await this._getProgressInfoUseCase.execute({
             userId: httpRequest.user.userId,
         });
-        if (!result.success) {
-            return this._httpErrors.error_400();
-        }
         return this._httpSuccess.success_200(result.data);
     }
 
@@ -118,9 +101,6 @@ export class AcademicController implements IAcademicController {
             return this._httpErrors.error_401();
         }
         const result = await this._getRequirementsInfoUseCase.execute({ userId: httpRequest.user.userId });
-        if (!result.success) {
-            return this._httpErrors.error_400();
-        }
         return this._httpSuccess.success_200(result.data);
     }
 
@@ -131,20 +111,16 @@ export class AcademicController implements IAcademicController {
             return this._httpErrors.error_401();
         }
         if (!courseId) {
-            return this._httpErrors.error_400();
+            throw new InvalidActionError('Course ID is required'); // Using Domain Error instead of direct 400
         }
         if (!reason) {
-            return this._httpErrors.error_400();
+            throw new InvalidActionError('Reason is required');
         }
         const result = await this._registerCourseUseCase.execute({
             studentId: httpRequest.user.userId,
             courseId,
             reason,
         });
-        if (!result.success) {
-            const errorMsg = (result.data as { error: string }).error || "Failed to register course";
-            return this._httpErrors.error_400(errorMsg);
-        }
         return this._httpSuccess.success_200(result.data);
     }
 
@@ -154,15 +130,12 @@ export class AcademicController implements IAcademicController {
             return this._httpErrors.error_401();
         }
         if (!courseId) {
-            return this._httpErrors.error_400();
+            throw new InvalidActionError('Course ID is required');
         }
         const result = await this._dropCourseUseCase.execute({
             studentId: httpRequest.user.userId,
             courseId,
         });
-        if (!result.success) {
-            return this._httpErrors.error_400();
-        }
         return this._httpSuccess.success_200(result.data);
     }
 
@@ -171,14 +144,15 @@ export class AcademicController implements IAcademicController {
         if (!httpRequest.user) {
             return this._httpErrors.error_401();
         }
+        // Validation logic can be moved to a validator or Value Object, but simpler to keep basic checks or throw
         if (!deliveryMethod || !['electronic', 'mail'].includes(deliveryMethod)) {
-            return this._httpErrors.error_400();
+            throw new InvalidActionError('Invalid delivery method');
         }
         if (deliveryMethod === 'mail' && !address) {
-            return this._httpErrors.error_400();
+            throw new InvalidActionError('Address is required for mail delivery');
         }
         if (deliveryMethod === 'electronic' && !email) {
-            return this._httpErrors.error_400();
+            throw new InvalidActionError('Email is required for electronic delivery');
         }
         const result = await this._requestTranscriptUseCase.execute({
             studentId: httpRequest.user.userId,
@@ -186,9 +160,6 @@ export class AcademicController implements IAcademicController {
             address,
             email,
         });
-        if (!result.success) {
-            return this._httpErrors.error_400();
-        }
         return this._httpSuccess.success_200(result.data);
     }
 }

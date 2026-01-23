@@ -20,7 +20,7 @@ import {
   RequestTranscriptRequestDTO,
   RequestTranscriptResponseDTO,
   ResponseDTO
-} from "../../../domain/academics/dtos/AcademicDTOs";
+} from "../dtos/AcademicDTOs";
 
 export interface IGetStudentInfoUseCase {
   execute(input: GetStudentInfoRequestDTO): Promise<ResponseDTO<GetStudentInfoResponseDTO>>;

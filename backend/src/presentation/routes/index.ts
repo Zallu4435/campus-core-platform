@@ -15,7 +15,7 @@ import financialRoutes from "../http/financial/financialRouter";
 import notificationRoutes from '../http/notifications/notificationRouter'
 import fcmTokenRoute from './fcmTokenRoute'
 import diplomaRoutes from '../http/diploma/DiplomaRouter'
-import vedioRoutes from '../http/vedios/vedioRoutes'
+import vedioRoutes from '../http/video/videoRoutes'
 import materialRoutes from '../http/materials/materialRoutes'
 import userMaterialRoutes from '../http/materials/userMaterialRoutes'
 import assignmentRoutes from '../http/assignments/assignmentRoutes'

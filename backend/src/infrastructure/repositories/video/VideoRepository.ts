@@ -1,11 +1,12 @@
-import { IRepoDiploma, IRepoVideo, IVideoRepository } from '../../../application/video/repositories/IVideoRepository';
+import { IVideoRepository, IRepoDiploma } from '../../../application/video/repositories/IVideoRepository';
 import { Video as VideoModel } from '../../database/mongoose/video/video.model';
 import { Diploma as DiplomaModel } from '../../database/mongoose/diploma/diploma.model';
-type WithStringId<T> = Omit<T, "_id"> & { _id: string };
-
+import { Video } from '../../../domain/video/entities/Video';
+import { VideoMappers } from './mapper/VideoMappers';
+import { VideoFilter } from '../../../domain/video/entities/Video';
 
 export class VideoRepository implements IVideoRepository {
-    async findVideos(query, page: number, limit: number) {
+    async findVideos(query: VideoFilter, page: number, limit: number): Promise<Video[]> {
         const videos = await VideoModel.find(query)
             .populate('diplomaId', 'title category')
             .skip((page - 1) * limit)
@@ -13,81 +14,57 @@ export class VideoRepository implements IVideoRepository {
             .sort({ module: 1, uploadedAt: -1 })
             .lean();
 
-        return videos.map((video) => ({
-            ...video,
-            _id: video._id.toString(),
-            diplomaId: video.diplomaId && typeof video.diplomaId === 'object' && 'title' in video.diplomaId 
-                ? video.diplomaId as unknown as IRepoDiploma
-                : video.diplomaId?.toString() || '',
-        }));
+        return videos.map(VideoMappers.toDomain);
     }
 
-    async countVideos(query) {
+    async countVideos(query: VideoFilter): Promise<number> {
         return VideoModel.countDocuments(query);
     }
 
-    async findDiplomaByCategory(category: string) {
-        return DiplomaModel.findOne({ category })
-        .lean<WithStringId<IRepoDiploma>>({ getters: true });   
+    async findDiplomaByCategory(category: string): Promise<IRepoDiploma | null> {
+        return DiplomaModel.findOne({ category }).lean() as unknown as IRepoDiploma;
     }
 
-    async getVideoById(id: string): Promise<IRepoVideo | null> {
+    async getVideoById(id: string): Promise<Video | null> {
         const video = await VideoModel.findById(id)
             .populate('diplomaId', 'title category')
             .lean();
-        return video
-            ? {
-                ...video,
-                _id: video._id.toString(),
-                diplomaId: video.diplomaId && typeof video.diplomaId === 'object' && 'title' in video.diplomaId 
-                    ? video.diplomaId as unknown as IRepoDiploma
-                    : video.diplomaId?.toString() || '',
-            }
-            : null;
+        return VideoMappers.toDomain(video);
     }
 
-    async createVideo(video): Promise<IRepoVideo> {
-        const created = await VideoModel.create({
-            ...video,
-            uploadedAt: new Date(),
-        });
-        const obj = created.toObject();
-        return {
-            ...obj,
-            _id: obj._id.toString(),
-            diplomaId: obj.diplomaId ? obj.diplomaId.toString() : "",
-        };
+    async createVideo(videoData: Partial<Video>): Promise<Video> {
+        const created = await VideoModel.create(videoData);
+        // We might need to populate immediately or handle in mapper
+        // For consistency, let's just convert the created document
+        const populated = await created.populate('diplomaId', 'title category');
+        return VideoMappers.toDomain(populated.toObject());
     }
 
-    async updateVideo(id: string, video): Promise<IRepoVideo | null> {
+    async updateVideo(id: string, videoData: Partial<Video>): Promise<Video | null> {
         const updated = await VideoModel.findByIdAndUpdate(
             id,
-            { $set: { ...video, updatedAt: new Date() } },
+            { $set: { ...videoData, updatedAt: new Date() } },
             { new: true, upsert: false }
-        ).lean();
-        return updated
-            ? {
-                ...updated,
-                _id: updated._id.toString(),
-                diplomaId: updated.diplomaId ? updated.diplomaId.toString() : "",
-            }
-            : null;
+        )
+            .populate('diplomaId', 'title category')
+            .lean();
+
+        return VideoMappers.toDomain(updated);
     }
 
-    async deleteVideo(id: string) {
+    async deleteVideo(id: string): Promise<void> {
         await VideoModel.findByIdAndDelete(id);
     }
 
-
-    async findDiplomaById(id: string) {
-        return DiplomaModel.findById(id)
-        .lean<WithStringId<IRepoDiploma>>({ getters: true });   
+    async findDiplomaById(id: string): Promise<IRepoDiploma | null> {
+        return DiplomaModel.findById(id).lean() as unknown as IRepoDiploma;
     }
-    
-    async addVideoToDiploma(diplomaId: string, videoId: string) {
+
+    async addVideoToDiploma(diplomaId: string, videoId: string): Promise<void> {
         await DiplomaModel.findByIdAndUpdate(diplomaId, { $addToSet: { videoIds: videoId } });
     }
-    async removeVideoFromDiploma(diplomaId: string, videoId: string) {
+
+    async removeVideoFromDiploma(diplomaId: string, videoId: string): Promise<void> {
         await DiplomaModel.findByIdAndUpdate(diplomaId, { $pull: { videoIds: videoId } });
     }
-} 
+}

@@ -19,15 +19,11 @@ import {
   DropCourseResponseDTO,
   RequestTranscriptRequestDTO,
   RequestTranscriptResponseDTO,
-  ResponseDTO
-} from "../../../domain/academics/dtos/AcademicDTOs";
+  ResponseDTO,
+  CourseWithJoined,
+  AcademicHistoryDTO
+} from "../../../application/academics/dtos/AcademicDTOs";
 import { IAcademicRepository } from "../repositories/IAcademicRepository";
-import {
-  EnrollmentStatus,
-  ICourseDocument,
-  IEnrollmentDocument,
-  StudentInfoResult,
-} from "../../../domain/academics/entities/Academic";
 import {
   IGetStudentInfoUseCase,
   IGetGradeInfoUseCase,
@@ -40,41 +36,48 @@ import {
   IDropCourseUseCase,
   IRequestTranscriptUseCase
 } from "./IAcademicUseCases";
-
+import { AcademicConstants } from "../constants/AcademicConstants";
+import {
+  StudentNotFoundError,
+  GradeNotFoundError,
+  CourseNotFoundError,
+  ProgramNotFoundError,
+  ProgressNotFoundError,
+  RequirementsNotFoundError,
+  AlreadyEnrolledError,
+  NotEnrolledError,
+  EnrollmentFailedError
+} from "../../../domain/academics/errors/AcademicErrors";
 
 export class GetStudentInfoUseCase implements IGetStudentInfoUseCase {
   constructor(private _academicRepository: IAcademicRepository) { }
 
   async execute(input: GetStudentInfoRequestDTO): Promise<ResponseDTO<GetStudentInfoResponseDTO>> {
-    const result: StudentInfoResult | null = await this._academicRepository.findStudentById(input.userId);
+    const result = await this._academicRepository.findStudentById(input.userId);
     if (!result) {
-      return { data: { error: "Student not found" }, success: false };
+      throw new StudentNotFoundError(input.userId);
     }
-    const { user, program, pendingEnrollments } = result;
-    const pendingCredits = (
-      await Promise.all(
-        pendingEnrollments
-          .filter((enrollment: IEnrollmentDocument) => Boolean(enrollment.courseId))
-          .map(async (enrollment: IEnrollmentDocument) => {
-            const course = await this._academicRepository.findCourseById(enrollment.courseId);
-            return course?.credits ?? 0;
-          })
-      )
-    ).reduce((sum: number, credits: number) => sum + credits, 0);
-    const academicStanding = 'Good';
-    const advisor = 'Unknown';
+    const { student, program, pendingEnrollments } = result;
+
+    const pendingCreditsPromises = pendingEnrollments.map(async (enrollment) => {
+      const course = await this._academicRepository.findCourseById(enrollment.courseId);
+      return course ? course.credits : 0;
+    });
+
+    const pendingCredits = (await Promise.all(pendingCreditsPromises)).reduce((sum, c) => sum + c, 0);
+
     const response: GetStudentInfoResponseDTO = {
-      name: `${user.firstName} ${user.lastName}`,
-      id: input.userId,
-      email: user.email,
-      phone: user.phone?.toString(),
-      profilePicture: user.profilePicture,
+      name: student.fullName,
+      id: student.id,
+      email: student.email,
+      phone: student.phone,
+      profilePicture: student.profilePicture,
       major: program.degree,
       catalogYear: program.catalogYear,
-      academicStanding,
-      advisor,
+      academicStanding: 'Good',
+      advisor: 'Unknown',
       pendingCredits,
-      credits: program.credits || 0
+      credits: program.credits
     };
     return { data: response, success: true };
   }
@@ -86,14 +89,14 @@ export class GetGradeInfoUseCase implements IGetGradeInfoUseCase {
   async execute(input: GetGradeInfoRequestDTO): Promise<ResponseDTO<GetGradeInfoResponseDTO>> {
     const grade = await this._academicRepository.findGradeByUserId(input.userId);
     if (!grade) {
-      return { data: { error: "Grade information not found" }, success: false };
+      throw new GradeNotFoundError(input.userId);
     }
     const response: GetGradeInfoResponseDTO = {
-      cumulativeGPA: grade.cumulativeGPA || 'N/A',
-      termGPA: grade.termGPA || 'N/A',
-      termName: grade.termName || 'Unknown Term',
-      creditsEarned: grade.creditsEarned || '0',
-      creditsInProgress: grade.creditsInProgress || '0'
+      cumulativeGPA: grade.cumulativeGPA,
+      termGPA: grade.termGPA,
+      termName: grade.termName,
+      creditsEarned: grade.creditsEarned,
+      creditsInProgress: grade.creditsInProgress
     };
     return { data: response, success: true };
   }
@@ -103,47 +106,35 @@ export class GetCoursesUseCase implements IGetCoursesUseCase {
   constructor(private _academicRepository: IAcademicRepository) { }
 
   async execute(input: GetCoursesRequestDTO & { userId?: string }): Promise<ResponseDTO<GetCoursesResponseDTO>> {
-    const { search, page = 1, limit = 5, userId } = input;
-    const courses = await this._academicRepository.findAllCourses(search, page, limit);
-    let mappedCourses;
-    if (userId) {
-      mappedCourses = await Promise.all(
-        courses.map(async (course: ICourseDocument) => {
-          const enrollment = await this._academicRepository.findEnrollment(userId, course._id.toString());
-          return {
-            id: course._id?.toString() || '',
-            title: course.title,
-            specialization: course.specialization,
-            faculty: course.faculty,
-            credits: course.credits,
-            term: course.term || '',
-            maxEnrollment: course.maxEnrollment || 0,
-            currentEnrollment: course.currentEnrollment || 0,
-            createdAt: course.createdAt ? new Date(course.createdAt).toISOString() : new Date().toISOString(),
-            schedule: course.schedule,
-            description: course.description,
-            prerequisites: course.prerequisites,
-            joined: !!enrollment,
-          };
-        })
-      );
-    } else {
-      mappedCourses = courses.map((course: ICourseDocument) => ({
-        id: course._id?.toString() || '',
+    const { search, page = AcademicConstants.Course.DEFAULT_PAGE, limit = AcademicConstants.Course.DEFAULT_LIMIT, userId } = input;
+
+    const safeLimit = Math.min(limit, AcademicConstants.Course.MAX_LIMIT);
+
+    const courses = await this._academicRepository.findAllCourses(search, page, safeLimit);
+
+    const mappedCourses: CourseWithJoined[] = await Promise.all(courses.map(async (course) => {
+      let joined = false;
+      if (userId) {
+        const enrollment = await this._academicRepository.findEnrollment(userId, course.id);
+        joined = !!enrollment;
+      }
+      return {
+        id: course.id,
         title: course.title,
         specialization: course.specialization,
         faculty: course.faculty,
         credits: course.credits,
-        term: course.term || '',
-        maxEnrollment: course.maxEnrollment || 0,
-        currentEnrollment: course.currentEnrollment || 0,
-        createdAt: course.createdAt ? new Date(course.createdAt).toISOString() : new Date().toISOString(),
+        term: course.term,
+        maxEnrollment: course.maxEnrollment,
+        currentEnrollment: course.currentEnrollment,
+        createdAt: course.createdAt.toISOString(),
         schedule: course.schedule,
         description: course.description,
         prerequisites: course.prerequisites,
-        joined: false,
-      }));
-    }
+        joined
+      };
+    }));
+
     const response: GetCoursesResponseDTO = {
       courses: mappedCourses,
       totalCourses: mappedCourses.length,
@@ -159,15 +150,14 @@ export class GetAcademicHistoryUseCase implements IGetAcademicHistoryUseCase {
 
   async execute(input: GetAcademicHistoryRequestDTO): Promise<ResponseDTO<GetAcademicHistoryResponseDTO>> {
     const history = await this._academicRepository.findAcademicHistory(input.userId, input.startTerm, input.endTerm);
-    const response: GetAcademicHistoryResponseDTO = {
-      history: history.map((record) => ({
-        term: record.term,
-        credits: record.credits,
-        gpa: record.gpa,
-        id: record.id
-      }))
-    };
-    return { data: response, success: true };
+    const mappedHistory: AcademicHistoryDTO[] = history.map(record => ({
+      term: record.term,
+      credits: record.credits,
+      gpa: record.gpa,
+      id: Number(record.id)
+    }));
+
+    return { data: { history: mappedHistory }, success: true };
   }
 }
 
@@ -177,13 +167,15 @@ export class GetProgramInfoUseCase implements IGetProgramInfoUseCase {
   async execute(input: GetProgramInfoRequestDTO): Promise<ResponseDTO<GetProgramInfoResponseDTO>> {
     const program = await this._academicRepository.findProgramByUserId(input.userId);
     if (!program) {
-      return { data: { error: "Program information not found" }, success: false };
+      throw new ProgramNotFoundError(input.userId);
     }
-    const response: GetProgramInfoResponseDTO = {
-      degree: program.degree,
-      catalogYear: program.catalogYear
+    return {
+      data: {
+        degree: program.degree,
+        catalogYear: program.catalogYear
+      },
+      success: true
     };
-    return { data: response, success: true };
   }
 }
 
@@ -193,16 +185,18 @@ export class GetProgressInfoUseCase implements IGetProgressInfoUseCase {
   async execute(input: GetProgressInfoRequestDTO): Promise<ResponseDTO<GetProgressInfoResponseDTO>> {
     const progress = await this._academicRepository.findProgressByUserId(input.userId);
     if (!progress) {
-      return { data: { error: "Progress information not found" }, success: false };
+      throw new ProgressNotFoundError(input.userId);
     }
-    const response: GetProgressInfoResponseDTO = {
-      overallProgress: progress.overallProgress || 0,
-      totalCredits: progress.totalCredits || 0,
-      completedCredits: progress.completedCredits || 0,
-      remainingCredits: progress.remainingCredits || 0,
-      estimatedGraduation: progress.estimatedGraduation || 'To be determined'
+    return {
+      data: {
+        overallProgress: progress.overallProgress,
+        totalCredits: progress.totalCredits,
+        completedCredits: progress.completedCredits,
+        remainingCredits: progress.remainingCredits,
+        estimatedGraduation: progress.estimatedGraduation
+      },
+      success: true
     };
-    return { data: response, success: true };
   }
 }
 
@@ -212,14 +206,16 @@ export class GetRequirementsInfoUseCase implements IGetRequirementsInfoUseCase {
   async execute(input: GetRequirementsInfoRequestDTO): Promise<ResponseDTO<GetRequirementsInfoResponseDTO>> {
     const requirements = await this._academicRepository.findRequirementsByUserId(input.userId);
     if (!requirements) {
-      return { data: { error: "Requirements information not found" }, success: false };
+      throw new RequirementsNotFoundError(input.userId);
     }
-    const response: GetRequirementsInfoResponseDTO = {
-      core: requirements.core || { percentage: 0, completed: 0, total: 0 },
-      elective: requirements.elective || { percentage: 0, completed: 0, total: 0 },
-      general: requirements.general || { percentage: 0, completed: 0, total: 0 }
+    return {
+      data: {
+        core: requirements.core,
+        elective: requirements.elective,
+        general: requirements.general
+      },
+      success: true
     };
-    return { data: response, success: true };
   }
 }
 
@@ -229,35 +225,26 @@ export class RegisterCourseUseCase implements IRegisterCourseUseCase {
   async execute(input: RegisterCourseRequestDTO): Promise<ResponseDTO<RegisterCourseResponseDTO>> {
     const course = await this._academicRepository.findCourseById(input.courseId);
     if (!course) {
-      return { data: { error: "Course not found" }, success: false };
+      throw new CourseNotFoundError(input.courseId);
     }
 
     const existingEnrollment = await this._academicRepository.findEnrollment(input.studentId, input.courseId);
     if (existingEnrollment) {
-      return {
-        data: { error: "Already enrolled in this course" },
-        success: false
-      };
+      throw new AlreadyEnrolledError();
     }
 
-    const enrollment = await this._academicRepository.createEnrollment({
-      id: '',
-      studentId: input.studentId,
-      courseId: input.courseId,
-      status: EnrollmentStatus.Pending,
-      reason: input.reason,
-      requestedAt: new Date().toISOString()
-    });
+    const enrollment = await this._academicRepository.createEnrollment(input.studentId, input.courseId, input.reason);
 
-    await this._academicRepository.updateCourseEnrollment(input.courseId, 1);
+    await this._academicRepository.updateCourseEnrollment(input.courseId, AcademicConstants.Enrollment.INCREMENT);
 
-    const response: RegisterCourseResponseDTO = {
-      success: true,
-      message: "Course registered successfully",
-      enrollmentId: enrollment._id?.toString() || ''
+    return {
+      data: {
+        success: true,
+        message: AcademicConstants.Messages.ENROLLMENT_SUCCESS,
+        enrollmentId: enrollment.id
+      },
+      success: true
     };
-
-    return { data: response, success: true };
   }
 }
 
@@ -267,22 +254,23 @@ export class DropCourseUseCase implements IDropCourseUseCase {
   async execute(input: DropCourseRequestDTO): Promise<ResponseDTO<DropCourseResponseDTO>> {
     const enrollment = await this._academicRepository.findEnrollment(input.studentId, input.courseId);
     if (!enrollment) {
-      return { data: { error: "Not enrolled in this course" }, success: false };
+      throw new NotEnrolledError();
     }
 
     const success = await this._academicRepository.deleteEnrollment(input.studentId, input.courseId);
     if (!success) {
-      return { data: { error: "Failed to drop course" }, success: false };
+      throw new EnrollmentFailedError(AcademicConstants.Messages.FAILED_TO_DROP);
     }
 
-    await this._academicRepository.updateCourseEnrollment(input.courseId, -1);
+    await this._academicRepository.updateCourseEnrollment(input.courseId, AcademicConstants.Enrollment.DECREMENT);
 
-    const response: DropCourseResponseDTO = {
-      success: true,
-      message: "Course dropped successfully"
+    return {
+      data: {
+        success: true,
+        message: AcademicConstants.Messages.DROP_SUCCESS
+      },
+      success: true
     };
-
-    return { data: response, success: true };
   }
 }
 
@@ -290,22 +278,26 @@ export class RequestTranscriptUseCase implements IRequestTranscriptUseCase {
   constructor(private _academicRepository: IAcademicRepository) { }
 
   async execute(input: RequestTranscriptRequestDTO): Promise<ResponseDTO<RequestTranscriptResponseDTO>> {
+    const estimatedDeliveryDate = new Date();
+    estimatedDeliveryDate.setDate(estimatedDeliveryDate.getDate() + AcademicConstants.Transcript.DELIVERY_ESTIMATE_DAYS);
+
     const request = await this._academicRepository.createTranscriptRequest({
       userId: input.studentId,
       deliveryMethod: input.deliveryMethod,
-      requestedAt: new Date().toISOString(),
-      estimatedDelivery: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      requestedAt: new Date(),
+      estimatedDelivery: estimatedDeliveryDate,
       address: input.address,
       email: input.email
     });
 
-    const response: RequestTranscriptResponseDTO = {
-      success: true,
-      message: "Transcript request submitted successfully",
-      requestId: request._id?.toString() || '',
-      estimatedDelivery: request.estimatedDelivery
+    return {
+      data: {
+        success: true,
+        message: AcademicConstants.Messages.TRANSCRIPT_SUCCESS,
+        requestId: request.id,
+        estimatedDelivery: request.estimatedDelivery.toISOString()
+      },
+      success: true
     };
-
-    return { data: response, success: true };
   }
 }
