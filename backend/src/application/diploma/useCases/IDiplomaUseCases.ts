@@ -1,30 +1,31 @@
-import { GetDiplomasRequestDTO, GetDiplomaByIdRequestDTO, CreateDiplomaRequestDTO, UpdateDiplomaRequestDTO, DeleteDiplomaRequestDTO, EnrollStudentRequestDTO, UnenrollStudentRequestDTO } from "../../../domain/diploma/dtos/DiplomaRequestDTOs";
-import { GetDiplomasResponseDTO, GetDiplomaByIdResponseDTO, CreateDiplomaResponseDTO, UpdateDiplomaResponseDTO, EnrollStudentResponseDTO, UnenrollStudentResponseDTO, DiplomaSummaryDTO, ResponseDTO } from "../../../domain/diploma/dtos/DiplomaResponseDTOs";
+import { GetDiplomasRequestDTO, GetDiplomaByIdRequestDTO, CreateDiplomaRequestDTO, UpdateDiplomaRequestDTO, DeleteDiplomaRequestDTO, EnrollStudentRequestDTO, UnenrollStudentRequestDTO } from "../dtos/DiplomaRequestDTOs";
+import { GetDiplomasResponseDTO, GetDiplomaByIdResponseDTO, CreateDiplomaResponseDTO, UpdateDiplomaResponseDTO, EnrollStudentResponseDTO, UnenrollStudentResponseDTO } from "../dtos/DiplomaResponseDTOs";
 
 export interface IGetDiplomasUseCase {
-  execute(params: GetDiplomasRequestDTO): Promise<ResponseDTO<GetDiplomasResponseDTO>>;
+  execute(params: GetDiplomasRequestDTO): Promise<GetDiplomasResponseDTO>;
 }
- 
+
 export interface IGetDiplomaByIdUseCase {
-  execute(params: GetDiplomaByIdRequestDTO): Promise<ResponseDTO<GetDiplomaByIdResponseDTO>>;
+  execute(params: GetDiplomaByIdRequestDTO): Promise<GetDiplomaByIdResponseDTO>;
 }
 
 export interface ICreateDiplomaUseCase {
-  execute(params: CreateDiplomaRequestDTO): Promise<ResponseDTO<CreateDiplomaResponseDTO>>;
+  execute(params: CreateDiplomaRequestDTO): Promise<CreateDiplomaResponseDTO>;
 }
 
 export interface IUpdateDiplomaUseCase {
-  execute(params: UpdateDiplomaRequestDTO): Promise<ResponseDTO<UpdateDiplomaResponseDTO>>;
+  execute(params: UpdateDiplomaRequestDTO): Promise<UpdateDiplomaResponseDTO>;
 }
 
 export interface IDeleteDiplomaUseCase {
-  execute(params: DeleteDiplomaRequestDTO): Promise<ResponseDTO<{ message: string }>>;
+  execute(params: DeleteDiplomaRequestDTO): Promise<{ message: string }>;
 }
 
 export interface IEnrollStudentUseCase {
-  execute(params: EnrollStudentRequestDTO): Promise<ResponseDTO<EnrollStudentResponseDTO>>;
+  execute(params: EnrollStudentRequestDTO): Promise<EnrollStudentResponseDTO>;
 }
 
 export interface IUnenrollStudentUseCase {
-  execute(params: UnenrollStudentRequestDTO): Promise<ResponseDTO<UnenrollStudentResponseDTO>>;
+  execute(params: UnenrollStudentRequestDTO): Promise<UnenrollStudentResponseDTO>;
 }
+

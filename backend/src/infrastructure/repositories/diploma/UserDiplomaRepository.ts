@@ -3,16 +3,21 @@ import { Diploma as DiplomaModel } from "../../database/mongoose/diploma/diploma
 import { UserProgress } from "../../database/mongoose/video/userProgress.model";
 import { Video } from "../../database/mongoose/video/video.model";
 import { VideoStatus } from "../../../domain/video/enums/VideoStatus";
-import { DiplomaFilter } from "../../../domain/diploma/entities/diplomatypes";
+import { IDiplomaDocument, DiplomaFilter, IVideoDocument } from "./infraTypes";
+import { UserDiplomaMapper } from "./mappers/UserDiplomaMapper";
+import { GetUserDiplomasRequestDTO } from "../../../application/diploma/dtos/UserDiplomaRequestDTOs";
+import { DIPLOMA_FILTERS, DIPLOMA_SORT } from "../../../application/diploma/constants/DiplomaConstants";
 
 export class UserDiplomaRepository implements IUserDiplomaRepository {
-  async getUserDiplomas(userId: string, page: number, limit: number, category: string, status: string, dateRange: string) {
+  async getUserDiplomas(params: GetUserDiplomasRequestDTO) {
+    const { userId, page, limit, category, status, dateRange } = params;
     const skip = (page - 1) * limit;
 
     const query: DiplomaFilter = { status: true };
-    if (category !== 'all') query.category = category;
-    if (status !== 'all') query.status = status === 'published';
-    if (dateRange !== 'all') {
+    if (category && category !== DIPLOMA_FILTERS.ALL) query.category = category;
+    if (status && status !== DIPLOMA_FILTERS.ALL) query.status = status === 'published';
+
+    if (dateRange && dateRange !== DIPLOMA_FILTERS.ALL) {
       const date = new Date();
       switch (dateRange) {
         case 'week':
@@ -32,7 +37,8 @@ export class UserDiplomaRepository implements IUserDiplomaRepository {
       DiplomaModel.find(query)
         .skip(skip)
         .limit(limit)
-        .sort({ createdAt: -1 }),
+        .sort(DIPLOMA_SORT.DEFAULT)
+        .lean<IDiplomaDocument[]>(),
       DiplomaModel.countDocuments(query)
     ]);
 
@@ -42,26 +48,13 @@ export class UserDiplomaRepository implements IUserDiplomaRepository {
         UserProgress.countDocuments({ userId, courseId: doc._id, isCompleted: true })
       ]);
 
-      return {
-        _id: doc._id.toString(),
-        title: doc.title,
-        description: doc.description,
-        category: doc.category,
-        status: doc.status ? 'published' : 'draft' as 'published' | 'draft' | 'archived',
-        instructor: 'Faculty Instructor',
-        department: doc.category || 'General',
-        chapters: [],
-        videoCount,
-        completedVideoCount,
-        createdAt: doc.createdAt || new Date(),
-        updatedAt: doc.updatedAt || new Date()
-      };
+      return UserDiplomaMapper.toDiplomaCourse(doc, videoCount, completedVideoCount);
     }));
 
-    return { 
-      courses, 
-      total, 
-      page, 
+    return {
+      data: courses,
+      total,
+      page,
       limit,
       totalPages: Math.ceil(total / limit)
     };
@@ -71,63 +64,33 @@ export class UserDiplomaRepository implements IUserDiplomaRepository {
     const diploma = await DiplomaModel.findOne({
       _id: id,
       status: true
-    }).lean();
-    
+    }).lean<IDiplomaDocument>();
+
     if (!diploma) return null;
-    
-    const videos = await Video.find({ 
-      diplomaId: diploma._id, 
-      status: VideoStatus.Published 
-    }).sort({ module: 1 }).lean();
-    
-    const chapters = videos.map(video => ({
-      _id: video._id.toString(),
-      title: video.title,
-      description: video.description,
-      videoUrl: video.videoUrl || '',
-      duration: parseInt(video.duration) || 0,
-      order: video.module || 0,
-      isPublished: video.status === VideoStatus.Published,
-      createdAt: video.uploadedAt || new Date(),
-      updatedAt: video.uploadedAt || new Date()
-    }));
-    
-    return {
-      _id: diploma._id.toString(),
-      title: diploma.title,
-      description: diploma.description,
-      category: diploma.category,
-      status: diploma.status ? 'published' : 'draft' as 'published' | 'draft' | 'archived',
-      instructor: 'Faculty Instructor', 
-      department: diploma.category || 'General',
-      chapters,
-      createdAt: diploma.createdAt || new Date(),
-      updatedAt: diploma.updatedAt || new Date()
-    };
+
+    const videos = await Video.find({
+      diplomaId: diploma._id,
+      status: VideoStatus.Published
+    }).sort({ module: 1 }).lean<IVideoDocument[]>();
+
+    const chapters = videos.map(video => UserDiplomaMapper.toChapter(video));
+
+    return UserDiplomaMapper.toDiplomaCourseWithChapters(diploma, chapters);
   }
 
   async getUserDiplomaChapter(courseId: string, chapterId: string) {
-    const diploma = await DiplomaModel.findOne({
+    const diplomaExists = await DiplomaModel.exists({
       _id: courseId,
       status: true
     });
-    if (!diploma) return null;
-    
-    const chapter = await Video.findOne({ _id: chapterId }).lean();
+    if (!diplomaExists) return null;
+
+    const chapter = await Video.findOne({ _id: chapterId }).lean<IVideoDocument>();
     if (!chapter) return null;
-    
-    return {
-      _id: chapter._id.toString(),
-      title: chapter.title,
-      description: chapter.description,
-      videoUrl: chapter.videoUrl || '',
-      duration: parseInt(chapter.duration) || 0,
-      order: chapter.module || 0,
-      isPublished: chapter.status === VideoStatus.Published,
-      createdAt: chapter.uploadedAt || new Date(),
-      updatedAt: chapter.uploadedAt || new Date()
-    };
+
+    return UserDiplomaMapper.toChapter(chapter);
   }
+
 
   async updateVideoProgress(userId: string, courseId: string, chapterId: string, progress: number) {
     const userProgress = await UserProgress.findOneAndUpdate(
@@ -135,7 +98,7 @@ export class UserDiplomaRepository implements IUserDiplomaRepository {
       { progress },
       { upsert: true, new: true }
     );
-    
+
     return {
       message: 'Progress updated successfully',
       progress: userProgress.progress
@@ -143,12 +106,12 @@ export class UserDiplomaRepository implements IUserDiplomaRepository {
   }
 
   async markChapterComplete(userId: string, courseId: string, chapterId: string) {
-    const userProgress = await UserProgress.findOneAndUpdate(
+    await UserProgress.findOneAndUpdate(
       { userId, courseId, chapterId },
       { isCompleted: true },
       { upsert: true, new: true }
     );
-    
+
     return {
       message: 'Chapter marked as complete',
       completed: true
@@ -158,7 +121,7 @@ export class UserDiplomaRepository implements IUserDiplomaRepository {
   async toggleBookmark(userId: string, courseId: string, chapterId: string) {
     const userProgress = await UserProgress.findOne({ userId, courseId, chapterId });
     let isBookmarked = false;
-    
+
     if (!userProgress) {
       await UserProgress.create({
         userId,
@@ -172,7 +135,7 @@ export class UserDiplomaRepository implements IUserDiplomaRepository {
       await userProgress.save();
       isBookmarked = userProgress.isBookmarked;
     }
-    
+
     return {
       message: isBookmarked ? 'Chapter bookmarked' : 'Chapter unbookmarked',
       bookmarked: isBookmarked
@@ -185,7 +148,7 @@ export class UserDiplomaRepository implements IUserDiplomaRepository {
       courseId,
       isCompleted: true
     }).select('chapterId');
-    
+
     return completedChapters.map(chapter => chapter.chapterId.toString());
   }
 
@@ -195,7 +158,7 @@ export class UserDiplomaRepository implements IUserDiplomaRepository {
       courseId,
       isBookmarked: true
     }).select('chapterId');
-    
+
     return bookmarkedChapters.map(chapter => chapter.chapterId.toString());
   }
-} 
+}

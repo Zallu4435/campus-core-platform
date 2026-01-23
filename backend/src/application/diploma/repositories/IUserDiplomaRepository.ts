@@ -1,13 +1,9 @@
-import { DiplomaCourse, Chapter } from "../../../domain/diploma/entities/diplomatypes";
- 
+import { DiplomaCourse, Chapter } from "../../../domain/diploma/types";
+import { GetUserDiplomasRequestDTO } from "../dtos/UserDiplomaRequestDTOs";
+import { GetUserDiplomasResponseDTO } from "../dtos/UserDiplomaResponseDTOs";
+
 export interface IUserDiplomaRepository {
-  getUserDiplomas(userId: string, page: number, limit: number, category: string, status: string, dateRange: string): Promise<{
-    courses: DiplomaCourse[];
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  }>;
+  getUserDiplomas(params: GetUserDiplomasRequestDTO): Promise<GetUserDiplomasResponseDTO>;
   getUserDiplomaById(id: string): Promise<DiplomaCourse | null>;
   getUserDiplomaChapter(courseId: string, chapterId: string): Promise<Chapter | null>;
   updateVideoProgress(userId: string, courseId: string, chapterId: string, progress: number): Promise<{
@@ -24,4 +20,4 @@ export interface IUserDiplomaRepository {
   }>;
   getCompletedChapters(userId: string, courseId: string): Promise<string[]>;
   getBookmarkedChapters(userId: string, courseId: string): Promise<string[]>;
-} 
+}

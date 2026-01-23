@@ -1,9 +1,22 @@
 import { IDiplomaRepository } from "../repositories/IDiplomaRepository";
-import { GetDiplomasRequestDTO, GetDiplomaByIdRequestDTO, CreateDiplomaRequestDTO, UpdateDiplomaRequestDTO, DeleteDiplomaRequestDTO, EnrollStudentRequestDTO, UnenrollStudentRequestDTO } from "../../../domain/diploma/dtos/DiplomaRequestDTOs";
-import { GetDiplomasResponseDTO, GetDiplomaByIdResponseDTO, CreateDiplomaResponseDTO, UpdateDiplomaResponseDTO, EnrollStudentResponseDTO, UnenrollStudentResponseDTO, DiplomaSummaryDTO, ResponseDTO } from "../../../domain/diploma/dtos/DiplomaResponseDTOs";
-import { Diploma } from "../../../domain/diploma/entities/Diploma";
-import { DiplomaNotFoundError, InvalidDiplomaStatusError } from "../../../domain/diploma/errors/DiplomaErrors";
-import { DiplomaDocument } from "../../../domain/diploma/entities/diplomatypes";
+import {
+  GetDiplomasRequestDTO,
+  GetDiplomaByIdRequestDTO,
+  CreateDiplomaRequestDTO,
+  UpdateDiplomaRequestDTO,
+  DeleteDiplomaRequestDTO,
+  EnrollStudentRequestDTO,
+  UnenrollStudentRequestDTO
+} from "../dtos/DiplomaRequestDTOs";
+import {
+  GetDiplomasResponseDTO,
+  GetDiplomaByIdResponseDTO,
+  CreateDiplomaResponseDTO,
+  UpdateDiplomaResponseDTO,
+  EnrollStudentResponseDTO,
+  UnenrollStudentResponseDTO
+} from "../dtos/DiplomaResponseDTOs";
+import { DiplomaNotFoundError } from "../../../domain/diploma/errors/DiplomaErrors";
 import {
   IGetDiplomasUseCase,
   IGetDiplomaByIdUseCase,
@@ -13,26 +26,18 @@ import {
   IEnrollStudentUseCase,
   IUnenrollStudentUseCase
 } from "./IDiplomaUseCases";
-
+import { DIPLOMA_MESSAGES, USER_DIPLOMA_MESSAGES } from "../constants/DiplomaConstants";
 
 export class GetDiplomasUseCase implements IGetDiplomasUseCase {
   constructor(private readonly _diplomaRepository: IDiplomaRepository) { }
 
-  async execute(params: GetDiplomasRequestDTO): Promise<ResponseDTO<GetDiplomasResponseDTO>> {
-    if (isNaN(params.page) || params.page < 1 || isNaN(params.limit) || params.limit < 1) {
-      throw new Error("Invalid page or limit parameters");
-    }
-    const { diplomas, totalItems } = await this._diplomaRepository.getDiplomas(params.page, params.limit, params.department, params.category, params.status, params.instructor, params.dateRange, params.search, params.startDate, params.endDate);
-    const totalPages = Math.ceil(totalItems / params.limit);
-    const mappedDiplomas: DiplomaSummaryDTO[] = diplomas.map(mapDiplomaToSummaryDTO);
+  async execute(params: GetDiplomasRequestDTO): Promise<GetDiplomasResponseDTO> {
+    const { diplomas, totalItems } = await this._diplomaRepository.getDiplomas(params);
     return {
-      success: true,
-      data: {
-        diplomas: mappedDiplomas,
-        totalPages,
-        currentPage: params.page,
-        totalItems,
-      },
+      data: diplomas,
+      totalPages: Math.ceil(totalItems / params.limit),
+      currentPage: params.page,
+      totalItems,
     };
   }
 }
@@ -40,150 +45,66 @@ export class GetDiplomasUseCase implements IGetDiplomasUseCase {
 export class GetDiplomaByIdUseCase implements IGetDiplomaByIdUseCase {
   constructor(private readonly _diplomaRepository: IDiplomaRepository) { }
 
-  async execute(params: GetDiplomaByIdRequestDTO): Promise<ResponseDTO<GetDiplomaByIdResponseDTO>> {
-    if (!isValidObjectId(params.id)) {
-      throw new InvalidDiplomaStatusError("Invalid diploma ID");
-    }
-    const diplomaDoc = await this._diplomaRepository.getDiplomaById(params.id);
-    if (!diplomaDoc) {
+  async execute(params: GetDiplomaByIdRequestDTO): Promise<GetDiplomaByIdResponseDTO> {
+    const diploma = await this._diplomaRepository.getDiplomaById(params.id);
+    if (!diploma) {
       throw new DiplomaNotFoundError(params.id);
     }
-    return {
-      success: true,
-      data: {
-        diploma: new Diploma({
-          id: diplomaDoc._id?.toString() || diplomaDoc._id,
-          title: diplomaDoc.title,
-          description: diplomaDoc.description,
-          price: diplomaDoc.price,
-          category: diplomaDoc.category,
-          thumbnail: diplomaDoc.thumbnail,
-          duration: diplomaDoc.duration,
-          prerequisites: diplomaDoc.prerequisites,
-          status: diplomaDoc.status,
-          createdAt: diplomaDoc.createdAt,
-          updatedAt: diplomaDoc.updatedAt,
-          videoIds: (diplomaDoc.videoIds || []).map((id) => id.toString()),
-        }),
-      },
-    };
+    return { diploma };
   }
 }
 
 export class CreateDiplomaUseCase implements ICreateDiplomaUseCase {
   constructor(private readonly _diplomaRepository: IDiplomaRepository) { }
 
-  async execute(params: CreateDiplomaRequestDTO): Promise<ResponseDTO<CreateDiplomaResponseDTO>> {
-    const diplomaDoc: DiplomaDocument = await this._diplomaRepository.createDiploma(params);
-    return {
-      success: true,
-      data: {
-        diploma: new Diploma({
-          id: diplomaDoc._id?.toString() || '',
-          title: diplomaDoc.title,
-          description: diplomaDoc.description,
-          price: diplomaDoc.price,
-          category: diplomaDoc.category,
-          thumbnail: diplomaDoc.thumbnail,
-          duration: diplomaDoc.duration,
-          prerequisites: diplomaDoc.prerequisites,
-          status: diplomaDoc.status,
-          createdAt: diplomaDoc.createdAt,
-          updatedAt: diplomaDoc.updatedAt,
-          videoIds: (diplomaDoc.videoIds || []).map((id) => id.toString()),
-        }),
-      },
-    };
+  async execute(params: CreateDiplomaRequestDTO): Promise<CreateDiplomaResponseDTO> {
+    const diploma = await this._diplomaRepository.createDiploma(params);
+    return { diploma };
   }
 }
 
 export class UpdateDiplomaUseCase implements IUpdateDiplomaUseCase {
   constructor(private readonly _diplomaRepository: IDiplomaRepository) { }
 
-  async execute(params: UpdateDiplomaRequestDTO): Promise<ResponseDTO<UpdateDiplomaResponseDTO>> {
-    if (!isValidObjectId(params.id)) {
-      throw new InvalidDiplomaStatusError("Invalid diploma ID");
+  async execute(params: UpdateDiplomaRequestDTO): Promise<UpdateDiplomaResponseDTO> {
+    const diploma = await this._diplomaRepository.updateDiploma(params);
+    if (!diploma) {
+      throw new DiplomaNotFoundError(params.id);
     }
-    const existingDiploma = await this._diplomaRepository.getDiplomaById(params.id);
-    if (!existingDiploma) throw new DiplomaNotFoundError(params.id);
-    const updatedDiploma = { ...existingDiploma, ...params };
-    const diplomaDoc: DiplomaDocument = await this._diplomaRepository.updateDiploma(updatedDiploma);
-    return {
-      success: true,
-      data: {
-        diploma: new Diploma({
-          id: diplomaDoc._id?.toString() || diplomaDoc._id,
-          title: diplomaDoc.title,
-          description: diplomaDoc.description,
-          price: diplomaDoc.price,
-          category: diplomaDoc.category,
-          thumbnail: diplomaDoc.thumbnail,
-          duration: diplomaDoc.duration,
-          prerequisites: diplomaDoc.prerequisites,
-          status: diplomaDoc.status,
-          createdAt: diplomaDoc.createdAt,
-          updatedAt: diplomaDoc.updatedAt,
-          videoIds: (diplomaDoc.videoIds || []).map((id) => id.toString()),
-        }),
-      },
-    };
+    return { diploma };
   }
 }
 
 export class DeleteDiplomaUseCase implements IDeleteDiplomaUseCase {
   constructor(private readonly _diplomaRepository: IDiplomaRepository) { }
 
-  async execute(params: DeleteDiplomaRequestDTO): Promise<ResponseDTO<{ message: string }>> {
-    if (!isValidObjectId(params.id)) {
-      throw new InvalidDiplomaStatusError("Invalid diploma ID");
-    }
+  async execute(params: DeleteDiplomaRequestDTO): Promise<{ message: string }> {
     await this._diplomaRepository.deleteDiploma(params.id);
-    return { success: true, data: { message: "Diploma deleted successfully" } };
+    return { message: DIPLOMA_MESSAGES.DELETED };
   }
 }
 
 export class EnrollStudentUseCase implements IEnrollStudentUseCase {
   constructor(private readonly _diplomaRepository: IDiplomaRepository) { }
 
-  async execute(params: EnrollStudentRequestDTO): Promise<ResponseDTO<EnrollStudentResponseDTO>> {
+  async execute(params: EnrollStudentRequestDTO): Promise<EnrollStudentResponseDTO> {
     const result = await this._diplomaRepository.enrollStudent(params);
     if (!result) {
       throw new DiplomaNotFoundError(params.diplomaId);
     }
-    return { success: true, data: { success: true, message: "Student enrolled successfully" } };
+    return { message: USER_DIPLOMA_MESSAGES.ENROLLED };
   }
 }
 
 export class UnenrollStudentUseCase implements IUnenrollStudentUseCase {
   constructor(private readonly _diplomaRepository: IDiplomaRepository) { }
 
-  async execute(params: UnenrollStudentRequestDTO): Promise<ResponseDTO<UnenrollStudentResponseDTO>> {
+  async execute(params: UnenrollStudentRequestDTO): Promise<UnenrollStudentResponseDTO> {
     const result = await this._diplomaRepository.unenrollStudent(params);
     if (!result) {
       throw new DiplomaNotFoundError(params.diplomaId);
     }
-    return { success: true, data: { success: true, message: "Student unenrolled successfully" } };
+    return { message: USER_DIPLOMA_MESSAGES.UNENROLLED };
   }
-} 
-
-
-function mapDiplomaToSummaryDTO(diploma): DiplomaSummaryDTO {
-  return {
-    id: diploma._id?.toString() || diploma.id,
-    title: diploma.title,
-    description: diploma.description,
-    price: diploma.price,
-    category: diploma.category,
-    thumbnail: diploma.thumbnail,
-    duration: diploma.duration,
-    prerequisites: diploma.prerequisites,
-    status: diploma.status,
-    createdAt: diploma.createdAt?.toISOString?.() || diploma.createdAt,
-    updatedAt: diploma.updatedAt?.toISOString?.() || diploma.updatedAt,
-    videoIds: (diploma.videoIds || []).map((id) => id.toString()),
-  };
 }
 
-function isValidObjectId(id: string): boolean {
-  return typeof id === 'string' && /^[a-fA-F0-9]{24}$/.test(id);
-}

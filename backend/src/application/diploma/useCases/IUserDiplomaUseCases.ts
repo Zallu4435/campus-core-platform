@@ -5,7 +5,7 @@ import {
   UpdateVideoProgressRequestDTO,
   MarkChapterCompleteRequestDTO,
   ToggleBookmarkRequestDTO
-} from "../../../domain/diploma/dtos/UserDiplomaRequestDTOs";
+} from "../dtos/UserDiplomaRequestDTOs";
 import {
   GetUserDiplomasResponseDTO,
   GetUserDiplomaByIdResponseDTO,
@@ -14,38 +14,38 @@ import {
   MarkChapterCompleteResponseDTO,
   ToggleBookmarkResponseDTO,
   GetCompletedChaptersResponseDTO,
-  GetBookmarkedChaptersResponseDTO,
-  ResponseDTO
-} from "../../../domain/diploma/dtos/UserDiplomaResponseDTOs";
+  GetBookmarkedChaptersResponseDTO
+} from "../dtos/UserDiplomaResponseDTOs";
 
 export interface IGetUserDiplomasUseCase {
-  execute(params: GetUserDiplomasRequestDTO): Promise<ResponseDTO<GetUserDiplomasResponseDTO>>;
+  execute(params: GetUserDiplomasRequestDTO): Promise<GetUserDiplomasResponseDTO>;
 }
 
 export interface IGetUserDiplomaByIdUseCase {
-  execute(params: GetUserDiplomaByIdRequestDTO): Promise<ResponseDTO<GetUserDiplomaByIdResponseDTO>>;
+  execute(params: GetUserDiplomaByIdRequestDTO): Promise<GetUserDiplomaByIdResponseDTO>;
 }
 
 export interface IGetUserDiplomaChapterUseCase {
-  execute(params: GetUserDiplomaChapterRequestDTO): Promise<ResponseDTO<GetUserDiplomaChapterResponseDTO>>;
+  execute(params: GetUserDiplomaChapterRequestDTO): Promise<GetUserDiplomaChapterResponseDTO>;
 }
 
 export interface IUpdateVideoProgressUseCase {
-  execute(params: UpdateVideoProgressRequestDTO): Promise<ResponseDTO<UpdateVideoProgressResponseDTO>>;
+  execute(params: UpdateVideoProgressRequestDTO): Promise<UpdateVideoProgressResponseDTO>;
 }
 
 export interface IMarkChapterCompleteUseCase {
-  execute(params: MarkChapterCompleteRequestDTO): Promise<ResponseDTO<MarkChapterCompleteResponseDTO>>;
+  execute(params: MarkChapterCompleteRequestDTO): Promise<MarkChapterCompleteResponseDTO>;
 }
 
 export interface IToggleBookmarkUseCase {
-  execute(params: ToggleBookmarkRequestDTO): Promise<ResponseDTO<ToggleBookmarkResponseDTO>>;
+  execute(params: ToggleBookmarkRequestDTO): Promise<ToggleBookmarkResponseDTO>;
 }
 
 export interface IGetCompletedChaptersUseCase {
-  execute(userId: string, courseId: string): Promise<ResponseDTO<GetCompletedChaptersResponseDTO>>;
+  execute(userId: string, courseId: string): Promise<GetCompletedChaptersResponseDTO>;
 }
 
 export interface IGetBookmarkedChaptersUseCase {
-  execute(userId: string, courseId: string): Promise<ResponseDTO<GetBookmarkedChaptersResponseDTO>>;
+  execute(userId: string, courseId: string): Promise<GetBookmarkedChaptersResponseDTO>;
 }
+

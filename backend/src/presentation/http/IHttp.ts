@@ -175,7 +175,9 @@ export interface IDiplomaController extends IController {
   updateDiploma(httpRequest: IHttpRequest): Promise<IHttpResponse>;
   deleteDiploma(httpRequest: IHttpRequest): Promise<IHttpResponse>;
   enrollStudent(httpRequest: IHttpRequest): Promise<IHttpResponse>;
+  unenrollStudent(httpRequest: IHttpRequest): Promise<IHttpResponse>;
 }
+
 
 export interface IVideoController extends IController {
   getVideos(httpRequest: IHttpRequest): Promise<IHttpResponse>;
@@ -355,7 +357,7 @@ export interface IFinancialController extends IController {
   updateCharge(httpRequest: IHttpRequest): Promise<IHttpResponse>;
   deleteCharge(httpRequest: IHttpRequest): Promise<IHttpResponse>;
   checkPendingPayment(httpRequest: IHttpRequest): Promise<IHttpResponse>;
-  clearPendingPayment(httpRequest: IHttpRequest): Promise<IHttpResponse>; 
+  clearPendingPayment(httpRequest: IHttpRequest): Promise<IHttpResponse>;
 }
 
 export interface IEnquiryController extends IController {

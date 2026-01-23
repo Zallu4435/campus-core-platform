@@ -1,12 +1,13 @@
-import { Diploma } from "../../../domain/diploma/entities/Diploma";
-import { DiplomaDocument, DiplomaListResult, EnrollStudent, UnenrollStudent } from "../../../domain/diploma/entities/diplomatypes";
+import { DiplomaProps, EnrollStudentProps, UnenrollStudentProps } from "../../../domain/diploma/types";
+import { GetDiplomasRequestDTO } from "../dtos/DiplomaRequestDTOs";
+import { DiplomaSummaryDTO, DiplomaDetailsDTO } from "../dtos/DiplomaResponseDTOs";
 
 export interface IDiplomaRepository {
-  getDiplomas(page: number, limit: number, department: string, category: string, status: string, instructor: string, dateRange: string, search: string, startDate: string, endDate: string): Promise<DiplomaListResult>;
-  getDiplomaById(id: string): Promise<DiplomaDocument | null>;
-  createDiploma(params: Diploma): Promise<DiplomaDocument>;
-  updateDiploma(params: Diploma): Promise<DiplomaDocument | null>;
+  getDiplomas(params: GetDiplomasRequestDTO): Promise<{ diplomas: DiplomaSummaryDTO[]; totalItems: number }>;
+  getDiplomaById(id: string): Promise<DiplomaDetailsDTO | null>;
+  createDiploma(params: DiplomaProps): Promise<DiplomaDetailsDTO>;
+  updateDiploma(params: Partial<DiplomaProps> & { id: string }): Promise<DiplomaDetailsDTO | null>;
   deleteDiploma(id: string): Promise<void>;
-  enrollStudent(params: EnrollStudent): Promise<boolean>;
-  unenrollStudent(params: UnenrollStudent): Promise<boolean>;
-} 
+  enrollStudent(params: EnrollStudentProps): Promise<boolean>;
+  unenrollStudent(params: UnenrollStudentProps): Promise<boolean>;
+}

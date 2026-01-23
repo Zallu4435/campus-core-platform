@@ -1,11 +1,11 @@
-import { DiplomaCourse, Chapter } from '../entities/diplomatypes';
+import { DiplomaCourse, Chapter } from '../../../domain/diploma/types';
 
 export interface GetUserDiplomasResponseDTO {
-  courses: DiplomaCourse[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
+    data: DiplomaCourse[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
 }
 
 export type GetUserDiplomaByIdResponseDTO = DiplomaCourse;
@@ -13,29 +13,24 @@ export type GetUserDiplomaByIdResponseDTO = DiplomaCourse;
 export type GetUserDiplomaChapterResponseDTO = Chapter;
 
 export interface UpdateVideoProgressResponseDTO {
-  message: string;
-  progress: number;
+    message: string;
+    progress: number;
 }
 
 export interface MarkChapterCompleteResponseDTO {
-  message: string;
-  completed: boolean;
+    message: string;
+    completed: boolean;
 }
 
 export interface ToggleBookmarkResponseDTO {
-  message: string;
-  bookmarked: boolean;
+    message: string;
+    bookmarked: boolean;
 }
 
 export interface GetCompletedChaptersResponseDTO {
-  chapters: string[];
+    chapters: string[];
 }
 
 export interface GetBookmarkedChaptersResponseDTO {
-  chapters: string[];
-} 
-
-export interface ResponseDTO<T> {
-  data: T;
-  success: boolean;
+    chapters: string[];
 }
