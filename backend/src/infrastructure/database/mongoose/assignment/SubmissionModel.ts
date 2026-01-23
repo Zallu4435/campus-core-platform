@@ -1,11 +1,12 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { SubmissionStatus } from '../../../../domain/assignments/enums/AssignmentEnums';
 
 export interface ISubmissionDocument extends Document {
   assignmentId: mongoose.Types.ObjectId;
   studentId: string;
   studentName: string;
   submittedDate: Date;
-  status: 'pending' | 'reviewed' | 'late' | 'needs_correction';
+  status: SubmissionStatus;
   marks?: number;
   feedback?: string;
   isLate: boolean;
@@ -37,8 +38,8 @@ const SubmissionSchema = new Schema<ISubmissionDocument>({
   },
   status: {
     type: String,
-    enum: ['pending', 'reviewed', 'late', 'needs_correction'],
-    default: 'pending'
+    enum: Object.values(SubmissionStatus),
+    default: SubmissionStatus.Pending
   },
   marks: {
     type: Number,

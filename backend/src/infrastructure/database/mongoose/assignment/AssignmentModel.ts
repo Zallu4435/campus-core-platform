@@ -1,5 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import { Assignment } from '../../../../domain/assignments/entities/Assignment';
+import { AssignmentStatus } from '../../../../domain/assignments/enums/AssignmentEnums';
 
 export interface IAssignmentDocument extends Document {
   title: string;
@@ -14,7 +15,7 @@ export interface IAssignmentDocument extends Document {
   }>;
   createdAt: Date;
   updatedAt: Date;
-  status: 'draft' | 'published' | 'closed';
+  status: AssignmentStatus;
   totalSubmissions: number;
   averageMarks?: number;
 }
@@ -67,8 +68,8 @@ const AssignmentSchema = new Schema<IAssignmentDocument>({
   },
   status: {
     type: String,
-    enum: ['draft', 'published', 'closed'],
-    default: 'draft'
+    enum: Object.values(AssignmentStatus),
+    default: AssignmentStatus.Draft
   },
   totalSubmissions: {
     type: Number,
@@ -81,7 +82,7 @@ const AssignmentSchema = new Schema<IAssignmentDocument>({
 });
 
 // Update the updatedAt field before saving
-AssignmentSchema.pre('save', function(next) {
+AssignmentSchema.pre('save', function (this: IAssignmentDocument, next) {
   this.updatedAt = new Date();
   next();
 });
