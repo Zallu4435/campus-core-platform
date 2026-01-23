@@ -12,30 +12,30 @@ export class UserMaterialsRepository implements IUserMaterialsRepository {
       .skip(options.skip ?? 0)
       .limit(options.limit ?? 0);
 
-    return docs.map(doc => MaterialMapper.toDomain(doc.toObject()));
+    return docs.map(doc => MaterialMapper.toDomain(doc.toObject() as unknown as Record<string, unknown>));
   }
 
   async count(filter: UserMaterialFilter): Promise<number> {
     const mongoFilter = this._buildMongoFilter(filter);
-    return MaterialModel.countDocuments(mongoFilter);
+    return MaterialModel.countDocuments(mongoFilter as any);
   }
 
   async findById(id: string): Promise<Material | null> {
     const doc = await MaterialModel.findById(id);
-    return doc ? MaterialMapper.toDomain(doc.toObject()) : null;
+    return doc ? MaterialMapper.toDomain(doc.toObject() as unknown as Record<string, unknown>) : null;
   }
 
   async update(id: string, material: Material): Promise<Material | null> {
     const persistence = MaterialMapper.toPersistence(material);
     const doc = await MaterialModel.findByIdAndUpdate(id, persistence, { new: true });
-    return doc ? MaterialMapper.toDomain(doc.toObject()) : null;
+    return doc ? MaterialMapper.toDomain(doc.toObject() as unknown as Record<string, unknown>) : null;
   }
 
   async toggleBookmark(materialId: string, userId: string): Promise<void> {
     const material = await MaterialModel.findById(materialId);
     if (!material) throw new Error('Material not found');
 
-    const bookmarkIndex = material.bookmarks.findIndex((b) => b.userId === userId);
+    const bookmarkIndex = material.bookmarks.findIndex((b: { userId: string }) => b.userId === userId);
     if (bookmarkIndex > -1) {
       material.bookmarks.splice(bookmarkIndex, 1);
     } else {
@@ -48,7 +48,7 @@ export class UserMaterialsRepository implements IUserMaterialsRepository {
     const material = await MaterialModel.findById(materialId);
     if (!material) throw new Error('Material not found');
 
-    const likeIndex = material.likes.findIndex((l) => l.userId === userId);
+    const likeIndex = material.likes.findIndex((l: { userId: string }) => l.userId === userId);
     if (likeIndex > -1) {
       material.likes.splice(likeIndex, 1);
     } else {
@@ -72,7 +72,7 @@ export class UserMaterialsRepository implements IUserMaterialsRepository {
   }
 
   private _buildMongoFilter(filter: UserMaterialFilter): Record<string, unknown> {
-    const mongoFilter: Record<string, any> = {};
+    const mongoFilter: Record<string, unknown> = {};
 
     if (filter.subject) mongoFilter.subject = { $regex: filter.subject, $options: 'i' };
     if (filter.course) mongoFilter.course = filter.course;

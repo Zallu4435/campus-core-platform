@@ -12,31 +12,31 @@ export class MaterialsRepository implements IMaterialsRepository {
       .skip(options.skip ?? 0)
       .limit(options.limit ?? 0);
 
-    return docs.map(doc => MaterialMapper.toDomain(doc.toObject()));
+    return docs.map(doc => MaterialMapper.toDomain(doc.toObject() as unknown as Record<string, unknown>));
   }
 
   async count(filter: MaterialFilter): Promise<number> {
     const mongoFilter = this._buildMongoFilter(filter);
-    return MaterialModel.countDocuments(mongoFilter);
+    return MaterialModel.countDocuments(mongoFilter as any);
   }
 
   async findById(id: string): Promise<Material | null> {
     const doc = await MaterialModel.findById(id);
-    return doc ? MaterialMapper.toDomain(doc.toObject()) : null;
+    return doc ? MaterialMapper.toDomain(doc.toObject() as unknown as Record<string, unknown>) : null;
   }
 
   async create(material: Material): Promise<Material> {
     const persistence = MaterialMapper.toPersistence(material);
     const doc = new MaterialModel(persistence);
     await doc.save();
-    return MaterialMapper.toDomain(doc.toObject());
+    return MaterialMapper.toDomain(doc.toObject() as unknown as Record<string, unknown>);
   }
 
   async update(id: string, material: Material): Promise<Material> {
     const persistence = MaterialMapper.toPersistence(material);
     const doc = await MaterialModel.findByIdAndUpdate(id, persistence, { new: true });
     if (!doc) throw new Error('Material not found');
-    return MaterialMapper.toDomain(doc.toObject());
+    return MaterialMapper.toDomain(doc.toObject() as unknown as Record<string, unknown>);
   }
 
   async delete(id: string): Promise<void> {
@@ -52,7 +52,7 @@ export class MaterialsRepository implements IMaterialsRepository {
   }
 
   private _buildMongoFilter(filter: MaterialFilter): Record<string, unknown> {
-    const mongoFilter: Record<string, any> = {};
+    const mongoFilter: Record<string, unknown> = {};
 
     if (filter.subject) mongoFilter.subject = filter.subject;
     if (filter.course) mongoFilter.course = filter.course;
@@ -63,9 +63,10 @@ export class MaterialsRepository implements IMaterialsRepository {
     if (filter.uploadedBy) mongoFilter.uploadedBy = filter.uploadedBy;
 
     if (filter.startDate || filter.endDate) {
-      mongoFilter.uploadedAt = {};
-      if (filter.startDate) mongoFilter.uploadedAt.$gte = filter.startDate;
-      if (filter.endDate) mongoFilter.uploadedAt.$lte = filter.endDate;
+      const dateRange: Record<string, string | Date> = {};
+      if (filter.startDate) dateRange.$gte = filter.startDate;
+      if (filter.endDate) dateRange.$lte = filter.endDate;
+      mongoFilter.uploadedAt = dateRange;
     }
 
     if (filter.search) {

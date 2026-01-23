@@ -13,10 +13,10 @@ export class EnquiryRepository implements IEnquiryRepository {
     }
 
     if (filter.startDate || filter.endDate) {
-      const createdAtFilter: Record<string, Date> = {};
-      if (filter.startDate) createdAtFilter.$gte = filter.startDate;
-      if (filter.endDate) createdAtFilter.$lte = filter.endDate;
-      mongoFilter.createdAt = createdAtFilter;
+      const dateRange: Record<string, Date> = {};
+      if (filter.startDate) dateRange.$gte = filter.startDate;
+      if (filter.endDate) dateRange.$lte = filter.endDate;
+      mongoFilter.createdAt = dateRange;
     }
 
     if (filter.search) {
@@ -42,7 +42,7 @@ export class EnquiryRepository implements IEnquiryRepository {
   async find(filter: EnquiryFilter, options: { skip?: number; limit?: number; sort?: EnquirySortOptions } = {}): Promise<Enquiry[]> {
     const mongoFilter = this.buildMongoFilter(filter);
     const results = await EnquiryModel.find(mongoFilter)
-      .sort(options.sort as any ?? { createdAt: -1 })
+      .sort((options.sort as any) ?? { createdAt: -1 })
       .skip(options.skip ?? 0)
       .limit(options.limit ?? 10)
       .lean();
@@ -52,7 +52,7 @@ export class EnquiryRepository implements IEnquiryRepository {
 
   async count(filter: EnquiryFilter): Promise<number> {
     const mongoFilter = this.buildMongoFilter(filter);
-    return EnquiryModel.countDocuments(mongoFilter);
+    return EnquiryModel.countDocuments(mongoFilter as any);
   }
 
   async findById(id: string): Promise<Enquiry | null> {

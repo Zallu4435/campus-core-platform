@@ -1,23 +1,24 @@
 export interface Announcement {
   id: string;
   title: string;
-  date: string;
+  date: Date;
 }
 
 export interface Deadline {
   id: string;
   title: string;
-  date: string;
+  date: Date;
   urgent?: boolean;
+  type: string;
 }
 
 export interface ClassInfo {
   id: string;
-  code: string;
-  name: string;
-  time: string;
-  room: string;
-  status: string;
+  title: string;
+  faculty: string;
+  schedule: string;
+  course: string;
+  description?: string;
 }
 
 export interface OnlineTopic {
@@ -28,8 +29,9 @@ export interface OnlineTopic {
 }
 
 export interface SpecialDate {
-  day: number;
-  type: 'exam' | 'deadline' | 'event';
+  type: string;
+  title: string;
+  date: string;
 }
 
 export interface StudentDashboardData {
@@ -37,6 +39,5 @@ export interface StudentDashboardData {
   deadlines: Deadline[];
   classes: ClassInfo[];
   onlineTopics: OnlineTopic[];
-  calendarDays: number[];
-  specialDates: SpecialDate[];
-} 
+  calendarDays: Record<number, SpecialDate[]>;
+}

@@ -32,7 +32,7 @@ export class AdminAdmissionController implements IAdminAdmissionController {
 
   async getAdmissions(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const { page = 1, limit = 5, status = "all", program = "all", dateRange = "all", startDate, endDate, search } = httpRequest.query || {};
-    const response = await this._getAdmissionsUseCase.execute({
+    const data = await this._getAdmissionsUseCase.execute({
       page: Number(page),
       limit: Number(limit),
       status: status as any,
@@ -42,142 +42,78 @@ export class AdminAdmissionController implements IAdminAdmissionController {
       endDate: endDate ? String(endDate) : undefined,
       search: search ? String(search) : undefined,
     });
-    if (!response.success) {
-      return this._httpErrors.error_400();
-    }
-    return this._httpSuccess.success_200(response.data);
+    return this._httpSuccess.success_200(data);
   }
 
   async getAdmissionById(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const { id } = httpRequest.params || {};
-    if (!id) {
-      return this._httpErrors.error_400();
-    }
-    const response = await this._getAdmissionByIdUseCase.execute({ id });
-    if (!response.success) {
-      return this._httpErrors.error_404();
-    }
-    return this._httpSuccess.success_200(response.data);
+    const data = await this._getAdmissionByIdUseCase.execute({ id });
+    return this._httpSuccess.success_200(data);
   }
 
   async getAdmissionByToken(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const { id } = httpRequest.params || {};
     const { token } = httpRequest.query || {};
-    if (!id || !token || typeof token !== "string") {
-      return this._httpErrors.error_400();
-    }
-    const response = await this._getAdmissionByTokenUseCase.execute({
+    const data = await this._getAdmissionByTokenUseCase.execute({
       admissionId: id,
-      token,
+      token: token as string,
     });
-    if (!response.success) {
-      return this._httpErrors.error_400();
-    }
-    return this._httpSuccess.success_200(response.data);
+    return this._httpSuccess.success_200(data);
   }
 
   async approveAdmission(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const { id } = httpRequest.params || {};
     const { programDetails, startDate, scholarshipInfo, additionalNotes } = httpRequest.body || {};
-    if (!id) {
-      return this._httpErrors.error_400();
-    }
-    const response = await this._approveAdmissionUseCase.execute({
+    const data = await this._approveAdmissionUseCase.execute({
       id,
       additionalInfo: { programDetails, startDate, scholarshipInfo, additionalNotes },
     });
-    if (!response.success) {
-      return this._httpErrors.error_400();
-    }
-    return this._httpSuccess.success_200(response.data);
+    return this._httpSuccess.success_200(data);
   }
 
   async rejectAdmission(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const { id } = httpRequest.params || {};
-    if (!id) {
-      return this._httpErrors.error_400();
-    }
-    const response = await this._rejectAdmissionUseCase.execute({ id });
-    if (!response.success) {
-      return this._httpErrors.error_400();
-    }
-    return this._httpSuccess.success_200(response.data);
+    const data = await this._rejectAdmissionUseCase.execute({ id });
+    return this._httpSuccess.success_200(data);
   }
 
   async deleteAdmission(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const { id } = httpRequest.params || {};
-    if (!id) {
-      return this._httpErrors.error_400();
-    }
-    const response = await this._deleteAdmissionUseCase.execute({ id });
-    if (!response.success) {
-      return this._httpErrors.error_400();
-    }
-    return this._httpSuccess.success_200(response.data);
+    const data = await this._deleteAdmissionUseCase.execute({ id });
+    return this._httpSuccess.success_200(data);
   }
 
   async confirmAdmissionOffer(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const { id, action } = httpRequest.params || {};
     const { token } = httpRequest.query || {};
-    if (!id || !action || !token || typeof token !== "string") {
-      return this._httpErrors.error_400();
-    }
-    if (action !== "accept" && action !== "reject") {
-      return this._httpErrors.error_400();
-    }
-    const response = await this._confirmAdmissionOfferUseCase.execute({
+    const data = await this._confirmAdmissionOfferUseCase.execute({
       admissionId: id,
-      token,
+      token: token as string,
       action: action as "accept" | "reject",
     });
-    if (!response.success) {
-      return this._httpErrors.error_400();
-    }
-    return this._httpSuccess.success_200(response.data);
+    return this._httpSuccess.success_200(data);
   }
 
   async serveDocument(httpRequest: IHttpRequest): Promise<IHttpResponse> {
-    if (!httpRequest.user) {
-      return this._httpErrors.error_401();
-    }
-
-    if (httpRequest.user.collection !== 'admin') {
-      return this._httpErrors.error_403();
-    }
-
     const { documentId } = httpRequest.params || {};
     const { admissionId } = httpRequest.query || {};
 
-    if (!documentId || !admissionId || typeof admissionId !== 'string') {
-      return this._httpErrors.error_400();
-    }
-
-    const response = await this._serveAdmissionDocumentUseCase.execute({
-      admissionId,
+    const data = await this._serveAdmissionDocumentUseCase.execute({
+      admissionId: admissionId as string,
       documentId
     });
-
-    if (!response.success) {
-      return this._httpErrors.error_404();
-    }
 
     return {
       statusCode: 200,
       body: {
-        data: response.data
+        data
       }
     };
   }
 
   async blockAdmission(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const { id } = httpRequest.params || {};
-    if (!id) {
-      return this._httpErrors.error_400();
-    }
-    const response = await this._blockAdmissionUseCase.execute({ id });
-    if (!response.success) {
-      return this._httpErrors.error_400();
-    }
-    return this._httpSuccess.success_200(response.data);
+    const data = await this._blockAdmissionUseCase.execute({ id });
+    return this._httpSuccess.success_200(data);
   }
 }

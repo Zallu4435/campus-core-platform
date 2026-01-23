@@ -9,8 +9,9 @@ import {
     GetAllChargesResponseDTO,
     UpdateChargeResponseDTO,
     DeleteChargeResponseDTO,
-} from "../../../domain/financial/dtos/FinancialResponseDTOs";
-import { Charge, CreateChargeParams, UploadDocumentParams } from "../../../domain/financial/entities/Charge";
+} from "../dtos/FinancialResponseDTOs";
+import { CreateChargeParams, UploadDocumentParams } from "../../../domain/financial/entities/FinancialTypes";
+import { Charge } from "../../../domain/financial/entities/FinancialEntities";
 
 export interface IFinancialRepository {
     getStudentFinancialInfo(studentId: string): Promise<GetStudentFinancialInfoResponseDTO>;

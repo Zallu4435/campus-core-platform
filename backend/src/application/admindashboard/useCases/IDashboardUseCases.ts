@@ -7,7 +7,7 @@ import {
   GetRecentActivitiesRequestDTO,
   GetSystemAlertsRequestDTO,
   RefreshDashboardRequestDTO,
-} from "../../../domain/admindashboard/dtos/DashboardRequestDTOs";
+} from "../dtos/DashboardRequestDTOs";
 import {
   GetDashboardDataResponseDTO,
   GetDashboardMetricsResponseDTO,
@@ -15,38 +15,37 @@ import {
   GetRevenueDataResponseDTO,
   GetRecentActivitiesResponseDTO,
   GetSystemAlertsResponseDTO,
-  ResponseDTO
-} from "../../../domain/admindashboard/dtos/DashboardResponseDTOs";
+} from "../dtos/DashboardResponseDTOs";
 import { PerformanceData, DashboardDataRaw } from '../../../domain/admindashboard/entities/AdminDashboardTypes';
 
 export interface IGetDashboardDataUseCase {
-  execute(params: GetDashboardDataRequestDTO): Promise<ResponseDTO<GetDashboardDataResponseDTO>>;
+  execute(params: GetDashboardDataRequestDTO): Promise<GetDashboardDataResponseDTO>;
 }
 
 export interface IGetDashboardMetricsUseCase {
-  execute(params: GetDashboardMetricsRequestDTO): Promise<ResponseDTO<GetDashboardMetricsResponseDTO>>;
+  execute(params: GetDashboardMetricsRequestDTO): Promise<GetDashboardMetricsResponseDTO>;
 }
 
 export interface IGetUserGrowthDataUseCase {
-  execute(params: GetUserGrowthDataRequestDTO): Promise<ResponseDTO<GetUserGrowthDataResponseDTO>>;
+  execute(params: GetUserGrowthDataRequestDTO): Promise<GetUserGrowthDataResponseDTO>;
 }
 
 export interface IGetRevenueDataUseCase {
-  execute(params: GetRevenueDataRequestDTO): Promise<ResponseDTO<GetRevenueDataResponseDTO>>;
+  execute(params: GetRevenueDataRequestDTO): Promise<GetRevenueDataResponseDTO>;
 }
 
 export interface IGetPerformanceDataUseCase {
-  execute(params: GetPerformanceDataRequestDTO): Promise<ResponseDTO<PerformanceData[]>>;
+  execute(params: GetPerformanceDataRequestDTO): Promise<PerformanceData[]>;
 }
 
 export interface IGetRecentActivitiesUseCase {
-  execute(params: GetRecentActivitiesRequestDTO): Promise<ResponseDTO<GetRecentActivitiesResponseDTO>>;
+  execute(params: GetRecentActivitiesRequestDTO): Promise<GetRecentActivitiesResponseDTO>;
 }
 
 export interface IGetSystemAlertsUseCase {
-  execute(params: GetSystemAlertsRequestDTO): Promise<ResponseDTO<GetSystemAlertsResponseDTO>>;
+  execute(params: GetSystemAlertsRequestDTO): Promise<GetSystemAlertsResponseDTO>;
 }
 
 export interface IRefreshDashboardUseCase {
-  execute(params: RefreshDashboardRequestDTO): Promise<ResponseDTO<DashboardDataRaw>>;
+  execute(params: RefreshDashboardRequestDTO): Promise<DashboardDataRaw>;
 }

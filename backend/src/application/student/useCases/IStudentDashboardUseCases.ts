@@ -4,38 +4,34 @@ import {
     GetClassesRequestDTO,
     GetCalendarDaysRequestDTO,
     GetUserInfoRequestDTO,
-} from "../../../domain/student/dtos/StudentDashboardRequestDTOs";
+    GetNewEventsRequestDTO
+} from "../dtos/StudentDashboardRequestDTOs";
 import {
-    GetDeadlinesResponseDTO,
-    GetClassesResponseDTO,
-    GetCalendarDaysResponseDTO,
-    NewEventDTO as BaseNewEventDTO,
-    GetUserInfoResponseDTO,
-    ResponseDTO
-} from "../../../domain/student/dtos/StudentDashboardResponseDTOs";
-
-export type NewEventDTO = BaseNewEventDTO & { description: string };
+    NewEventDTO,
+    GetUserInfoResponseDTO
+} from "../dtos/StudentDashboardResponseDTOs";
+import { Announcement, Deadline, ClassInfo, SpecialDate } from "../../../domain/student/entities/StudentDashboardTypes";
 
 export interface IGetAnnouncementsUseCase {
-    execute(params: GetAnnouncementsRequestDTO): Promise<ResponseDTO<{ title: string; date: Date }[]>>;
+    execute(params: GetAnnouncementsRequestDTO): Promise<Announcement[]>;
 }
 
 export interface IGetDeadlinesUseCase {
-    execute(params: GetDeadlinesRequestDTO): Promise<GetDeadlinesResponseDTO>;
+    execute(params: GetDeadlinesRequestDTO): Promise<Deadline[]>;
 }
 
 export interface IGetClassesUseCase {
-    execute(params: GetClassesRequestDTO): Promise<GetClassesResponseDTO>;
+    execute(params: GetClassesRequestDTO): Promise<ClassInfo[]>;
 }
 
 export interface IGetCalendarDaysUseCase {
-    execute(params: GetCalendarDaysRequestDTO): Promise<GetCalendarDaysResponseDTO>;
+    execute(params: GetCalendarDaysRequestDTO): Promise<Record<number, SpecialDate[]>>;
 }
 
 export interface IGetNewEventsUseCase {
-    execute(studentId: string): Promise<ResponseDTO<NewEventDTO[]>>;
+    execute(params: GetNewEventsRequestDTO): Promise<NewEventDTO[]>;
 }
 
 export interface IGetUserInfoForDashboardUseCase {
-    execute(params: GetUserInfoRequestDTO): Promise<ResponseDTO<GetUserInfoResponseDTO>>;
+    execute(params: GetUserInfoRequestDTO): Promise<GetUserInfoResponseDTO>;
 }

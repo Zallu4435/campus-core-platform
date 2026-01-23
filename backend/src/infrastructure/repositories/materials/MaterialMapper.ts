@@ -2,9 +2,9 @@ import { Material, MaterialProps } from "../../../domain/materials/entities/Mate
 import { MaterialType, MaterialDifficulty } from "../../../domain/materials/entities/MaterialTypes";
 
 export class MaterialMapper {
-    static toDomain(raw: Record<string, any>): Material {
+    static toDomain(raw: Record<string, unknown>): Material {
         const props: MaterialProps = {
-            id: raw._id?.toString() ?? raw.id,
+            id: raw._id?.toString() || raw.id?.toString() || '',
             title: raw.title as string,
             description: raw.description as string,
             subject: raw.subject as string,
@@ -50,7 +50,7 @@ export class MaterialMapper {
         };
     }
 
-    static toDTO(material: Material): any {
-        return material.toJSON();
+    static toDTO(material: Material): Record<string, unknown> {
+        return material.toJSON() as unknown as Record<string, unknown>;
     }
 }

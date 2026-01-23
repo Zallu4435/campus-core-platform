@@ -25,85 +25,44 @@ export class StudentDashboardController implements IStudentDashboardController {
   }
 
   async getAnnouncements(httpRequest: IHttpRequest): Promise<IHttpResponse> {
-    const { limit, startDate, endDate } = httpRequest.query || {};
-    const response = await this._getAnnouncementsUseCase.execute({
-      studentId: httpRequest.user?.userId,
-      limit: limit ? Number(limit) : undefined,
-      startDate: startDate ? String(startDate) : undefined,
-      endDate: endDate ? String(endDate) : undefined
-    });
-
-    if (!response.success) {
-      return this._httpErrors.error_400();
-    }
-    return this._httpSuccess.success_200(response.data);
+    const studentId = httpRequest.user?.userId;
+    const data = await this._getAnnouncementsUseCase.execute({ studentId });
+    return this._httpSuccess.success_200(data);
   }
 
   async getDeadlines(httpRequest: IHttpRequest): Promise<IHttpResponse> {
-    const { startDate, endDate, urgentOnly, courseId } = httpRequest.query || {};
-    const response = await this._getDeadlinesUseCase.execute({
-      studentId: httpRequest.user?.userId,
-      startDate: startDate ? String(startDate) : undefined,
-      endDate: endDate ? String(endDate) : undefined,
-      urgentOnly: urgentOnly === 'true',
-      courseId: courseId ? String(courseId) : undefined
-    });
-
-    if (!response.success) {
-      return this._httpErrors.error_400();
-    }
-    return this._httpSuccess.success_200(response.data);
+    const studentId = httpRequest.user?.userId;
+    const data = await this._getDeadlinesUseCase.execute({ studentId });
+    return this._httpSuccess.success_200(data);
   }
 
   async getClasses(httpRequest: IHttpRequest): Promise<IHttpResponse> {
-    const { term, status } = httpRequest.query || {};
-    const response = await this._getClassesUseCase.execute({
-      studentId: httpRequest.user?.userId,
-      term: term ? String(term) : undefined,
-      status: status ? String(status) as 'upcoming' | 'ongoing' | 'completed' : undefined
-    });
-
-    if (!response.success) {
-      return this._httpErrors.error_400();
-    }
-    return this._httpSuccess.success_200(response.data);
+    const studentId = httpRequest.user?.userId;
+    const data = await this._getClassesUseCase.execute({ studentId });
+    return this._httpSuccess.success_200(data);
   }
 
   async getNewEvents(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const studentId = httpRequest.user?.userId;
-    const response = await this._getNewEventsUseCase.execute(studentId);
-    if (!response.success) {
-      return this._httpErrors.error_400();
-    }
-    return this._httpSuccess.success_200(response.data);
+    const data = await this._getNewEventsUseCase.execute({ studentId });
+    return this._httpSuccess.success_200(data);
   }
 
   async getCalendarDays(httpRequest: IHttpRequest): Promise<IHttpResponse> {
-    const { month, year, types } = httpRequest.query || {};
-    const response = await this._getCalendarDaysUseCase.execute({
-      studentId: httpRequest.user?.userId,
+    const studentId = httpRequest.user?.userId;
+    const { month, year } = httpRequest.query || {};
+    const data = await this._getCalendarDaysUseCase.execute({
+      studentId,
       month: month ? Number(month) : undefined,
-      year: year ? Number(year) : undefined,
-      includeTypes: types ? String(types).split(',') as ('class' | 'event' | 'sports' | 'club')[] : undefined
+      year: year ? Number(year) : undefined
     });
 
-    if (!response.success) {
-      return this._httpErrors.error_400();
-    }
-    return this._httpSuccess.success_200(response.data);
+    return this._httpSuccess.success_200(data);
   }
-
 
   async getUserInfo(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const studentId = httpRequest.user?.userId;
-    
-    if (!studentId) {
-      return this._httpErrors.error_401();
-    }
-    const response = await this._getUserInfoForDashboardUseCase.execute({ studentId });
-    if (!response.success) {
-      return this._httpErrors.error_400();
-    }
-    return this._httpSuccess.success_200(response.data);
+    const data = await this._getUserInfoForDashboardUseCase.execute({ studentId });
+    return this._httpSuccess.success_200(data);
   }
-} 
+}

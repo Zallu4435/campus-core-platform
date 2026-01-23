@@ -30,55 +30,40 @@ export class FinancialController implements IFinancialController {
     private readonly _updateChargeUseCase: IUpdateChargeUseCase,
     private readonly _deleteChargeUseCase: IDeleteChargeUseCase,
     private readonly _checkPendingPaymentUseCase: ICheckPendingPaymentUseCase,
-    private readonly _clearPendingPaymentUseCase: IClearPendingPaymentUseCase 
+    private readonly _clearPendingPaymentUseCase: IClearPendingPaymentUseCase
   ) { }
 
   async getStudentFinancialInfo(httpRequest: IHttpRequest): Promise<IHttpResponse> {
-    if (!httpRequest.user?.userId) {
-      return this._httpErrors.error_401();
-    }
-    const response = await this._getStudentFinancialInfoUseCase.execute({ studentId: httpRequest.user.userId });
-    if (!response.success) {
-      return this._httpErrors.error_400();
-    }
-    return this._httpSuccess.success_200(response.data);
+    const studentId = httpRequest.user?.userId;
+    const data = await this._getStudentFinancialInfoUseCase.execute({ studentId });
+    return this._httpSuccess.success_200(data);
   }
 
   async getAllPayments(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const { startDate, endDate, status, studentId, page = "1", limit = "10" } = httpRequest.query || {};
-    const response = await this._getAllPaymentsUseCase.execute({
-      startDate,
-      endDate,
-      status,
-      studentId,
+    const data = await this._getAllPaymentsUseCase.execute({
+      startDate: startDate as string,
+      endDate: endDate as string,
+      status: status as string,
+      studentId: studentId as string,
       page: parseInt(page as string),
       limit: parseInt(limit as string),
     });
-    if (!response.success) {
-      return this._httpErrors.error_400();
-    }
-    return this._httpSuccess.success_200(response.data);
+    return this._httpSuccess.success_200(data);
   }
 
   async getOnePayment(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const { id } = httpRequest.params || {};
-    const response = await this._getOnePaymentUseCase.execute({ paymentId: id });
-    if (!response.success) {
-      return this._httpErrors.error_400();
-    }
-    return this._httpSuccess.success_200(response.data);
+    const data = await this._getOnePaymentUseCase.execute({ paymentId: id });
+    return this._httpSuccess.success_200(data);
   }
 
   async makePayment(httpRequest: IHttpRequest): Promise<IHttpResponse> {
-    if (!httpRequest.user?.userId) {
-      return this._httpErrors.error_401();
-    }
+    const studentId = httpRequest.user?.userId;
     const { amount, method, term, chargeId, razorpayPaymentId, razorpayOrderId, razorpaySignature } = httpRequest.body || {};
-    if (!chargeId) {
-      return this._httpErrors.error_400('Charge ID is required');
-    }
-    const response = await this._makePaymentUseCase.execute({
-      studentId: httpRequest.user.userId,
+
+    const data = await this._makePaymentUseCase.execute({
+      studentId,
       amount: parseFloat(amount),
       method,
       term,
@@ -87,118 +72,74 @@ export class FinancialController implements IFinancialController {
       razorpayOrderId,
       razorpaySignature,
     });
-    if (!response.success) {
-      return this._httpErrors.error_400();
-    }
-    return this._httpSuccess.success_201(response.data);
+    return this._httpSuccess.success_201(data);
   }
 
   async uploadDocument(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const file = httpRequest.file;
     const { type } = httpRequest.body || {};
-    if (!file) return this._httpErrors.error_400();
-    const response = await this._uploadDocumentUseCase.execute({ file, type });
-    if (!response.success) {
-      return this._httpErrors.error_400();
-    }
-    return this._httpSuccess.success_201(response.data);
+    const data = await this._uploadDocumentUseCase.execute({ file, type });
+    return this._httpSuccess.success_201(data);
   }
 
   async getPaymentReceipt(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const { paymentId } = httpRequest.params || {};
-    if (!httpRequest.user?.userId) {
-      return this._httpErrors.error_401();
-    }
-    const response = await this._getPaymentReceiptUseCase.execute({
+    const studentId = httpRequest.user?.userId;
+    const data = await this._getPaymentReceiptUseCase.execute({
       paymentId,
-      studentId: httpRequest.user.userId
+      studentId
     });
-    if (!response.success) {
-      return this._httpErrors.error_400();
-    }
-    return this._httpSuccess.success_200(response.data);
+    return this._httpSuccess.success_200(data);
   }
-
 
   async createCharge(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const { title, description, amount, term, dueDate, applicableFor } = httpRequest.body || {};
-    if (!httpRequest.user?.userId) {
-      return this._httpErrors.error_401();
-    }
-    const response = await this._createChargeUseCase.execute({
+    const createdBy = httpRequest.user?.userId;
+    const data = await this._createChargeUseCase.execute({
       title,
       description,
       amount,
       term,
       dueDate,
       applicableFor,
-      createdBy: httpRequest.user.userId,
+      createdBy,
     });
-    if (!response.success) {
-      return this._httpErrors.error_400();
-    }
-    return this._httpSuccess.success_201(response.data);
+    return this._httpSuccess.success_201(data);
   }
 
   async getAllCharges(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const { term, status, search, page = "1", limit = "10" } = httpRequest.query || {};
-    const response = await this._getAllChargesUseCase.execute({
-      term,
-      status,
-      search,
+    const data = await this._getAllChargesUseCase.execute({
+      term: term as string,
+      status: status as string,
+      search: search as string,
       page: parseInt(page as string),
       limit: parseInt(limit as string),
     });
-    if (!response.success) {
-      return this._httpErrors.error_400();
-    }
-    return this._httpSuccess.success_200(response.data);
+    return this._httpSuccess.success_200(data);
   }
 
   async updateCharge(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const { id } = httpRequest.params || {};
-    const response = await this._updateChargeUseCase.execute({ id, ...httpRequest.body });
-    if (!response.success) {
-      const errorMsg = hasErrorProperty(response.data) ? response.data.error : 'Bad Request';
-      return this._httpErrors.error_400(errorMsg);
-    }
-    return this._httpSuccess.success_200(response.data);
+    const data = await this._updateChargeUseCase.execute({ id, data: httpRequest.body });
+    return this._httpSuccess.success_200(data);
   }
 
   async deleteCharge(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const { id } = httpRequest.params || {};
-    const response = await this._deleteChargeUseCase.execute({ id });
-    if (!response.success) {
-      const errorMsg = typeof response.data === 'object' && response.data && 'error' in response.data ? (response.data).error : 'Bad Request';
-      return this._httpErrors.error_400(errorMsg);
-    }
-    return this._httpSuccess.success_200(response.data);
+    const data = await this._deleteChargeUseCase.execute({ id });
+    return this._httpSuccess.success_200(data);
   }
 
   async checkPendingPayment(httpRequest: IHttpRequest): Promise<IHttpResponse> {
-    if (!httpRequest.user?.userId) {
-      return this._httpErrors.error_401();
-    }
-    const response = await this._checkPendingPaymentUseCase.execute(httpRequest.user.userId);
-    if (!response.success) {
-      return this._httpErrors.error_400();
-    }
-    return this._httpSuccess.success_200(response.data);
+    const studentId = httpRequest.user?.userId;
+    const data = await this._checkPendingPaymentUseCase.execute(studentId as string);
+    return this._httpSuccess.success_200(data);
   }
 
   async clearPendingPayment(httpRequest: IHttpRequest): Promise<IHttpResponse> {
-    if (!httpRequest.user?.userId) {
-      return this._httpErrors.error_401();
-    }
-    const response = await this._clearPendingPaymentUseCase.execute(httpRequest.user.userId);
-    if (!response.success) {
-      return this._httpErrors.error_400();
-    }
-    return this._httpSuccess.success_200(response.data);
+    const studentId = httpRequest.user?.userId;
+    const data = await this._clearPendingPaymentUseCase.execute(studentId as string);
+    return this._httpSuccess.success_200(data);
   }
-  
-}
-
-function hasErrorProperty(data: unknown): data is { error: string } {
-  return typeof data === 'object' && data !== null && 'error' in data;
 }

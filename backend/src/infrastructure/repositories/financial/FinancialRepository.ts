@@ -6,7 +6,9 @@ import { StudentFinancialInfoModel, ChargeModel, PaymentModel } from "../../data
 import { ProgramModel } from "../../database/mongoose/academic/studentProgram.model";
 import { FinancialErrorType } from "../../../domain/financial/enums/FinancialErrorType";
 import { IFinancialRepository } from "../../../application/financial/repositories/IFinancialRepository";
-import { Charge, ChargeFilter } from "../../../domain/financial/entities/Charge";
+import { ChargeFilter } from "../../../domain/financial/entities/FinancialTypes";
+import { Charge } from "../../../domain/financial/entities/FinancialEntities";
+import { FinancialMapper } from "./FinancialMapper";
 
 const razorpay = new Razorpay({
     key_id: process.env.RAZORPAY_KEY_ID!,
@@ -127,17 +129,10 @@ export class FinancialRepository implements IFinancialRepository {
         const totalPages = Math.ceil(total / limit);
 
         return {
-            data: payments.map((payment) => ({
-                id: payment._id.toString(),
-                studentId: payment.studentId.toString(),
-                date: payment.date.toISOString(),
-                description: payment.description,
-                method: payment.method,
-                amount: payment.amount,
-                status: payment.status,
-                receiptUrl: payment.receiptUrl,
-                metadata: payment.metadata,
-            })),
+            data: payments.map((payment) => {
+                const paymentEntity = FinancialMapper.toPayment(payment);
+                return paymentEntity.toJSON();
+            }),
             totalPayments: total,
             totalPages,
             currentPage: page,
@@ -150,18 +145,9 @@ export class FinancialRepository implements IFinancialRepository {
             throw new Error(FinancialErrorType.PaymentNotFound);
         }
 
+        const paymentEntity = FinancialMapper.toPayment(payment);
         return {
-            payment: {
-                id: payment._id.toString(),
-                studentId: payment.studentId.toString(),
-                date: payment.date.toISOString(),
-                description: payment.description,
-                method: payment.method,
-                amount: payment.amount,
-                status: payment.status,
-                receiptUrl: payment.receiptUrl,
-                metadata: payment.metadata,
-            },
+            payment: paymentEntity.toJSON(),
         };
     }
 
@@ -379,20 +365,10 @@ export class FinancialRepository implements IFinancialRepository {
             status: "Active",
         });
         await charge.save();
+
+        const chargeEntity = FinancialMapper.toCharge(charge.toObject());
         return {
-            charge: {
-                id: charge._id.toString(),
-                title: charge.title,
-                description: charge.description,
-                amount: charge.amount,
-                term: charge.term,
-                dueDate: charge.dueDate.toISOString(),
-                applicableFor: charge.applicableFor,
-                createdBy: charge.createdBy.toString(),
-                createdAt: charge.createdAt.toISOString(),
-                updatedAt: charge.updatedAt.toISOString(),
-                status: charge.status,
-            },
+            charge: chargeEntity.toJSON(),
             studentFinancialInfos: [],
         };
     }
@@ -421,19 +397,10 @@ export class FinancialRepository implements IFinancialRepository {
             .lean();
 
         return {
-            data: charges.map((charge) => ({
-                id: charge._id.toString(),
-                title: charge.title,
-                description: charge.description,
-                amount: charge.amount,
-                term: charge.term,
-                dueDate: charge.dueDate.toISOString(),
-                applicableFor: charge.applicableFor,
-                createdBy: charge.createdBy.toString(),
-                createdAt: charge.createdAt.toISOString(),
-                updatedAt: charge.updatedAt.toISOString(),
-                status: charge.status,
-            })),
+            data: charges.map((charge) => {
+                const chargeEntity = FinancialMapper.toCharge(charge);
+                return chargeEntity.toJSON();
+            }),
             total,
         };
     }
@@ -445,20 +412,10 @@ export class FinancialRepository implements IFinancialRepository {
             { new: true }
         ).lean();
         if (!updated) throw new Error('Charge not found');
+
+        const chargeEntity = FinancialMapper.toCharge(updated);
         return {
-            charge: {
-                id: updated._id.toString(),
-                title: updated.title,
-                description: updated.description,
-                amount: updated.amount,
-                term: updated.term,
-                dueDate: updated.dueDate.toISOString(),
-                applicableFor: updated.applicableFor,
-                createdBy: updated.createdBy.toString(),
-                createdAt: updated.createdAt.toISOString(),
-                updatedAt: updated.updatedAt.toISOString(),
-                status: updated.status,
-            },
+            charge: chargeEntity.toJSON(),
         };
     }
 

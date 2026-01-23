@@ -15,7 +15,6 @@ import {
     RejectAdmissionResponseDTO,
     DeleteAdmissionResponseDTO,
     ConfirmAdmissionOfferResponseDTO,
-    ResponseDTO,
     AdmissionResponseDTO
 } from "../dtos/AdmissionResponseDTOs";
 import { IAdmissionRepository } from "../repositories/IAdmissionRepository";
@@ -42,7 +41,7 @@ import {
 } from './IAdmissionUseCases';
 import { AdminConstants } from "../constants/AdminConstants";
 import { IAdmissionMapper } from "../interfaces/IAdmissionMapper";
-import { AppConfig, AdmissionProjection } from "../types/RepositoryTypes";
+import { AppConfig } from "../types/RepositoryTypes";
 
 export class GetAdmissionsUseCase implements IGetAdmissionsUseCase {
     constructor(
@@ -51,7 +50,7 @@ export class GetAdmissionsUseCase implements IGetAdmissionsUseCase {
         private _userService: IUserService
     ) { }
 
-    async execute(p: GetAdmissionsRequestDTO): Promise<ResponseDTO<GetAdmissionsResponseDTO>> {
+    async execute(p: GetAdmissionsRequestDTO): Promise<GetAdmissionsResponseDTO> {
         const filter: Record<string, any> = {};
 
         if (p.status && p.status !== "all") {
@@ -95,7 +94,6 @@ export class GetAdmissionsUseCase implements IGetAdmissionsUseCase {
 
         const skip = (p.page - 1) * p.limit;
 
-        // This projection logic might eventually move to the repository implementation
         const proj = {
             _id: 1,
             "personal.fullName": 1,
@@ -120,13 +118,10 @@ export class GetAdmissionsUseCase implements IGetAdmissionsUseCase {
         );
 
         return {
-            data: {
-                admissions: admissions as AdmissionResponseDTO[],
-                totalAdmissions: total,
-                totalPages: Math.ceil(total / p.limit),
-                currentPage: p.page,
-            },
-            success: true,
+            admissions: admissions as AdmissionResponseDTO[],
+            totalAdmissions: total,
+            totalPages: Math.ceil(total / p.limit),
+            currentPage: p.page,
         };
     }
 }
@@ -139,7 +134,7 @@ export class GetAdmissionByIdUseCase implements IGetAdmissionByIdUseCase {
         private _userService: IUserService
     ) { }
 
-    async execute(params: GetAdmissionByIdRequestDTO): Promise<ResponseDTO<GetAdmissionByIdResponseDTO>> {
+    async execute(params: GetAdmissionByIdRequestDTO): Promise<GetAdmissionByIdResponseDTO> {
         const admission = await this._admissionRepository.getAdmissionById(params.id);
         if (!admission) {
             throw new AdminAdmissionNotFoundError();
@@ -151,7 +146,7 @@ export class GetAdmissionByIdUseCase implements IGetAdmissionByIdUseCase {
             blocked = user?.blocked ?? false;
         }
 
-        return { data: this._mapper.toDTO(admission, blocked) as GetAdmissionByIdResponseDTO, success: true };
+        return this._mapper.toDTO(admission, blocked) as GetAdmissionByIdResponseDTO;
     }
 }
 
@@ -161,7 +156,7 @@ export class GetAdmissionByTokenUseCase implements IGetAdmissionByTokenUseCase {
         private _mapper: IAdmissionMapper
     ) { }
 
-    async execute(params: GetAdmissionByTokenRequestDTO): Promise<ResponseDTO<GetAdmissionByTokenResponseDTO>> {
+    async execute(params: GetAdmissionByTokenRequestDTO): Promise<GetAdmissionByTokenResponseDTO> {
         const admission = await this._admissionRepository.getAdmissionByToken(params.admissionId, params.token);
         if (!admission) {
             throw new AdminAdmissionNotFoundError();
@@ -179,8 +174,7 @@ export class GetAdmissionByTokenUseCase implements IGetAdmissionByTokenUseCase {
             throw new AdminTokenExpiredError();
         }
 
-        // Return domain entity directly (not DTO) as per GetAdmissionByTokenResponseDTO interface
-        return { data: { admission }, success: true };
+        return { admission };
     }
 }
 
@@ -191,7 +185,7 @@ export class ApproveAdmissionUseCase implements IApproveAdmissionUseCase {
         private _config: AppConfig
     ) { }
 
-    async execute(params: ApproveAdmissionRequestDTO): Promise<ResponseDTO<ApproveAdmissionResponseDTO>> {
+    async execute(params: ApproveAdmissionRequestDTO): Promise<ApproveAdmissionResponseDTO> {
         const admission = await this._admissionRepository.findAdmissionById(params.id);
         if (!admission) throw new AdminAdmissionNotFoundError();
         if (admission.status !== AdminAdmissionStatus.Pending) throw new AdminAdmissionAlreadyProcessedError();
@@ -218,7 +212,7 @@ export class ApproveAdmissionUseCase implements IApproveAdmissionUseCase {
             expiryDays: AdminConstants.EMAIL.EXPIRY_DAYS,
         });
 
-        return { data: { message: "Admission offer email sent" }, success: true };
+        return { message: "Admission offer email sent" };
     }
 
     private generateConfirmationToken(): string {
@@ -229,7 +223,7 @@ export class ApproveAdmissionUseCase implements IApproveAdmissionUseCase {
 export class RejectAdmissionUseCase implements IRejectAdmissionUseCase {
     constructor(private _admissionRepository: IAdmissionRepository) { }
 
-    async execute(params: RejectAdmissionRequestDTO): Promise<ResponseDTO<RejectAdmissionResponseDTO>> {
+    async execute(params: RejectAdmissionRequestDTO): Promise<RejectAdmissionResponseDTO> {
         const admission = await this._admissionRepository.findAdmissionById(params.id);
         if (!admission) throw new AdminAdmissionNotFoundError();
         if (admission.status !== AdminAdmissionStatus.Pending) throw new AdminAdmissionAlreadyProcessedError();
@@ -239,19 +233,19 @@ export class RejectAdmissionUseCase implements IRejectAdmissionUseCase {
 
         await this._admissionRepository.saveAdmission(admission);
 
-        return { data: { message: "Admission rejected" }, success: true };
+        return { message: "Admission rejected" };
     }
 }
 
 export class DeleteAdmissionUseCase implements IDeleteAdmissionUseCase {
     constructor(private admissionRepository: IAdmissionRepository) { }
 
-    async execute(params: DeleteAdmissionRequestDTO): Promise<ResponseDTO<DeleteAdmissionResponseDTO>> {
+    async execute(params: DeleteAdmissionRequestDTO): Promise<DeleteAdmissionResponseDTO> {
         const success = await this.admissionRepository.deleteAdmission(params.id);
         if (!success) {
             throw new AdminAdmissionNotFoundError();
         }
-        return { data: { message: "Admission deleted successfully" }, success: true };
+        return { message: "Admission deleted successfully" };
     }
 }
 
@@ -262,8 +256,7 @@ export class ConfirmAdmissionOfferUseCase implements IConfirmAdmissionOfferUseCa
         private _programService: IProgramService
     ) { }
 
-    async execute(params: ConfirmAdmissionOfferRequestDTO): Promise<ResponseDTO<ConfirmAdmissionOfferResponseDTO>> {
-        // 1. Fetch and validate admission
+    async execute(params: ConfirmAdmissionOfferRequestDTO): Promise<ConfirmAdmissionOfferResponseDTO> {
         const admission = await this._admissionRepository.getAdmissionByToken(params.admissionId, params.token);
         if (!admission) {
             throw new AdminAdmissionNotFoundError();
@@ -281,20 +274,16 @@ export class ConfirmAdmissionOfferUseCase implements IConfirmAdmissionOfferUseCa
             throw new AdminTokenExpiredError();
         }
 
-        // 2. Process based on action
         if (params.action === "accept") {
-            // Get register user password
             const registerUser = await this._admissionRepository.findRegisterUserById(admission.registerId);
             if (!registerUser) {
                 throw new AdminRegisterUserNotFoundError();
             }
 
-            // Parse name
             const fullNameParts = admission.personal.fullName.split(" ");
             const firstName = fullNameParts[0];
             const lastName = fullNameParts.slice(1).join(" ") || "";
 
-            // Create user account
             const newUser = await this._userService.createUser({
                 firstName,
                 lastName,
@@ -302,7 +291,6 @@ export class ConfirmAdmissionOfferUseCase implements IConfirmAdmissionOfferUseCa
                 password: registerUser.password,
             });
 
-            // Enroll in program
             if (admission.choiceOfStudy && admission.choiceOfStudy.length > 0) {
                 const currentYear = new Date().getFullYear();
                 const yearRange = `${currentYear}-${currentYear + 4}`;
@@ -320,29 +308,21 @@ export class ConfirmAdmissionOfferUseCase implements IConfirmAdmissionOfferUseCa
                 }
             }
 
-            // Update admission status
             admission.status = AdminAdmissionStatus.Approved;
             admission.confirmationToken = undefined;
             admission.tokenExpiry = undefined;
 
             await this._admissionRepository.saveAdmission(admission);
 
-            return {
-                data: { message: "Admission accepted and user account created" },
-                success: true
-            };
+            return { message: "Admission accepted and user account created" };
         } else {
-            // Reject admission
             admission.status = AdminAdmissionStatus.Rejected;
             admission.confirmationToken = undefined;
             admission.tokenExpiry = undefined;
 
             await this._admissionRepository.saveAdmission(admission);
 
-            return {
-                data: { message: "Admission offer rejected" },
-                success: true
-            };
+            return { message: "Admission offer rejected" };
         }
     }
 }
@@ -353,7 +333,7 @@ export class BlockAdmissionUseCase implements IBlockAdmissionUseCase {
         private _userService: IUserService
     ) { }
 
-    async execute(params: { id: string }): Promise<ResponseDTO<{ message: string }>> {
+    async execute(params: { id: string }): Promise<{ message: string }> {
         const admission = await this._admissionRepository.findAdmissionById(params.id);
         if (!admission) {
             throw new AdminAdmissionNotFoundError();
@@ -365,9 +345,6 @@ export class BlockAdmissionUseCase implements IBlockAdmissionUseCase {
 
         const result = await this._userService.toggleBlock(user.id);
 
-        return {
-            data: { message: result.blocked ? 'User blocked' : 'User unblocked' },
-            success: true,
-        };
+        return { message: result.blocked ? 'User blocked' : 'User unblocked' };
     }
 }

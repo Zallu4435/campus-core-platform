@@ -1,0 +1,8 @@
+export const STUDENT_DASHBOARD_CONSTANTS = {
+    PAGINATION: {
+        DEFAULT_PAGE: 1,
+        DEFAULT_LIMIT: 10,
+    },
+    DEADLINE_URGENCY_DAYS: 3,
+    MAX_DASHBOARD_ITEMS: 5,
+};

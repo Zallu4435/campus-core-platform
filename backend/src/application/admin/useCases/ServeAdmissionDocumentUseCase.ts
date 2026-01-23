@@ -1,6 +1,5 @@
 // ServeAdmissionDocumentUseCase.ts
 import { IAdmissionRepository } from "../repositories/IAdmissionRepository";
-import { ResponseDTO } from "../dtos/AdmissionResponseDTOs";
 import { AdminAdmissionNotFoundError } from "../../../domain/admin/errors/AdminAdmissionErrors";
 
 export interface ServeAdmissionDocumentRequestDTO {
@@ -15,13 +14,13 @@ export interface ServeAdmissionDocumentResponseDTO {
 }
 
 export interface IServeAdmissionDocumentUseCase {
-    execute(params: ServeAdmissionDocumentRequestDTO): Promise<ResponseDTO<ServeAdmissionDocumentResponseDTO>>;
+    execute(params: ServeAdmissionDocumentRequestDTO): Promise<ServeAdmissionDocumentResponseDTO>;
 }
 
 export class ServeAdmissionDocumentUseCase implements IServeAdmissionDocumentUseCase {
     constructor(private _admissionRepository: IAdmissionRepository) { }
 
-    async execute(params: ServeAdmissionDocumentRequestDTO): Promise<ResponseDTO<ServeAdmissionDocumentResponseDTO>> {
+    async execute(params: ServeAdmissionDocumentRequestDTO): Promise<ServeAdmissionDocumentResponseDTO> {
         const { admissionId, documentId } = params;
 
         const admission = await this._admissionRepository.findAdmissionById(admissionId);
@@ -33,7 +32,7 @@ export class ServeAdmissionDocumentUseCase implements IServeAdmissionDocumentUse
         const document = docsArray.find((doc) => doc.id === documentId);
 
         if (!document) {
-            throw new AdminAdmissionNotFoundError(); // Or safer 'DocumentNotFound'
+            throw new AdminAdmissionNotFoundError();
         }
 
         const documentUrl = document.cloudinaryUrl || document.url || document.path;
@@ -51,12 +50,9 @@ export class ServeAdmissionDocumentUseCase implements IServeAdmissionDocumentUse
         const pdfBuffer = await response.arrayBuffer();
 
         return {
-            success: true,
-            data: {
-                pdfData: Buffer.from(pdfBuffer).toString('base64'),
-                fileName: document.fileName,
-                contentType: 'application/pdf' // Dynamic if needed, but pdf logic suggests pdf
-            }
+            pdfData: Buffer.from(pdfBuffer).toString('base64'),
+            fileName: document.fileName,
+            contentType: 'application/pdf'
         };
     }
 }

@@ -10,7 +10,7 @@ export abstract class BaseRepository<
   ResponseType = TSchema
 > implements IBaseRepository<ResponseType, CreateDto, UpdateDto, FilterDto, ResponseType> {
 
-  constructor(protected model: any) {} 
+  constructor(protected model: any) { }
 
   async create(data: CreateDto): Promise<ResponseType> {
     const entity = new this.model(data);
@@ -76,7 +76,7 @@ export abstract class BaseRepository<
         status: 'sent',
         readBy: [],
       });
-      
+
       await notification.save();
     } catch (error) {
       console.error(`Failed to send approval notification for ${entityType} request ${requestId}:`, error);
@@ -96,11 +96,10 @@ export abstract class BaseRepository<
         status: 'sent',
         readBy: [],
       });
-      
+
       await notification.save();
     } catch (error) {
       console.error(`Failed to send rejection notification for ${entityType} request ${requestId}:`, error);
-
     }
   }
 }
