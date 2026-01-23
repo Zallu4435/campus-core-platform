@@ -1,28 +1,37 @@
 import { ICampusLifeRepository } from "../repositories/ICampusLifeRepository";
+import { GetCampusLifeOverviewRequestDTO, CampusLifeOverviewResponseDTO } from "../dtos/CampusLifeOverviewDTOs";
 import {
-  GetCampusLifeOverviewRequestDTO,
   GetEventsRequestDTO,
-  GetEventByIdRequestDTO,
-  GetSportsRequestDTO,
-  GetSportByIdRequestDTO,
-  GetClubsRequestDTO,
-  GetClubByIdRequestDTO,
-  JoinClubRequestDTO,
-  JoinSportRequestDTO,
-  JoinEventRequestDTO,
-  CampusLifeOverviewResponseDTO,
   GetEventsResponseDTO,
+  GetEventByIdRequestDTO,
   GetEventByIdResponseDTO,
+  JoinEventRequestDTO,
+  JoinEventResponseDTO
+} from "../dtos/CampusEventDTOs";
+import {
+  GetSportsRequestDTO,
   GetSportsResponseDTO,
+  GetSportByIdRequestDTO,
   GetSportByIdResponseDTO,
+  JoinSportRequestDTO,
+  JoinSportResponseDTO
+} from "../dtos/SportDTOs";
+import {
+  GetClubsRequestDTO,
   GetClubsResponseDTO,
+  GetClubByIdRequestDTO,
   GetClubByIdResponseDTO,
-  JoinClubResponseDTO,
-  JoinSportResponseDTO,
-  JoinEventResponseDTO,
-  ResponseDTO
-} from "../../../domain/campus-life/dtos/CampusLifeDTOs";
-import { CampusEvent, Sport, Club, ClubStatus, SportType } from "../../../domain/campus-life/entities/CampusLife";
+  JoinClubRequestDTO,
+  JoinClubResponseDTO
+} from "../dtos/ClubDTOs";
+import { ResponseDTO } from "../dtos/ResponseDTO";
+import { CampusEvent, Sport, Club } from "../../../domain/campus-life/entities/CampusLife";
+import { EventsRequest, SportsRequest, ClubsRequest, JoinClubRequest, JoinSportRequest, JoinEventRequest } from "../../../domain/campus-life/entities/CampusLifeTypes";
+import { EventStatus, SportType, ClubStatus, RequestStatus } from "../../../domain/campus-life/enums/CampusLifeEnums";
+import { CampusEventMapper } from "../../../infrastructure/repositories/campus-life/mappers/CampusEventMapper";
+import { SportMapper } from "../../../infrastructure/repositories/campus-life/mappers/SportMapper";
+import { ClubMapper } from "../../../infrastructure/repositories/campus-life/mappers/ClubMapper";
+import { EventNotFoundError, SportNotFoundError, ClubNotFoundError, InvalidJoinRequestError } from "../../../domain/campus-life/errors/CampusLifeErrors";
 import {
   IGetCampusLifeOverviewUseCase,
   IGetEventsUseCase,
@@ -46,53 +55,9 @@ export class GetCampusLifeOverviewUseCase implements IGetCampusLifeOverviewUseCa
     return {
       success: true,
       data: {
-        events: events.map((e) => new CampusEvent(
-          e._id.toString(),
-          e.title,
-          e.date,
-          e.time,
-          e.location,
-          e.organizer,
-          e.timeframe,
-          e.icon,
-          e.color,
-          e.description,
-          String(e.fullTime), 
-          e.additionalInfo,
-          e.requirements,
-          e.createdAt.toISOString(),
-          e.updatedAt.toISOString()
-        )),
-        sports: sports.map((s) => new Sport(
-          s._id.toString(),
-          s.title,
-          s.type as SportType,
-          [],
-          s.icon,
-          s.color,
-          s.division,
-          s.headCoach,
-          [],
-          "",
-          [],
-          s.createdAt.toISOString(),
-          s.updatedAt.toISOString()
-        )),
-        clubs: clubs.map((c) => new Club(
-          c._id.toString(),
-          c.name,
-          c.type,
-          Array.isArray(c.members) ? c.members.length : 0,
-          c.icon,
-          c.color,
-          c.status as ClubStatus,
-          "",
-          c.nextMeeting,
-          c.about || "",
-          c.upcomingEvents || [],
-          c.createdAt.toISOString(),
-          c.updatedAt.toISOString()
-        ))
+        events: CampusEventMapper.toDomainList(events, [], undefined),
+        sports: SportMapper.toDomainList(sports, [], undefined),
+        clubs: ClubMapper.toDomainList(clubs, [], undefined)
       }
     };
   }
@@ -102,37 +67,32 @@ export class GetEventsUseCase implements IGetEventsUseCase {
   constructor(private readonly _campusLifeRepository: ICampusLifeRepository) { }
 
   async execute(params: GetEventsRequestDTO): Promise<ResponseDTO<GetEventsResponseDTO>> {
+    // Validation is now handled by middleware, these checks are redundant but kept for safety
     if (isNaN(params.page) || params.page < 1 || isNaN(params.limit) || params.limit < 1) {
-      return { success: false, data: { error: "Invalid page or limit parameters" } };
+      throw new InvalidJoinRequestError("Invalid page or limit parameters");
     }
     if (params.status && !['upcoming', 'past', 'all'].includes(params.status)) {
-      return { success: false, data: { error: "Invalid status; must be 'upcoming', 'past', or 'all'" } };
+      throw new InvalidJoinRequestError("Invalid status; must be 'upcoming', 'past', or 'all'");
     }
-    const { events: rawEvents, requests, totalItems, totalPages, currentPage } = await this._campusLifeRepository.getEvents(params);
+    // Convert DTO status string to EventStatus enum or 'all'
+    let status: EventStatus | 'all' = 'all';
+    if (params.status === 'upcoming') status = EventStatus.Upcoming;
+    else if (params.status === 'past') status = EventStatus.Past;
+    else status = 'all';
+
+    const eventsRequest = new EventsRequest(
+      params.page,
+      params.limit,
+      params.search,
+      status,
+      params.userId
+    );
+
+    const { events: rawEvents, requests, totalItems, totalPages, currentPage } = await this._campusLifeRepository.getEvents(eventsRequest);
     return {
       success: true,
       data: {
-        events: rawEvents.map((e) => {
-          const req = requests.find((r) => r.eventId?.toString() === e._id.toString());
-          return new CampusEvent(
-            e._id.toString(),
-            e.title,
-            e.date,
-            e.time,
-            e.location,
-            e.organizer,
-            e.timeframe,
-            e.icon,
-            e.color,
-            e.description,
-            String(e.fullTime), 
-            e.additionalInfo,
-            e.requirements,
-            e.createdAt.toISOString(),
-            e.updatedAt.toISOString(),
-            req ? req.status as 'pending' | 'approved' | 'rejected' : null
-          );
-        }),
+        events: CampusEventMapper.toDomainList(rawEvents, requests, params.userId),
         totalItems,
         totalPages,
         currentPage,
@@ -147,7 +107,7 @@ export class GetEventByIdUseCase implements IGetEventByIdUseCase {
   async execute(params: GetEventByIdRequestDTO): Promise<ResponseDTO<GetEventByIdResponseDTO>> {
     const rawEvent = await this._campusLifeRepository.getEventById(params.eventId);
     if (!rawEvent) {
-      return { success: false, data: { error: "Event not found" } };
+      throw new EventNotFoundError(params.eventId);
     }
     return {
       success: true,
@@ -163,7 +123,7 @@ export class GetEventByIdUseCase implements IGetEventByIdUseCase {
           rawEvent.icon,
           rawEvent.color,
           rawEvent.description,
-          String(rawEvent.fullTime), 
+          String(rawEvent.fullTime),
           rawEvent.additionalInfo,
           rawEvent.requirements,
           rawEvent.createdAt.toString(),
@@ -179,31 +139,24 @@ export class GetSportsUseCase implements IGetSportsUseCase {
 
   async execute(params: GetSportsRequestDTO): Promise<ResponseDTO<GetSportsResponseDTO>> {
     if (params.type && !['VARSITY SPORTS', 'INTRAMURAL SPORTS'].includes(params.type)) {
-      return { success: false, data: { error: "Invalid type; must be 'VARSITY SPORTS' or 'INTRAMURAL SPORTS'" } };
+      throw new InvalidJoinRequestError("Invalid type; must be 'VARSITY SPORTS' or 'INTRAMURAL SPORTS'");
     }
-    const { sports, requests, totalItems } = await this._campusLifeRepository.getSports(params);
+    // Convert DTO type string to SportType enum if provided
+    let type: SportType | undefined = undefined;
+    if (params.type === 'VARSITY SPORTS') type = SportType.Varsity;
+    else if (params.type === 'INTRAMURAL SPORTS') type = SportType.Intramural;
+
+    const sportsRequest = new SportsRequest(
+      params.search,
+      type,
+      params.userId
+    );
+
+    const { sports, requests, totalItems } = await this._campusLifeRepository.getSports(sportsRequest);
     return {
       success: true,
       data: {
-        sports: sports.map((s) => {
-          const req = requests.find((r) => r.sportId?.toString() === s._id.toString());
-          return new Sport(
-            s._id.toString(),
-            s.title,
-            s.type as SportType,
-            [],
-            s.icon,
-            s.color,
-            s.division,
-            s.headCoach,
-            [],
-            "",
-            [],
-            s.createdAt.toISOString(),
-            s.updatedAt.toISOString(),
-            req ? req.status as 'pending' | 'approved' | 'rejected' : null
-          );
-        }),
+        sports: SportMapper.toDomainList(sports, requests, params.userId),
         totalItems
       }
     };
@@ -216,7 +169,7 @@ export class GetSportByIdUseCase implements IGetSportByIdUseCase {
   async execute(params: GetSportByIdRequestDTO): Promise<ResponseDTO<GetSportByIdResponseDTO>> {
     const sport = await this._campusLifeRepository.getSportById(params.sportId);
     if (!sport) {
-      return { success: false, data: { error: "Sport not found" } };
+      throw new SportNotFoundError(params.sportId);
     }
     return {
       success: true,
@@ -246,31 +199,26 @@ export class GetClubsUseCase implements IGetClubsUseCase {
 
   async execute(params: GetClubsRequestDTO): Promise<ResponseDTO<GetClubsResponseDTO>> {
     if (params.status && !['active', 'inactive', 'all'].includes(params.status)) {
-      return { success: false, data: { error: "Invalid status; must be 'active', 'inactive', or 'all'" } };
+      throw new InvalidJoinRequestError("Invalid status; must be 'active', 'inactive', or 'all'");
     }
-    const { clubs, requests, totalItems } = await this._campusLifeRepository.getClubs(params);
+    // Convert DTO status string to ClubStatus enum or 'all'
+    let status: ClubStatus | 'all' = 'all';
+    if (params.status === 'active') status = ClubStatus.Active;
+    else if (params.status === 'inactive') status = ClubStatus.Inactive;
+    else status = 'all';
+
+    const clubsRequest = new ClubsRequest(
+      params.search,
+      status,
+      params.type,
+      params.userId
+    );
+
+    const { clubs, requests, totalItems } = await this._campusLifeRepository.getClubs(clubsRequest);
     return {
       success: true,
       data: {
-        clubs: clubs.map((c) => {
-          const req = requests.find((r) => r.clubId?.toString() === c._id.toString());
-          return new Club(
-            c._id.toString(),
-            c.name,
-            c.type,
-            Array.isArray(c.members) ? c.members.length : 0,
-            c.icon,
-            c.color,
-            c.status as ClubStatus,
-            "",
-            c.nextMeeting,
-            c.about || "",
-            c.upcomingEvents || [],
-            c.createdAt.toISOString(),
-            c.updatedAt.toISOString(),
-            req ? req.status as 'pending' | 'approved' | 'rejected' : null
-          );
-        }),
+        clubs: ClubMapper.toDomainList(clubs, requests, params.userId),
         totalItems
       }
     };
@@ -283,7 +231,7 @@ export class GetClubByIdUseCase implements IGetClubByIdUseCase {
   async execute(params: GetClubByIdRequestDTO): Promise<ResponseDTO<GetClubByIdResponseDTO>> {
     const club = await this._campusLifeRepository.getClubById(params.clubId);
     if (!club) {
-      return { success: false, data: { error: "Club not found" } };
+      throw new ClubNotFoundError(params.clubId);
     }
     return {
       success: true,
@@ -320,7 +268,7 @@ export class JoinClubUseCase implements IJoinClubUseCase {
       success: true,
       data: {
         requestId: newRequest._id.toString(),
-        status: newRequest.status as 'pending' | 'approved' | 'rejected',
+        status: newRequest.status as RequestStatus,
         message: "Join request submitted successfully"
       }
     };
@@ -339,7 +287,7 @@ export class JoinSportUseCase implements IJoinSportUseCase {
       success: true,
       data: {
         requestId: newRequest._id.toString(),
-        status: newRequest.status as 'pending' | 'approved' | 'rejected',
+        status: newRequest.status as RequestStatus,
         message: "Join request submitted successfully"
       }
     };
@@ -358,7 +306,7 @@ export class JoinEventUseCase implements IJoinEventUseCase {
       success: true,
       data: {
         requestId: newRequest._id.toString(),
-        status: newRequest.status as 'pending' | 'approved' | 'rejected',
+        status: newRequest.status as RequestStatus,
         message: "Join request submitted successfully"
       }
     };

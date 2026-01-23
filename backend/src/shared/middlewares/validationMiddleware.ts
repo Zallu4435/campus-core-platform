@@ -43,3 +43,56 @@ export const validate = (schema: Joi.ObjectSchema, source: 'body' | 'query' | 'p
         next();
     };
 };
+
+/**
+ * Validate Request - Multi-source validation
+ * Validates body, params, and query simultaneously
+ * 
+ * @param schema - Joi schema with body, params, and/or query properties
+ */
+export const validateRequest = (schema: Joi.ObjectSchema) => {
+    return (req: Request, res: Response, next: NextFunction) => {
+        const dataToValidate: any = {};
+
+        // Extract schema keys to know what to validate
+        const schemaDescription = schema.describe() as any;
+
+        if (schemaDescription.keys?.body) {
+            dataToValidate.body = req.body;
+        }
+        if (schemaDescription.keys?.params) {
+            dataToValidate.params = req.params;
+        }
+        if (schemaDescription.keys?.query) {
+            dataToValidate.query = req.query;
+        }
+
+        const { error, value } = schema.validate(dataToValidate, {
+            abortEarly: false,
+            stripUnknown: true,
+            errors: {
+                wrap: {
+                    label: ''
+                }
+            }
+        });
+
+        if (error) {
+            const httpErrors = new HttpErrors();
+            const errorMessage = error.details
+                .map((detail) => detail.message)
+                .join(', ');
+
+            const response = httpErrors.error_400(errorMessage);
+            res.status(response.statusCode).json(response);
+            return;
+        }
+
+        // Update request with validated values
+        if (value.body) req.body = value.body;
+        if (value.params) req.params = value.params;
+        if (value.query) req.query = value.query;
+
+        next();
+    };
+};

@@ -10,9 +10,9 @@ import {
   RawSport,
   RawClub,
   RawJoinRequest,
-} from "../../../domain/campus-life/entities/CampusLife";
+} from "../../../domain/campus-life/entities/CampusLifeTypes";
 
- 
+
 export interface ICampusLifeRepository {
   getCampusLifeOverview(params: CampusLifeOverviewRequest): Promise<{ events: RawCampusEvent[]; sports: RawSport[]; clubs: RawClub[] }>;
   getEvents(params: EventsRequest): Promise<{ events: RawCampusEvent[]; requests: RawJoinRequest[]; totalItems: number; totalPages: number; currentPage: number }>;

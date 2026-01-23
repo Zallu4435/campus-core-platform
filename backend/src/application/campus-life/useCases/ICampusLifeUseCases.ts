@@ -1,26 +1,29 @@
+import { GetCampusLifeOverviewRequestDTO, CampusLifeOverviewResponseDTO } from "../dtos/CampusLifeOverviewDTOs";
 import {
-  GetCampusLifeOverviewRequestDTO,
   GetEventsRequestDTO,
-  GetEventByIdRequestDTO,
-  GetSportsRequestDTO,
-  GetSportByIdRequestDTO,
-  GetClubsRequestDTO,
-  GetClubByIdRequestDTO,
-  JoinClubRequestDTO,
-  JoinSportRequestDTO,
-  JoinEventRequestDTO,
-  CampusLifeOverviewResponseDTO,
   GetEventsResponseDTO,
+  GetEventByIdRequestDTO,
   GetEventByIdResponseDTO,
+  JoinEventRequestDTO,
+  JoinEventResponseDTO
+} from "../dtos/CampusEventDTOs";
+import {
+  GetSportsRequestDTO,
   GetSportsResponseDTO,
+  GetSportByIdRequestDTO,
   GetSportByIdResponseDTO,
+  JoinSportRequestDTO,
+  JoinSportResponseDTO
+} from "../dtos/SportDTOs";
+import {
+  GetClubsRequestDTO,
   GetClubsResponseDTO,
+  GetClubByIdRequestDTO,
   GetClubByIdResponseDTO,
-  JoinClubResponseDTO,
-  JoinSportResponseDTO,
-  JoinEventResponseDTO,
-  ResponseDTO
-} from "../../../domain/campus-life/dtos/CampusLifeDTOs";
+  JoinClubRequestDTO,
+  JoinClubResponseDTO
+} from "../dtos/ClubDTOs";
+import { ResponseDTO } from "../dtos/ResponseDTO";
 
 export interface IGetCampusLifeOverviewUseCase {
   execute(params: GetCampusLifeOverviewRequestDTO): Promise<ResponseDTO<CampusLifeOverviewResponseDTO>>;

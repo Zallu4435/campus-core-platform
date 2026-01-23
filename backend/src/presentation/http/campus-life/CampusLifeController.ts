@@ -12,6 +12,7 @@ import {
 } from "../../../application/campus-life/useCases/ICampusLifeUseCases";
 import { IHttpRequest, IHttpResponse, HttpSuccess, HttpErrors } from "../../http/IHttp";
 import { ICampusLifeController } from "../../http/IHttp";
+import { CAMPUS_LIFE_CONSTANTS } from "../../../application/campus-life/constants/CampusLifeConstants";
 
 export class CampusLifeController implements ICampusLifeController {
   private _httpSuccess: HttpSuccess;
@@ -45,7 +46,12 @@ export class CampusLifeController implements ICampusLifeController {
   }
 
   async getEvents(httpRequest: IHttpRequest): Promise<IHttpResponse> {
-    const { page = "1", limit = "10", search = "", status = "all" } = httpRequest.query;
+    const {
+      page = CAMPUS_LIFE_CONSTANTS.DEFAULT_QUERY_PARAMS.PAGE,
+      limit = CAMPUS_LIFE_CONSTANTS.DEFAULT_QUERY_PARAMS.LIMIT,
+      search = CAMPUS_LIFE_CONSTANTS.DEFAULT_QUERY_PARAMS.SEARCH,
+      status = CAMPUS_LIFE_CONSTANTS.DEFAULT_QUERY_PARAMS.STATUS
+    } = httpRequest.query;
     if (!httpRequest.user) {
       return this._httpErrors.error_401();
     }
@@ -53,7 +59,7 @@ export class CampusLifeController implements ICampusLifeController {
       page: Number(page),
       limit: Number(limit),
       search: String(search),
-      status: String(status) as "upcoming" | "past" | "all",
+      status: String(status) as 'upcoming' | 'past' | 'all',
       userId: httpRequest.user.id,
     });
     if (!result.success) {
@@ -67,9 +73,7 @@ export class CampusLifeController implements ICampusLifeController {
     if (!httpRequest.user) {
       return this._httpErrors.error_401();
     }
-    if (httpRequest.user.collection !== "admin") {
-      return this._httpErrors.error_403();
-    }
+    // Admin check moved to middleware
     const result = await this._getEventByIdUseCase.execute({ eventId });
     if (!result.success) {
       return this._httpErrors.error_404();
@@ -83,7 +87,7 @@ export class CampusLifeController implements ICampusLifeController {
       return this._httpErrors.error_401();
     }
     const result = await this._getSportsUseCase.execute({
-      type: type ? String(type) as "VARSITY SPORTS" | "INTRAMURAL SPORTS" : undefined,
+      type: type ? String(type) as 'VARSITY SPORTS' | 'INTRAMURAL SPORTS' : undefined,
       search: String(search),
       userId: httpRequest.user.id,
     });
@@ -105,15 +109,19 @@ export class CampusLifeController implements ICampusLifeController {
     return this._httpSuccess.success_200(result.data);
   }
 
-  async getClubs(httpRequest: IHttpRequest): Promise<IHttpResponse> {    
-    const { search = "", type, status = "all" } = httpRequest.query;
+  async getClubs(httpRequest: IHttpRequest): Promise<IHttpResponse> {
+    const {
+      search = CAMPUS_LIFE_CONSTANTS.DEFAULT_QUERY_PARAMS.SEARCH,
+      type,
+      status = CAMPUS_LIFE_CONSTANTS.DEFAULT_QUERY_PARAMS.STATUS
+    } = httpRequest.query;
     if (!httpRequest.user) {
       return this._httpErrors.error_401();
     }
     const result = await this._getClubsUseCase.execute({
       search: String(search),
       type: type ? String(type) : undefined,
-      status: String(status) as "active" | "inactive" | "all",
+      status: String(status) as 'active' | 'inactive' | 'all',
       userId: httpRequest.user.id,
     });
     if (!result.success) {

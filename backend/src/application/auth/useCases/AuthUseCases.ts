@@ -1,6 +1,6 @@
 import { IEventDispatcher } from '../../../domain/shared/IEventDispatcher';
 import {
-  RegisterRequestDTO, LoginRequestDTO, RefreshTokenRequestDTO, LogoutRequestDTO,
+  RegisterRequestDTO, LoginRequestDTO,
   RegisterFacultyRequestDTO, SendEmailOtpRequestDTO, VerifyEmailOtpRequestDTO, ResetPasswordRequestDTO,
 } from "../dtos/AuthRequestDTOs";
 import {
