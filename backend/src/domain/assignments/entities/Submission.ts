@@ -1,4 +1,5 @@
-import { SubmissionFile, SubmissionStatus } from '../assignmenttypes';
+import { SubmissionFile } from '../types/AssignmentTypes';
+import { SubmissionStatus } from '../enums/AssignmentEnums';
 
 export class Submission {
   constructor(
@@ -11,8 +12,9 @@ export class Submission {
     public readonly isLate: boolean,
     public readonly files: SubmissionFile[],
     public readonly marks?: number,
-    public readonly feedback?: string
-  ) {}
+    public readonly feedback?: string,
+    public readonly reviewedAt?: Date | null
+  ) { }
 
   static create(props: {
     id: string;
@@ -25,6 +27,7 @@ export class Submission {
     files: SubmissionFile[];
     marks?: number;
     feedback?: string;
+    reviewedAt?: Date | null;
   }): Submission {
     return new Submission(
       props.id,
@@ -36,7 +39,8 @@ export class Submission {
       props.isLate,
       props.files,
       props.marks,
-      props.feedback
+      props.feedback,
+      props.reviewedAt
     );
   }
 } 

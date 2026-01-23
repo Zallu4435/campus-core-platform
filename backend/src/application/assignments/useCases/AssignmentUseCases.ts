@@ -1,27 +1,15 @@
 import { IAssignmentRepository } from '../../../application/assignments/repositories/IAssignmentRepository';
 import {
-  CreateAssignmentRequestDTO,
-  UpdateAssignmentRequestDTO,
-  GetAssignmentsRequestDTO,
-  GetAssignmentByIdRequestDTO,
-  DeleteAssignmentRequestDTO,
-  GetSubmissionsRequestDTO,
-  GetSubmissionByIdRequestDTO,
-  ReviewSubmissionRequestDTO,
-} from '../../../domain/assignments/dtos/AssignmentRequestDTOs';
-import {
-  GetAssignmentsResponseDTO,
-  GetAssignmentResponseDTO,
-  CreateAssignmentResponseDTO,
-  UpdateAssignmentResponseDTO,
-  GetSubmissionsResponseDTO,
-  GetSubmissionResponseDTO,
-  ReviewSubmissionResponseDTO,
-  AnalyticsResponseDTO,
-  ResponseDTO
-} from '../../../domain/assignments/dtos/AssignmentResponseDTOs';
-import { AssignmentStatus, IAssignment } from '../../../domain/assignments/entities/Assignment';
-import { AssignmentErrorType } from "../../../domain/assignments/enums/AssignmentErrorType";
+  CreateAssignmentDTO,
+  UpdateAssignmentDTO,
+  AssignmentResponseDTO,
+  SubmissionResponseDTO,
+  PaginatedResponseDTO,
+  ReviewSubmissionDTO
+} from '../dtos/AssignmentDTOs';
+import { AssignmentStatus, SubmissionStatus } from '../../../domain/assignments/enums/AssignmentEnums';
+import { Assignment } from '../../../domain/assignments/entities/Assignment';
+import { AssignmentMapper } from '../../../infrastructure/repositories/assignments/mappers/AssignmentMapper';
 import {
   IGetAssignmentsUseCase,
   IGetAssignmentByIdUseCase,
@@ -33,266 +21,169 @@ import {
   IReviewSubmissionUseCase,
   IGetAnalyticsUseCase
 } from "./IAssignmentUseCases";
-
+import { AnalyticsData } from '../dtos/AnalyticsDTOs';
+import {
+  AssignmentNotFoundError,
+  SubmissionNotFoundError,
+  AssignmentValidationError
+} from '../../../domain/assignments/errors/AssignmentErrors';
 
 export class GetAssignmentsUseCase implements IGetAssignmentsUseCase {
   constructor(private assignmentRepository: IAssignmentRepository) { }
 
-  async execute(params: GetAssignmentsRequestDTO & { search?: string }): Promise<ResponseDTO<GetAssignmentsResponseDTO>> {
-    if (params.page && (isNaN(params.page) || params.page < 1)) {
-      return { data: { error: AssignmentErrorType.InvalidPageOrLimit }, success: false };
-    }
-    if (params.limit && (isNaN(params.limit) || params.limit < 1)) {
-      return { data: { error: AssignmentErrorType.InvalidPageOrLimit }, success: false };
-    }
-
-    const { assignments, total, page, limit } = await this.assignmentRepository.getAssignments(params.subject, params.status, params.page, params.limit, params.search);
-
-    const assignmentIds = assignments.map(assignment => assignment._id.toString());
-    const submissionsStats = await this.assignmentRepository.getSubmissionsStats(assignmentIds);
-    
-    const statsMap = new Map(
-      submissionsStats.map(stat => [
-        stat._id,
-        {
-          totalSubmissions: stat.totalSubmissions,
-          averageMarks: stat.gradedSubmissions > 0 ? stat.totalMarks / stat.gradedSubmissions : 0
-        }
-      ])
+  async execute(params: { subject?: string; status?: string; page?: number; limit?: number; search?: string }): Promise<PaginatedResponseDTO<AssignmentResponseDTO>> {
+    const { assignments, total, page, limit } = await this.assignmentRepository.getAssignments(
+      params.subject,
+      params.status,
+      params.page,
+      params.limit,
+      params.search
     );
 
-    const assignmentDTOs = assignments.map(assignment => {
-      const stats = statsMap.get(assignment._id.toString()) || { totalSubmissions: 0, averageMarks: 0 };
-      return {
-        _id: assignment._id.toString(),
-        title: assignment.title,
-        subject: assignment.subject,
-        dueDate: assignment.dueDate,
-        description: assignment.description,
-        status: assignment.status,
-        totalSubmissions: stats.totalSubmissions,
-        averageMarks: stats.averageMarks
-      };
-    });
+    const assignmentDTOs = assignments.map(assignment => AssignmentMapper.toDTO(assignment));
 
-    return { data: { assignments: assignmentDTOs, total, page, limit }, success: true };
+    return {
+      data: assignmentDTOs,
+      total,
+      page,
+      limit
+    };
   }
 }
 
 export class GetAssignmentByIdUseCase implements IGetAssignmentByIdUseCase {
   constructor(private assignmentRepository: IAssignmentRepository) { }
 
-  async execute(params: GetAssignmentByIdRequestDTO): Promise<ResponseDTO<GetAssignmentResponseDTO>> {
-    if (!params.id || params.id.trim() === '') {
-      return { data: { error: AssignmentErrorType.InvalidAssignmentId }, success: false };
-    }
+  async execute(params: { id: string }): Promise<AssignmentResponseDTO> {
     const assignment = await this.assignmentRepository.getAssignmentById(params.id);
     if (!assignment) {
-      return { data: { error: AssignmentErrorType.AssignmentNotFound }, success: false };
+      throw new AssignmentNotFoundError(params.id);
     }
-    const assignmentObj = {
-      _id: assignment._id.toString(),
-      title: assignment.title,
-      subject: assignment.subject,
-      dueDate: assignment.dueDate,
-      maxMarks: assignment.maxMarks,
-      description: assignment.description,
-      files: assignment.files,
-      createdAt: assignment.createdAt,
-      updatedAt: assignment.updatedAt,
-      status: assignment.status,
-      totalSubmissions: assignment.totalSubmissions || 0,
-      averageMarks: assignment.averageMarks || 0
-    };
-    return { data: { assignment: assignmentObj }, success: true };
+    return AssignmentMapper.toDTO(assignment);
   }
 }
 
 export class CreateAssignmentUseCase implements ICreateAssignmentUseCase {
   constructor(private assignmentRepository: IAssignmentRepository) { }
 
-  async execute(params: CreateAssignmentRequestDTO): Promise<ResponseDTO<CreateAssignmentResponseDTO>> {
-    const assignmentData: IAssignment = {
+  async execute(params: CreateAssignmentDTO): Promise<AssignmentResponseDTO> {
+    const assignment = Assignment.create({
+      id: '', // ID will be generated by persistence or we can generate a UUID here if wanted
       title: params.title,
       subject: params.subject,
       description: params.description,
-      maxMarks: Number(params.maxMarks),
-      dueDate: new Date(params.dueDate),
-      files: params.files || [],
-      status: AssignmentStatus.Draft,
-      totalSubmissions: 0,
-      averageMarks: 0,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
+      maxMarks: params.maxMarks,
+      dueDate: params.dueDate,
+      files: params.files ? params.files.map(f => ({ fileName: f.originalname, fileUrl: f.path, fileSize: f.size })) : []
+    });
 
-    const newAssignment = await this.assignmentRepository.createAssignment(assignmentData);
-
-    const assignmentObj = {
-      _id: newAssignment._id.toString(),
-      title: newAssignment.title,
-      subject: newAssignment.subject,
-      dueDate: newAssignment.dueDate,
-      maxMarks: newAssignment.maxMarks,
-      description: newAssignment.description,
-      files: newAssignment.files,
-      createdAt: newAssignment.createdAt,
-      updatedAt: newAssignment.updatedAt,
-      status: newAssignment.status,
-      totalSubmissions: newAssignment.totalSubmissions || 0,
-      averageMarks: newAssignment.averageMarks || 0
-    };
-
-    return { data: { assignment: assignmentObj }, success: true };
+    const newAssignment = await this.assignmentRepository.createAssignment(assignment);
+    return AssignmentMapper.toDTO(newAssignment);
   }
 }
 
 export class UpdateAssignmentUseCase implements IUpdateAssignmentUseCase {
   constructor(private assignmentRepository: IAssignmentRepository) { }
 
-  async execute(params: UpdateAssignmentRequestDTO): Promise<ResponseDTO<UpdateAssignmentResponseDTO>> {
-    if (!params.id || params.id.trim() === '') {
-      return { data: { error: AssignmentErrorType.InvalidAssignmentId }, success: false };
-    }
-    if (params.status && !['draft', 'published', 'closed'].includes(params.status)) {
-      return { data: { error: AssignmentErrorType.InvalidStatus }, success: false };
+  async execute(params: UpdateAssignmentDTO): Promise<AssignmentResponseDTO> {
+    const assignment = await this.assignmentRepository.getAssignmentById(params.id);
+    if (!assignment) {
+      throw new AssignmentNotFoundError(params.id);
     }
 
-    const updateData: Partial<IAssignment> = {
-      ...(params.title && { title: params.title }),
-      ...(params.subject && { subject: params.subject }),
-      ...(params.description && { description: params.description }),
-      ...(params.maxMarks && { maxMarks: Number(params.maxMarks) }),
-      ...(params.dueDate && { dueDate: new Date(params.dueDate) }),
-      ...(params.files && {
-        files: params.files.map(file => ({
-          fileName: file.fileName,
-          fileUrl: file.fileUrl,
-        }))
-      }),
-      ...(params.status && { status: params.status as AssignmentStatus }),
-      updatedAt: new Date()
-    };
+    assignment.update({
+      title: params.title,
+      subject: params.subject,
+      description: params.description,
+      maxMarks: params.maxMarks,
+      dueDate: params.dueDate,
+      files: params.files ? params.files.map(f => ({ fileName: f.originalname, fileUrl: f.path, fileSize: f.size })) : undefined,
+      status: params.status
+    });
 
-    const updatedAssignment = await this.assignmentRepository.updateAssignment(params.id, updateData);
+    const updatedAssignment = await this.assignmentRepository.updateAssignment(params.id, assignment);
     if (!updatedAssignment) {
-      return { data: { error: AssignmentErrorType.AssignmentNotFound }, success: false };
+      throw new AssignmentValidationError('Update failed');
     }
 
-    const assignmentObj = {
-      _id: updatedAssignment._id.toString(),
-      title: updatedAssignment.title,
-      subject: updatedAssignment.subject,
-      dueDate: updatedAssignment.dueDate,
-      maxMarks: updatedAssignment.maxMarks,
-      description: updatedAssignment.description,
-      files: updatedAssignment.files,
-      createdAt: updatedAssignment.createdAt,
-      updatedAt: updatedAssignment.updatedAt,
-      status: updatedAssignment.status,
-      totalSubmissions: updatedAssignment.totalSubmissions || 0,
-      averageMarks: updatedAssignment.averageMarks || 0
-    };
-
-    return { data: { assignment: assignmentObj }, success: true };
+    return AssignmentMapper.toDTO(updatedAssignment);
   }
 }
 
 export class DeleteAssignmentUseCase implements IDeleteAssignmentUseCase {
   constructor(private assignmentRepository: IAssignmentRepository) { }
 
-  async execute(params: DeleteAssignmentRequestDTO): Promise<ResponseDTO<{ message: string }>> {
-    if (!params.id || params.id.trim() === '') {
-      return { data: { error: AssignmentErrorType.InvalidAssignmentId }, success: false };
+  async execute(params: { id: string }): Promise<{ message: string }> {
+    const deleted = await this.assignmentRepository.deleteAssignment(params.id);
+    if (!deleted) {
+      throw new AssignmentNotFoundError(params.id);
     }
-    await this.assignmentRepository.deleteAssignment(params.id);
-    return { data: { message: "Assignment deleted successfully" }, success: true };
+    return { message: "Assignment deleted successfully" };
   }
 }
 
 export class GetSubmissionsUseCase implements IGetSubmissionsUseCase {
   constructor(private assignmentRepository: IAssignmentRepository) { }
 
-  async execute(params: GetSubmissionsRequestDTO): Promise<ResponseDTO<GetSubmissionsResponseDTO>> {
+  async execute(params: { assignmentId: string; page?: number; limit?: number; search?: string; status?: string }): Promise<PaginatedResponseDTO<SubmissionResponseDTO>> {
     const { submissions, total, page, limit } = await this.assignmentRepository.getSubmissions(
-      params.assignmentId, 
-      params.page || 1, 
-      params.limit || 10,
+      params.assignmentId,
+      params.page,
+      params.limit,
       params.search,
       params.status
     );
-    
-    const mappedSubmissions = submissions.map((submission) => ({
-      id: submission._id.toString(),
-      assignmentId: submission.assignmentId.toString(),
-      studentId: submission.studentId,
-      studentName: submission.studentName,
-      submittedDate: submission.submittedDate,
-      status: submission.status,
-      marks: submission.marks,
-      feedback: submission.feedback,
-      isLate: submission.isLate,
-      files: submission.files
-    }));
-    
-    return { data: { submissions: mappedSubmissions, total, page: page || 1, limit: limit || 10 }, success: true };
+
+    const mappedSubmissions = submissions.map(s => AssignmentMapper.submissionToDTO(s));
+
+    return {
+      data: mappedSubmissions,
+      total,
+      page,
+      limit
+    };
   }
 }
 
 export class GetSubmissionByIdUseCase implements IGetSubmissionByIdUseCase {
   constructor(private assignmentRepository: IAssignmentRepository) { }
 
-  async execute(params: GetSubmissionByIdRequestDTO): Promise<ResponseDTO<GetSubmissionResponseDTO>> {
+  async execute(params: { assignmentId: string; submissionId: string }): Promise<SubmissionResponseDTO> {
     const submission = await this.assignmentRepository.getSubmissionById(params.assignmentId, params.submissionId);
     if (!submission) {
-      return { data: { error: 'Submission not found' }, success: false };
+      throw new SubmissionNotFoundError(params.submissionId);
     }
-    const submissionObj = {
-      id: submission._id.toString(),
-      assignmentId: submission.assignmentId.toString(),
-      studentId: submission.studentId,
-      studentName: submission.studentName,
-      submittedDate: submission.submittedDate,
-      status: submission.status,
-      marks: submission.marks,
-      feedback: submission.feedback,
-      isLate: submission.isLate,
-      files: submission.files
-    };
-    return { data: { submission: submissionObj }, success: true };
+    return AssignmentMapper.submissionToDTO(submission);
   }
 }
 
 export class ReviewSubmissionUseCase implements IReviewSubmissionUseCase {
   constructor(private assignmentRepository: IAssignmentRepository) { }
 
-  async execute(params: ReviewSubmissionRequestDTO): Promise<ResponseDTO<ReviewSubmissionResponseDTO>> {
-    const updatedSubmission = await this.assignmentRepository.reviewSubmission(params.assignmentId, params.submissionId, params.marks, params.feedback, params.status, params.isLate);
+  async execute(params: ReviewSubmissionDTO): Promise<SubmissionResponseDTO> {
+    const updatedSubmission = await this.assignmentRepository.reviewSubmission(
+      params.assignmentId,
+      params.submissionId,
+      params.marks,
+      params.feedback,
+      params.status,
+      params.isLate
+    );
+
     if (!updatedSubmission) {
-      return { data: { error: 'Submission not found' }, success: false };
+      throw new SubmissionNotFoundError(params.submissionId);
     }
-    const submissionObj = {
-      id: updatedSubmission._id.toString(),
-      assignmentId: updatedSubmission.assignmentId.toString(),
-      studentId: updatedSubmission.studentId,
-      studentName: updatedSubmission.studentName,
-      submittedDate: updatedSubmission.submittedDate,
-      status: updatedSubmission.status,
-      marks: updatedSubmission.marks,
-      feedback: updatedSubmission.feedback,
-      isLate: updatedSubmission.isLate,
-      files: updatedSubmission.files
-    };
-    return { data: { submission: submissionObj }, success: true };
+
+    return AssignmentMapper.submissionToDTO(updatedSubmission);
   }
 }
 
 export class GetAnalyticsUseCase implements IGetAnalyticsUseCase {
   constructor(private readonly assignmentRepository: IAssignmentRepository) { }
 
-  async execute(): Promise<ResponseDTO<AnalyticsResponseDTO>> {
+  async execute(): Promise<AnalyticsData> {
     const analytics = await this.assignmentRepository.getAnalytics();
-    return { data: analytics, success: true };
+    return analytics;
   }
 }
 

@@ -1,57 +1,45 @@
 import {
-  CreateAssignmentRequestDTO,
-  UpdateAssignmentRequestDTO,
-  GetAssignmentsRequestDTO,
-  GetAssignmentByIdRequestDTO,
-  DeleteAssignmentRequestDTO,
-  GetSubmissionsRequestDTO,
-  GetSubmissionByIdRequestDTO,
-  ReviewSubmissionRequestDTO,
-} from '../../../domain/assignments/dtos/AssignmentRequestDTOs';
-import {
-  GetAssignmentsResponseDTO,
-  GetAssignmentResponseDTO,
-  CreateAssignmentResponseDTO,
-  UpdateAssignmentResponseDTO,
-  GetSubmissionsResponseDTO,
-  GetSubmissionResponseDTO,
-  ReviewSubmissionResponseDTO,
-  AnalyticsResponseDTO,
-  ResponseDTO
-} from '../../../domain/assignments/dtos/AssignmentResponseDTOs';
+  CreateAssignmentDTO,
+  UpdateAssignmentDTO,
+  AssignmentResponseDTO,
+  SubmissionResponseDTO,
+  PaginatedResponseDTO,
+  ReviewSubmissionDTO
+} from '../dtos/AssignmentDTOs';
+import { AnalyticsData } from '../dtos/AnalyticsDTOs';
 
 export interface IGetAssignmentsUseCase {
-  execute(params: GetAssignmentsRequestDTO): Promise<ResponseDTO<GetAssignmentsResponseDTO>>;
+  execute(params: { subject?: string; status?: string; page?: number; limit?: number; search?: string }): Promise<PaginatedResponseDTO<AssignmentResponseDTO>>;
 }
 
 export interface IGetAssignmentByIdUseCase {
-  execute(params: GetAssignmentByIdRequestDTO): Promise<ResponseDTO<GetAssignmentResponseDTO>>;
+  execute(params: { id: string }): Promise<AssignmentResponseDTO>;
 }
 
 export interface ICreateAssignmentUseCase {
-  execute(params: CreateAssignmentRequestDTO): Promise<ResponseDTO<CreateAssignmentResponseDTO>>;
+  execute(params: CreateAssignmentDTO): Promise<AssignmentResponseDTO>;
 }
 
 export interface IUpdateAssignmentUseCase {
-  execute(params: UpdateAssignmentRequestDTO): Promise<ResponseDTO<UpdateAssignmentResponseDTO>>;
+  execute(params: UpdateAssignmentDTO): Promise<AssignmentResponseDTO>;
 }
 
 export interface IDeleteAssignmentUseCase {
-  execute(params: DeleteAssignmentRequestDTO): Promise<ResponseDTO<{ message: string }>>;
+  execute(params: { id: string }): Promise<{ message: string }>;
 }
 
 export interface IGetSubmissionsUseCase {
-  execute(params: GetSubmissionsRequestDTO): Promise<ResponseDTO<GetSubmissionsResponseDTO>>;
+  execute(params: { assignmentId: string; page?: number; limit?: number; search?: string; status?: string }): Promise<PaginatedResponseDTO<SubmissionResponseDTO>>;
 }
 
 export interface IGetSubmissionByIdUseCase {
-  execute(params: GetSubmissionByIdRequestDTO): Promise<ResponseDTO<GetSubmissionResponseDTO>>;
+  execute(params: { assignmentId: string; submissionId: string }): Promise<SubmissionResponseDTO>;
 }
 
 export interface IReviewSubmissionUseCase {
-  execute(params: ReviewSubmissionRequestDTO): Promise<ResponseDTO<ReviewSubmissionResponseDTO>>;
+  execute(params: ReviewSubmissionDTO): Promise<SubmissionResponseDTO>;
 }
 
 export interface IGetAnalyticsUseCase {
-  execute(): Promise<ResponseDTO<AnalyticsResponseDTO>>;
+  execute(): Promise<AnalyticsData>;
 }

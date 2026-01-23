@@ -3,6 +3,9 @@ import { getUserAssignmentComposer } from '../../../infrastructure/services/assi
 import { assignmentSubmissionUpload, cloudinary } from '../../../config/cloudinary.config';
 import { authMiddleware } from '../../../shared/middlewares/authMiddleware';
 import { expressAdapter } from '../../adapters/ExpressAdapter';
+import { validate } from '../../../shared/middlewares/validationMiddleware';
+import { getAssignmentsQuerySchema } from '../../../shared/validation/schemas/AssignmentSchemas';
+import Logger from '../../../shared/utils/logger';
 const fetch = require('node-fetch');
 
 const router = Router();
@@ -14,13 +17,13 @@ router.get('/download-reference-file', authMiddleware, async (req: Request, res:
     const { fileUrl, fileName } = req.query;
 
     if (!fileUrl || typeof fileUrl !== 'string') {
-      console.error('❌ Error: File URL is missing or invalid');
+      Logger.error('File URL is missing or invalid');
       res.status(400).send('File URL is required');
       return;
     }
 
     if (!fileName || typeof fileName !== 'string') {
-      console.error('❌ Error: File name is missing or invalid');
+      Logger.error('File name is missing or invalid');
       res.status(400).send('File name is required');
       return;
     }
@@ -30,11 +33,9 @@ router.get('/download-reference-file', authMiddleware, async (req: Request, res:
     cleanFileName = cleanFileName.replace(/"/g, '');
 
     const response = await fetch(fileUrl);
-    
+
     if (!response.ok) {
-      console.error('❌ Error: Failed to fetch file from URL');
-      console.error('Response status:', response.status);
-      console.error('Response status text:', response.statusText);
+      Logger.error(`Failed to fetch file from URL. Status: ${response.status} ${response.statusText}`);
       res.status(500).send('Failed to fetch file');
       return;
     }
@@ -45,13 +46,9 @@ router.get('/download-reference-file', authMiddleware, async (req: Request, res:
     res.setHeader('Content-Disposition', contentDisposition);
     res.setHeader('Content-Type', contentType);
     response.body.pipe(res);
-    
+
   } catch (err) {
-    if (err instanceof Error) {
-      console.error('❌ Error name:', err.name);
-    }
-    
-    console.error('=== ASSIGNMENT REFERENCE FILE DOWNLOAD ERROR END ===');
+    Logger.error('Assignment reference file download error:', err);
     res.status(500).send('Download failed');
   }
 });

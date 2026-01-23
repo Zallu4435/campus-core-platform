@@ -9,8 +9,9 @@ import {
   IGetSubmissionByIdUseCase,
   IReviewSubmissionUseCase,
   IGetAnalyticsUseCase
-} from '../../../application/assignments/useCases/IAssignmentUseCases';
-
+} from "../../../application/assignments/useCases/IAssignmentUseCases";
+import { AssignmentStatus, SubmissionStatus } from '../../../domain/assignments/enums/AssignmentEnums';
+import { FileDTO } from '../../../application/assignments/dtos/AssignmentDTOs';
 
 export class AssignmentController implements IAssignmentController {
   private _httpSuccess: HttpSuccess;
@@ -31,130 +32,106 @@ export class AssignmentController implements IAssignmentController {
     this._httpErrors = new HttpErrors();
   }
 
+  private _mapFiles(files?: Express.Multer.File[]): FileDTO[] | undefined {
+    if (!files || files.length === 0) return undefined;
+    return files.map(f => ({
+      originalname: f.originalname,
+      path: f.path,
+      size: f.size
+    }));
+  }
+
   async getAssignments(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const { subject, status, page, limit, search } = httpRequest.query;
-    const result = await this._getAssignmentsUseCase.execute({
+    const data = await this._getAssignmentsUseCase.execute({
       subject: subject as string,
-      status: status as 'draft' | 'published' | 'closed',
+      status: status as string,
       page: page ? parseInt(page as string) : undefined,
       limit: limit ? parseInt(limit as string) : undefined,
       search: search as string,
     });
-    if (!result.success) {
-      return this._httpErrors.error_400();
-    }
-    return this._httpSuccess.success_200(result.data);
+    return this._httpSuccess.success_200(data);
   }
 
   async getAssignmentById(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const { id } = httpRequest.params;
-    const result = await this._getAssignmentByIdUseCase.execute({ id });
-    if (!result.success) {
-      return this._httpErrors.error_400();
-    }
-    return this._httpSuccess.success_200(result.data);
+    const data = await this._getAssignmentByIdUseCase.execute({ id });
+    return this._httpSuccess.success_200(data);
   }
 
   async createAssignment(httpRequest: IHttpRequest): Promise<IHttpResponse> {
-    const assignmentData = {
-      ...httpRequest.body,
-      files: httpRequest.files
-    };
-    const result = await this._createAssignmentUseCase.execute(assignmentData);
-    if (!result.success) {
-      return this._httpErrors.error_400();
-    }
-    return this._httpSuccess.success_201(result.data);
+    const data = await this._createAssignmentUseCase.execute({
+      title: httpRequest.body.title,
+      subject: httpRequest.body.subject,
+      description: httpRequest.body.description,
+      maxMarks: Number(httpRequest.body.maxMarks),
+      dueDate: new Date(httpRequest.body.dueDate),
+      files: this._mapFiles(httpRequest.files)
+    });
+    return this._httpSuccess.success_201(data);
   }
 
   async updateAssignment(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const { id } = httpRequest.params;
-    let updateData = { ...httpRequest.body };
-    if (httpRequest.files && httpRequest.files.length > 0) {
-      updateData.files = httpRequest.files.map((file: Express.Multer.File) => ({
-        fileName: file.originalname,
-        fileUrl: file.path,
-        fileSize: file.size
-      }));
-    }
-    const result = await this._updateAssignmentUseCase.execute({ id, ...updateData });
-    if (!result.success) {
-      return this._httpErrors.error_400();
-    }
-    return this._httpSuccess.success_200(result.data);
+    const data = await this._updateAssignmentUseCase.execute({
+      id,
+      title: httpRequest.body.title,
+      subject: httpRequest.body.subject,
+      description: httpRequest.body.description,
+      maxMarks: httpRequest.body.maxMarks ? Number(httpRequest.body.maxMarks) : undefined,
+      dueDate: httpRequest.body.dueDate ? new Date(httpRequest.body.dueDate) : undefined,
+      files: this._mapFiles(httpRequest.files),
+      status: httpRequest.body.status as AssignmentStatus
+    });
+    return this._httpSuccess.success_200(data);
   }
 
   async deleteAssignment(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const { id } = httpRequest.params;
-    const result = await this._deleteAssignmentUseCase.execute({ id });
-    if (!result.success) {
-      return this._httpErrors.error_400();
-    }
-    return this._httpSuccess.success_200({ message: "Assignment deleted successfully" });
+    const data = await this._deleteAssignmentUseCase.execute({ id });
+    return this._httpSuccess.success_200(data);
   }
 
   async getSubmissions(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const { assignmentId } = httpRequest.params;
     const { page, limit, search, status } = httpRequest.query;
 
-    const result = await this._getSubmissionsUseCase.execute({
+    const data = await this._getSubmissionsUseCase.execute({
       assignmentId,
       page: page ? parseInt(page as string) : undefined,
       limit: limit ? parseInt(limit as string) : undefined,
       search: search as string,
-      status: status as 'pending' | 'reviewed' | 'late' | 'needs_correction',
+      status: status as string
     });
-
-    if (!result.success) {
-      return this._httpErrors.error_400();
-    }
-    return this._httpSuccess.success_200(result.data);
+    return this._httpSuccess.success_200(data);
   }
 
   async getSubmissionById(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const { assignmentId, submissionId } = httpRequest.params;
-    const result = await this._getSubmissionByIdUseCase.execute({
+    const data = await this._getSubmissionByIdUseCase.execute({
       assignmentId,
       submissionId
     });
-    if (!result.success) {
-      return this._httpErrors.error_400();
-    }
-    return this._httpSuccess.success_200(result.data);
+    return this._httpSuccess.success_200(data);
   }
 
   async reviewSubmission(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const { assignmentId, submissionId } = httpRequest.params;
-    
     const { marks, feedback, status, isLate } = httpRequest.body;
-    if (!submissionId || submissionId === 'undefined') {
-      return this._httpErrors.error_400();
-    }
-    if (!assignmentId) {
-      return this._httpErrors.error_400();
-    }
-    if (marks === undefined || feedback === undefined || status === undefined || isLate === undefined) {
-      return this._httpErrors.error_400();
-    }
-    const result = await this._reviewSubmissionUseCase.execute({
+
+    const data = await this._reviewSubmissionUseCase.execute({
       assignmentId,
       submissionId,
-      marks,
+      marks: Number(marks),
       feedback,
-      status,
-      isLate
+      status: status as SubmissionStatus,
+      isLate: isLate === true || isLate === 'true'
     });
-    if (!result.success) {
-      return this._httpErrors.error_400();
-    }
-    return this._httpSuccess.success_200(result.data);
+    return this._httpSuccess.success_200(data);
   }
 
-  async getAnalytics(httpRequest: IHttpRequest): Promise<IHttpResponse> {
-    const result = await this._getAnalyticsUseCase.execute();
-    if (!result.success) {
-      return this._httpErrors.error_400();
-    }
-    return this._httpSuccess.success_200(result.data);
+  async getAnalytics(_httpRequest: IHttpRequest): Promise<IHttpResponse> {
+    const data = await this._getAnalyticsUseCase.execute();
+    return this._httpSuccess.success_200(data);
   }
-} 
+}

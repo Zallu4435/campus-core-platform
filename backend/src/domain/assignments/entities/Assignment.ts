@@ -1,14 +1,8 @@
-import { AssignmentFile } from '../assignmenttypes';
-import { Submission } from './Submission';
-
-export enum AssignmentStatus {
-  Draft = 'draft',
-  Published = 'published',
-  Closed = 'closed'
-}
+import { AssignmentFile } from '../types/AssignmentTypes';
+import { AssignmentStatus } from '../enums/AssignmentEnums';
 
 export interface IAssignment {
-  _id?: string;
+  id: string;
   title: string;
   subject: string;
   description: string;
@@ -16,42 +10,30 @@ export interface IAssignment {
   dueDate: Date;
   files: AssignmentFile[];
   status: AssignmentStatus;
-  createdAt?: Date;
-  updatedAt?: Date;
-  totalSubmissions?: number;
-  averageMarks?: number;
+  createdAt: Date;
+  updatedAt: Date;
+  totalSubmissions: number;
+  averageMarks: number;
 }
 
 export class Assignment implements IAssignment {
-  _id?: string;
-  title: string;
-  subject: string;
-  description: string;
-  maxMarks: number;
-  dueDate: Date;
-  files: AssignmentFile[];
-  status: AssignmentStatus;
-  createdAt?: Date;
-  updatedAt?: Date;
-  totalSubmissions: number;
-  averageMarks: number;
-
-  constructor(props: IAssignment) {
-    this._id = props._id;
-    this.title = props.title;
-    this.subject = props.subject;
-    this.description = props.description;
-    this.maxMarks = props.maxMarks;
-    this.dueDate = props.dueDate;
-    this.files = props.files || [];
-    this.status = props.status;
-    this.createdAt = props.createdAt;
-    this.updatedAt = props.updatedAt;
-    this.totalSubmissions = props.totalSubmissions || 0;
-    this.averageMarks = props.averageMarks || 0;
-  }
+  constructor(
+    public readonly id: string,
+    public title: string,
+    public subject: string,
+    public description: string,
+    public maxMarks: number,
+    public dueDate: Date,
+    public files: AssignmentFile[],
+    public status: AssignmentStatus,
+    public readonly createdAt: Date,
+    public updatedAt: Date,
+    public totalSubmissions: number,
+    public averageMarks: number
+  ) { }
 
   static create(props: {
+    id: string;
     title: string;
     subject: string;
     dueDate: Date;
@@ -59,110 +41,26 @@ export class Assignment implements IAssignment {
     description: string;
     files: AssignmentFile[];
     status?: AssignmentStatus;
+    totalSubmissions?: number;
+    averageMarks?: number;
+    createdAt?: Date;
+    updatedAt?: Date;
   }): Assignment {
     const now = new Date();
-    return new Assignment({
-      title: props.title,
-      subject: props.subject,
-      dueDate: props.dueDate,
-      maxMarks: props.maxMarks,
-      description: props.description,
-      files: props.files,
-      status: props.status || AssignmentStatus.Draft,
-      totalSubmissions: 0,
-      averageMarks: 0,
-      createdAt: now,
-      updatedAt: now
-    });
-  }
-
-  static fromExisting(props: {
-    _id: string;
-    title: string;
-    subject: string;
-    dueDate: Date;
-    maxMarks: number;
-    description: string;
-    files: AssignmentFile[];
-    createdAt: Date;
-    updatedAt: Date;
-    status: AssignmentStatus;
-    totalSubmissions: number;
-    averageMarks?: number;
-  }): Assignment {
-    return new Assignment({
-      _id: props._id,
-      title: props.title,
-      subject: props.subject,
-      dueDate: props.dueDate,
-      maxMarks: props.maxMarks,
-      description: props.description,
-      files: props.files,
-      status: props.status,
-      totalSubmissions: props.totalSubmissions,
-      averageMarks: props.averageMarks,
-      createdAt: props.createdAt,
-      updatedAt: props.updatedAt
-    });
-  }
-
-  static createAssignmentList(props: {
-    assignments: Assignment[];
-    total: number;
-    page: number;
-    limit: number;
-  }) {
-    return {
-      assignments: props.assignments,
-      total: props.total,
-      page: props.page,
-      limit: props.limit
-    };
-  }
-
-  static createAssignmentResponse(assignment: Assignment) {
-    return assignment;
-  }
-
-  static createSubmissionList(props: {
-    submissions: Submission[];
-    total: number;
-    page: number;
-    limit: number;
-  }) {
-    return {
-      submissions: props.submissions,
-      total: props.total,
-      page: props.page,
-      limit: props.limit
-    };
-  }
-
-  static createSubmissionResponse(submission: Submission) {
-    return submission;
-  }
-
-  static createAnalyticsResponse(props: {
-    totalAssignments: number;
-    totalSubmissions: number;
-    submissionRate: number;
-    averageSubmissionTimeHours: number;
-    subjectDistribution: Record<string, number>;
-    statusDistribution: Record<string, number>;
-    recentSubmissions: Array<{
-      assignmentTitle: string;
-      studentName: string;
-      submittedAt: Date;
-      score: number;
-    }>;
-    topPerformers: Array<{
-      studentId: string;
-      studentName: string;
-      averageScore: number;
-      submissionsCount: number;
-    }>;
-  }) {
-    return props;
+    return new Assignment(
+      props.id,
+      props.title,
+      props.subject,
+      props.description,
+      props.maxMarks,
+      props.dueDate,
+      props.files,
+      props.status || AssignmentStatus.Draft,
+      props.createdAt || now,
+      props.updatedAt || now,
+      props.totalSubmissions || 0,
+      props.averageMarks || 0
+    );
   }
 
   update(props: {
@@ -185,50 +83,9 @@ export class Assignment implements IAssignment {
     this.updatedAt = new Date();
   }
 
-  updateStats(totalSubmissions: number, averageMarks?: number): void {
+  updateStats(totalSubmissions: number, averageMarks: number): void {
     this.totalSubmissions = totalSubmissions;
     this.averageMarks = averageMarks;
     this.updatedAt = new Date();
   }
 }
-
-export interface AssignmentFilter {
-  subject?: string;
-  status?: string;
-  title?: { $regex: string; $options: string };
-  $or?: Array<{
-    title?: { $regex: string; $options: string };
-    subject?: { $regex: string; $options: string };
-  }>;
-  [key: string]: unknown;
-}
-
-
-export interface UserAssignmentFilter {
-  subject?: string;
-  status?: string;
-  dueDate?: { $gte?: Date; $lte?: Date };
-  priority?: number;
-  title?: { $regex: string; $options: string };
-  $or?: Array<{
-    title?: { $regex: string; $options: string };
-    subject?: { $regex: string; $options: string };
-  }>;
-  [key: string]: unknown;
-}
-
-
-export type SubmissionFilterOrClause =
-  | { studentName: RegExp }
-  | { feedback: RegExp }
-  | { 'files.fileName': RegExp };
-
-export type SubmissionFilter = {
-  assignmentId: string;
-  status?: string;
-  $or?: SubmissionFilterOrClause[];
-};
-
-export type SubmissionSort = {
-  submittedDate?: 1 | -1;
-};

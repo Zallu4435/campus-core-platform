@@ -1,35 +1,27 @@
 import {
-  GetUserAssignmentsRequestDTO,
-  GetUserAssignmentByIdRequestDTO,
-  SubmitUserAssignmentRequestDTO,
-  GetUserAssignmentStatusRequestDTO,
-  GetUserAssignmentFeedbackRequestDTO
-} from '../../../domain/assignments/dtos/UserAssignmentRequestDTOs';
-import {
-  GetUserAssignmentsResponseDTO,
-  GetUserAssignmentResponseDTO,
-  SubmitUserAssignmentResponseDTO,
-  GetUserAssignmentStatusResponseDTO,
-  GetUserAssignmentFeedbackResponseDTO,
-  ResponseDTO
-} from '../../../domain/assignments/dtos/UserAssignmentResponseDTOs';
+  UserAssignmentResponseDTO,
+  SubmitAssignmentDTO,
+  UserAssignmentStatusDTO,
+  UserAssignmentFeedbackDTO
+} from '../dtos/UserAssignmentDTOs';
+import { PaginatedResponseDTO } from '../dtos/AssignmentDTOs';
 
 export interface IGetUserAssignmentsUseCase {
-  execute(params: GetUserAssignmentsRequestDTO): Promise<ResponseDTO<GetUserAssignmentsResponseDTO>>;
+  execute(params: { studentId: string; subject?: string; status?: string; page?: number; limit?: number; search?: string; sortBy?: string }): Promise<PaginatedResponseDTO<UserAssignmentResponseDTO>>;
 }
 
 export interface IGetUserAssignmentByIdUseCase {
-  execute(params: GetUserAssignmentByIdRequestDTO): Promise<ResponseDTO<GetUserAssignmentResponseDTO>>;
+  execute(params: { id: string; studentId: string }): Promise<UserAssignmentResponseDTO>;
 }
 
 export interface ISubmitUserAssignmentUseCase {
-  execute(params: SubmitUserAssignmentRequestDTO): Promise<ResponseDTO<SubmitUserAssignmentResponseDTO>>;
+  execute(params: SubmitAssignmentDTO): Promise<UserAssignmentResponseDTO>;
 }
 
 export interface IGetUserAssignmentStatusUseCase {
-  execute(params: GetUserAssignmentStatusRequestDTO): Promise<ResponseDTO<GetUserAssignmentStatusResponseDTO>>;
+  execute(params: { assignmentId: string; studentId: string }): Promise<UserAssignmentStatusDTO>;
 }
 
 export interface IGetUserAssignmentFeedbackUseCase {
-  execute(params: GetUserAssignmentFeedbackRequestDTO): Promise<ResponseDTO<GetUserAssignmentFeedbackResponseDTO>>;
+  execute(params: { assignmentId: string; studentId: string }): Promise<UserAssignmentFeedbackDTO>;
 }
