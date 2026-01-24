@@ -1,29 +1,23 @@
-import { NotificationProps } from "../../../domain/notifications/entities/NotificationTypes";
-import {
-    CreateNotificationResponseDTO,
-    GetAllNotificationsResponseDTO,
-    GetIndividualNotificationResponseDTO,
-    DeleteNotificationResponseDTO,
-    MarkNotificationAsReadResponseDTO,
-    MarkAllNotificationsAsReadResponseDTO,
-} from "../../../domain/notifications/dtos/NotificationResponseDTOs";
+import { Notification } from "../../../domain/notifications/entities/Notification";
+import { NotificationRecipientType, NotificationStatus } from "../../../domain/notifications/entities/NotificationTypes";
+
+export interface NotificationFilter {
+    userId?: string;
+    recipientId?: string;
+    recipientType?: NotificationRecipientType | { $in: NotificationRecipientType[] };
+    status?: string | NotificationStatus;
+    readBy?: string | { $ne: string };
+    createdAt?: { $gte?: Date; $lte?: Date };
+    search?: string;
+    $or?: any[];
+}
 
 export interface INotificationRepository {
-    createNotification(title: string, message: string, recipientType: string, recipientId: string, recipientName: string, createdBy: string, createdAt: Date, status: string, readBy: string[]): Promise<CreateNotificationResponseDTO>;
-    getAllNotifications(recipientType: string, recipientId: string, page: number, limit: number, status: string, dateRange: string, search: string, isRead: boolean): Promise<GetAllNotificationsResponseDTO>;
-    getIndividualNotification(notificationId: string): Promise<GetIndividualNotificationResponseDTO>;
-    deleteNotification(notificationId: string): Promise<DeleteNotificationResponseDTO>;
-    markNotificationAsRead(notificationId: string, recipientId: string): Promise<MarkNotificationAsReadResponseDTO>;
-    markAllNotificationsAsRead(recipientType: string, recipientId: string): Promise<MarkAllNotificationsAsReadResponseDTO>;
-    
-    create(data: NotificationProps);
-    find(filter, options?: { skip?: number; limit?: number; sort? });
-    count(filter);
-    findById(id: string);
-    update(id: string, data: Partial<NotificationProps>);
+    create(notification: Notification): Promise<Notification>;
+    findById(id: string): Promise<Notification | null>;
+    update(id: string, updates: Partial<Notification>): Promise<Notification | null>;
     delete(id: string): Promise<void>;
-    
-    findUsersByCollection(collection: string);
-    findFacultyByCollection(collection: string);
-    removeToken(token: string): Promise<void>;
+    find(filter: NotificationFilter, options?: { skip?: number; limit?: number; sort?: any }): Promise<Notification[]>;
+    count(filter: NotificationFilter): Promise<number>;
+    markAllAsRead(userId: string, filter: NotificationFilter): Promise<number>;
 }

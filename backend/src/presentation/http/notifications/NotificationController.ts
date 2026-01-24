@@ -1,3 +1,4 @@
+import { IHttpRequest, IHttpResponse, HttpErrors, HttpSuccess, INotificationController } from '../IHttp';
 import {
   ICreateNotificationUseCase,
   IGetAllNotificationsUseCase,
@@ -6,15 +7,7 @@ import {
   IMarkNotificationAsReadUseCase,
   IMarkAllNotificationsAsReadUseCase,
 } from '../../../application/notifications/useCases/INotificationUseCases';
-import {
-  CreateNotificationRequestDTO,
-  GetAllNotificationsRequestDTO,
-  GetIndividualNotificationRequestDTO,
-  DeleteNotificationRequestDTO,
-  MarkNotificationAsReadRequestDTO,
-  MarkAllNotificationsAsReadRequestDTO,
-} from '../../../domain/notifications/dtos/NotificationRequestDTOs';
-import { IHttpRequest, IHttpResponse, HttpErrors, HttpSuccess, INotificationController } from '../IHttp';
+import { NotificationMapper } from '../../../infrastructure/repositories/notifications/mappers/NotificationMapper';
 
 export class NotificationController implements INotificationController {
   private _httpErrors = new HttpErrors();
@@ -30,67 +23,71 @@ export class NotificationController implements INotificationController {
   ) { }
 
   async createNotification(httpRequest: IHttpRequest): Promise<IHttpResponse> {
-    const { title, message, recipientType, recipientId, recipientName } = httpRequest.body;
     const createdBy = httpRequest.user?.userId;
-    if (!createdBy || !title || !message || !recipientType) return this._httpErrors.error_400();
-    const dto: CreateNotificationRequestDTO = { title, message, recipientType, recipientId, recipientName, createdBy };
-    const data = await this._createNotificationUseCase.execute(dto);
-    return this._httpSuccess.success_201(data);
+    if (!createdBy) return this._httpErrors.error_401();
+
+    const result = await this._createNotificationUseCase.execute({
+      ...httpRequest.body,
+      createdBy
+    });
+    return this._httpSuccess.success_201(result);
   }
 
   async getAllNotifications(httpRequest: IHttpRequest): Promise<IHttpResponse> {
-    const { page = "1", limit = "10", recipientType, status, dateRange, search } = httpRequest.query || {};
     const userId = httpRequest.user?.userId;
     const collection = httpRequest.user?.collection;
     if (!userId || !collection) return this._httpErrors.error_401();
-    const dto: GetAllNotificationsRequestDTO = {
+
+    const result = await this._getAllNotificationsUseCase.execute({
+      ...httpRequest.query,
       userId,
       collection,
-      page: Number(page),
-      limit: Number(limit),
-      recipientType,
-      status,
-      dateRange,
-      search,
-    };
-    const data = await this._getAllNotificationsUseCase.execute(dto);
-    return this._httpSuccess.success_200(data);
+      page: Number(httpRequest.query.page || 1),
+      limit: Number(httpRequest.query.limit || 10),
+    });
+
+    return this._httpSuccess.success_200({
+      ...result,
+      notifications: NotificationMapper.toResponseDTOList(result.notifications, userId)
+    });
   }
 
   async getIndividualNotification(httpRequest: IHttpRequest): Promise<IHttpResponse> {
-    const { notificationId } = httpRequest.params || {};
-    if (!notificationId) return this._httpErrors.error_400();
-    const dto: GetIndividualNotificationRequestDTO = { notificationId };
-    const data = await this._getIndividualNotificationUseCase.execute(dto);
-    return this._httpSuccess.success_200(data);
+    const userId = httpRequest.user?.userId;
+    const { notificationId } = httpRequest.params;
+    const result = await this._getIndividualNotificationUseCase.execute({ notificationId });
+
+    return this._httpSuccess.success_200({
+      notification: NotificationMapper.toResponseDTO(result.notification, userId)
+    });
   }
 
   async deleteNotification(httpRequest: IHttpRequest): Promise<IHttpResponse> {
-    const { notificationId } = httpRequest.params || {};
+    const { notificationId } = httpRequest.params;
     const authenticatedUserId = httpRequest.user?.userId;
     const collection = httpRequest.user?.collection;
-    if (!notificationId || !authenticatedUserId || !collection) return this._httpErrors.error_401();
-    const dto: DeleteNotificationRequestDTO = { notificationId, authenticatedUserId, collection };
-    const data = await this._deleteNotificationUseCase.execute(dto);
-    return this._httpSuccess.success_200(data);
+    if (!authenticatedUserId || !collection) return this._httpErrors.error_401();
+
+    const result = await this._deleteNotificationUseCase.execute({ notificationId, authenticatedUserId, collection });
+    return this._httpSuccess.success_200(result);
   }
 
   async markNotificationAsRead(httpRequest: IHttpRequest): Promise<IHttpResponse> {
-    const { notificationId } = httpRequest.params || {};
+    const { notificationId } = httpRequest.params;
     const authenticatedUserId = httpRequest.user?.userId;
     const collection = httpRequest.user?.collection;
-    if (!notificationId || !authenticatedUserId || !collection) return this._httpErrors.error_401();
-    const dto: MarkNotificationAsReadRequestDTO = { notificationId, authenticatedUserId, collection };
-    const data = await this._markNotificationAsReadUseCase.execute(dto);
-    return this._httpSuccess.success_200(data);
+    if (!authenticatedUserId || !collection) return this._httpErrors.error_401();
+
+    const result = await this._markNotificationAsReadUseCase.execute({ notificationId, authenticatedUserId, collection });
+    return this._httpSuccess.success_200(result);
   }
 
   async markAllNotificationsAsRead(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const authenticatedUserId = httpRequest.user?.userId;
     const collection = httpRequest.user?.collection;
     if (!authenticatedUserId || !collection) return this._httpErrors.error_401();
-    const dto: MarkAllNotificationsAsReadRequestDTO = { authenticatedUserId, collection };
-    const data = await this._markAllNotificationsAsReadUseCase.execute(dto);
-    return this._httpSuccess.success_200(data);
+
+    const result = await this._markAllNotificationsAsReadUseCase.execute({ authenticatedUserId, collection });
+    return this._httpSuccess.success_200(result);
   }
 }

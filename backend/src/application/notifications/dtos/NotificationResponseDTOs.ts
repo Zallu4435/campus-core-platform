@@ -1,17 +1,17 @@
-import { NotificationRecipientType, NotificationStatus } from "../entities/NotificationTypes";
+import { NotificationRecipientType, NotificationStatus } from "../../../domain/notifications/entities/NotificationTypes";
 
 export interface NotificationResponseDTO {
-    _id: string;
+    id: string;
     title: string;
     message: string;
     recipientType: NotificationRecipientType;
     recipientId?: string;
     recipientName?: string;
     createdBy: string;
-    createdAt: string; // Will be converted to ISO string
+    createdAt: string;
     status: NotificationStatus;
-    isRead: boolean; // Calculated based on whether current user is in readBy array
-    readBy: string[]; // Array of user IDs who have read this notification
+    isRead: boolean;
+    readBy: string[];
 }
 
 export interface CreateNotificationResponseDTO {

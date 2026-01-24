@@ -313,4 +313,24 @@ export class AuthRepository implements IAuthRepository {
         const docs = await UserModel.find({ _id: { $in: ids } });
         return docs.map(doc => UserMapper.toDomain(doc));
     }
+
+    async findTokensByUserId(userId: string): Promise<string[]> {
+        const user = await UserModel.findById(userId).select("fcmTokens").lean();
+        return user?.fcmTokens || [];
+    }
+
+    async findTokensByCollection(collection: string): Promise<string[]> {
+        let Model;
+        if (collection === "user") Model = UserModel;
+        else if (collection === "faculty") Model = FacultyModel;
+        else return [];
+
+        const users = await Model.find().select("fcmTokens").lean();
+        return users.flatMap(u => u.fcmTokens || []);
+    }
+
+    async removeFcmToken(token: string): Promise<void> {
+        await UserModel.updateMany({ fcmTokens: token }, { $pull: { fcmTokens: token } });
+        await FacultyModel.updateMany({ fcmTokens: token }, { $pull: { fcmTokens: token } });
+    }
 }

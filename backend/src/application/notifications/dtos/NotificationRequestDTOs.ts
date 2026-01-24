@@ -1,4 +1,4 @@
-import { NotificationRecipientType } from "../entities/NotificationTypes";
+import { NotificationRecipientType } from "../../../domain/notifications/entities/NotificationTypes";
 
 export interface CreateNotificationRequestDTO {
     title: string;

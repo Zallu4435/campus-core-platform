@@ -1,3 +1,4 @@
+import { Notification } from "../../../domain/notifications/entities/Notification";
 import {
     CreateNotificationRequestDTO,
     GetAllNotificationsRequestDTO,
@@ -5,7 +6,7 @@ import {
     DeleteNotificationRequestDTO,
     MarkNotificationAsReadRequestDTO,
     MarkAllNotificationsAsReadRequestDTO,
-} from "../../../domain/notifications/dtos/NotificationRequestDTOs";
+} from "../dtos/NotificationRequestDTOs";
 import {
     CreateNotificationResponseDTO,
     GetAllNotificationsResponseDTO,
@@ -13,18 +14,23 @@ import {
     DeleteNotificationResponseDTO,
     MarkNotificationAsReadResponseDTO,
     MarkAllNotificationsAsReadResponseDTO,
-} from "../../../domain/notifications/dtos/NotificationResponseDTOs";
+} from "../dtos/NotificationResponseDTOs";
 
 export interface ICreateNotificationUseCase {
     execute(params: CreateNotificationRequestDTO): Promise<CreateNotificationResponseDTO>;
 }
 
 export interface IGetAllNotificationsUseCase {
-    execute(params: GetAllNotificationsRequestDTO): Promise<GetAllNotificationsResponseDTO>;
+    execute(params: GetAllNotificationsRequestDTO): Promise<{
+        notifications: Notification[];
+        totalPages: number;
+        currentPage: number;
+        totalItems: number;
+    }>;
 }
 
 export interface IGetIndividualNotificationUseCase {
-    execute(params: GetIndividualNotificationRequestDTO): Promise<GetIndividualNotificationResponseDTO>;
+    execute(params: GetIndividualNotificationRequestDTO): Promise<{ notification: Notification }>;
 }
 
 export interface IDeleteNotificationUseCase {
