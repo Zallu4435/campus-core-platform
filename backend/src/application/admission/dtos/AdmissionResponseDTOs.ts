@@ -1,4 +1,4 @@
-import { IAdmissionDraft, IAdmission, IDocument } from "../entities/AdmissionTypes";
+import { IAdmissionDraft, IAdmission, IDocument } from "../../../domain/admission/entities/AdmissionTypes";
 
 export type CreateApplicationResponseDTO = Pick<IAdmission, "applicationId">;
 

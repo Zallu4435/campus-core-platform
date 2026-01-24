@@ -7,7 +7,7 @@ import {
   FinalizeAdmissionRequestDTO,
   UploadDocumentRequestDTO,
   UploadMultipleDocumentsRequestDTO,
-} from "../../../domain/admission/dtos/AdmissionRequestDTOs";
+} from "../dtos/AdmissionRequestDTOs";
 import {
   CreateApplicationResponseDTO,
   GetApplicationResponseDTO,
@@ -17,7 +17,7 @@ import {
   FinalizeAdmissionResponseDTO,
   UploadDocumentResponseDTO,
   UploadMultipleDocumentsResponseDTO,
-} from "../../../domain/admission/dtos/AdmissionResponseDTOs";
+} from "../dtos/AdmissionResponseDTOs";
 
 export interface ICreateApplicationUseCase {
   execute(params: CreateApplicationRequestDTO): Promise<CreateApplicationResponseDTO>;
@@ -56,6 +56,16 @@ export interface IGetDocumentByKeyUseCase {
     cloudinaryUrl?: string;
     fileName?: string;
     fileType?: string;
+    [key: string]: unknown;
+  } | null>;
+}
+
+export interface IServeDocumentUseCase {
+  execute(params: { userId: string; documentId: string }): Promise<{
+    cloudinaryUrl?: string;
+    fileName?: string;
+    fileType?: string;
+    pdfData: string;
     [key: string]: unknown;
   } | null>;
 }

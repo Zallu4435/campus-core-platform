@@ -16,7 +16,7 @@ export class VideoStorageService implements IVideoStorageService {
             return result.secure_url;
         } catch (error) {
             Logger.error('Cloudinary upload error:', error);
-            throw new VideoUploadError();
+            throw new VideoUploadError("Failed to upload video");
         }
     }
 

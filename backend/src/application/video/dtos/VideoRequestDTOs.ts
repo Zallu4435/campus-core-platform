@@ -1,5 +1,4 @@
-import { VideoStatus } from '../enums/VideoStatus';
-import { IVideoBase } from '../entities/VideoTypes';
+import { IVideoBase } from "../../../domain/video/entities/VideoTypes";
 
 export interface GetVideosRequestDTO {
     category?: string;

@@ -1,15 +1,15 @@
-import { 
-  AdmissionDraftProps, 
-  AdmissionProps, 
-  AdmissionStatus, 
+import {
+  AdmissionDraftProps,
+  AdmissionProps,
+  AdmissionStatus,
   RejectedBy,
 } from "./AdmissionTypes";
 import { AdmissionErrorType } from "../enums/AdmissionErrorType";
 
-export { 
-  PaymentStatus, 
-  PaymentMethod, 
-  AdmissionStatus, 
+export {
+  PaymentStatus,
+  PaymentMethod,
+  AdmissionStatus,
   RejectedBy,
   AdmissionDraftProps,
   AdmissionProps
@@ -66,6 +66,16 @@ export class AdmissionDraft {
   getCompletedSteps(): string[] { return this.completedSteps; }
   getCreatedAt(): Date | undefined { return this.createdAt; }
   getUpdatedAt(): Date | undefined { return this.updatedAt; }
+
+  addCompletedStep(step: string): void {
+    if (!this.completedSteps.includes(step)) {
+      this.completedSteps.push(step);
+    }
+  }
+
+  updateSection(section: string, data: Record<string, unknown>): void {
+    (this as any)[section] = data;
+  }
 }
 
 export class Admission extends AdmissionDraft {

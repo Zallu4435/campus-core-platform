@@ -1,23 +1,33 @@
 import { v4 as uuidv4 } from "uuid";
-import Stripe from "stripe";
 import { AdmissionErrorType } from "../../../domain/admission/enums/AdmissionErrorType";
 import { IAdmissionsRepository } from "../../../application/admission/repositories/IAdmissionsRepository";
 import { AdmissionDraft as AdmissionDraftModel } from "../../database/mongoose/admission/AdmissionDraftModel";
 import { Admission as AdmissionModel } from "../../database/mongoose/admission/AdmissionModel";
 import { PaymentModel } from "../../database/mongoose/financial/financial.model";
 import { DocumentUploadService } from '../../services/admission/DocumentUploadService';
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", { apiVersion: "2025-04-30.basil" });
+import { IPaymentService } from "../../../application/admission/services/IPaymentService";
+import { PaymentService } from "../../services/financial/PaymentService";
+import {
+    CreateApplicationResponseDTO,
+    ProcessPaymentResponseDTO,
+    ConfirmPaymentResponseDTO,
+    UploadDocumentResponseDTO,
+    UploadMultipleDocumentsResponseDTO,
+} from "../../../application/admission/dtos/AdmissionResponseDTOs";
+import { Admission, AdmissionDraft } from "../../../domain/admission/entities/Admission";
+import { AdmissionMapper } from "./AdmissionMapper";
 
 export class AdmissionsRepository implements IAdmissionsRepository {
 
     private _documentUploadService: DocumentUploadService;
+    private _paymentService: IPaymentService;
 
     constructor() {
         this._documentUploadService = new DocumentUploadService();
+        this._paymentService = new PaymentService();
     }
 
-    async createApplication(params: { userId: string }) {
+    async createApplication(params: { userId: string }): Promise<CreateApplicationResponseDTO> {
         let draft = await AdmissionDraftModel.findOne({ registerId: params.userId });
         if (draft) {
             return { applicationId: draft.applicationId };
@@ -41,19 +51,42 @@ export class AdmissionsRepository implements IAdmissionsRepository {
         return { applicationId: draft.applicationId };
     }
 
-    async findDraftByRegisterId(userId: string) {
-        return AdmissionDraftModel.findOne({ registerId: userId }).lean();
+    async findDraftByRegisterId(userId: string): Promise<AdmissionDraft | null> {
+        const doc = await AdmissionDraftModel.findOne({ registerId: userId }).lean();
+        if (!doc) return null;
+        return AdmissionMapper.toDraftDomain(doc);
     }
 
-    async findDraftByApplicationId(applicationId: string) {
-        return AdmissionDraftModel.findOne({ applicationId });
+    async findDraftByApplicationId(applicationId: string): Promise<AdmissionDraft | null> {
+        const doc = await AdmissionDraftModel.findOne({ applicationId }).lean();
+        if (!doc) return null;
+        return AdmissionMapper.toDraftDomain(doc);
     }
 
-    async saveDraft(draft) {
-        return draft.save();
+    async saveDraft(draft: AdmissionDraft): Promise<void> {
+        // Map Domain Entity back to Mongoose update
+        // Since AdmissionDraft manages its own state, we can extract properties
+        // However, standard Mongoose 'save' works on Mongoose Documents.
+        // We need to update the document based on the Entity fields.
+        await AdmissionDraftModel.updateOne(
+            { applicationId: draft.getApplicationId() },
+            {
+                $set: {
+                    personal: draft.getPersonal(),
+                    choiceOfStudy: draft.getChoiceOfStudy(),
+                    education: draft.getEducation(),
+                    achievements: draft.getAchievements(),
+                    otherInformation: draft.getOtherInformation(),
+                    documents: draft.getDocuments(),
+                    declaration: draft.getDeclaration(),
+                    completedSteps: draft.getCompletedSteps(),
+                    updatedAt: new Date()
+                }
+            }
+        );
     }
 
-    async processPayment(params: { applicationId: string, paymentDetails: { method: string, amount: number, currency: string, paymentMethodId: string, returnUrl: string } }) {
+    async processPayment(params: { applicationId: string, paymentDetails: { method: string, amount: number, currency: string, paymentMethodId?: string, returnUrl?: string } }): Promise<ProcessPaymentResponseDTO> {
         const { applicationId, paymentDetails } = params;
         const draft = await AdmissionDraftModel.findOne({ applicationId });
         if (!draft) throw new Error(AdmissionErrorType.ApplicationNotFound);
@@ -73,18 +106,16 @@ export class AdmissionsRepository implements IAdmissionsRepository {
         });
         await payment.save();
 
-        const paymentIntent = await stripe.paymentIntents.create({
-            amount: Math.round(paymentDetails.amount * 100),
-            currency: paymentDetails.currency.toLowerCase(),
-            automatic_payment_methods: { enabled: true, allow_redirects: "never" },
-            confirm: false, 
-            payment_method: paymentDetails.paymentMethodId,
-            metadata: {
+        const paymentIntent = await this._paymentService.createPaymentIntent(
+            paymentDetails.amount,
+            paymentDetails.currency,
+            paymentDetails.paymentMethodId,
+            {
                 paymentId: payment._id.toString(),
                 applicationId: applicationId,
                 studentId: draft.registerId.toString(),
             }
-        });
+        );
 
         payment.metadata = {
             ...payment.metadata,
@@ -98,21 +129,18 @@ export class AdmissionsRepository implements IAdmissionsRepository {
             paymentId: payment._id.toString(),
             status: "pending",
             message: "Payment created successfully. Please complete the payment.",
-            clientSecret: paymentIntent.client_secret,
+            clientSecret: paymentIntent.client_secret || undefined,
             stripePaymentIntentId: paymentIntent.id,
         };
     }
 
-    async confirmPayment(params: { paymentId: string, stripePaymentIntentId: string }) {
+    async confirmPayment(params: { paymentId: string, stripePaymentIntentId: string }): Promise<ConfirmPaymentResponseDTO> {
         const { paymentId, stripePaymentIntentId } = params;
         const payment = await PaymentModel.findById(paymentId);
         if (!payment) throw new Error(AdmissionErrorType.PaymentNotFound);
 
-        const paymentIntent = await stripe.paymentIntents.confirm(stripePaymentIntentId, {
-            payment_method: payment.metadata?.paymentMethodId as string,
-        });
-
-        const stripeStatus = paymentIntent.status;
+        const confirmationResult = await this._paymentService.confirmPayment(stripePaymentIntentId, payment.metadata?.paymentMethodId as string);
+        const stripeStatus = confirmationResult.status;
         const paymentStatus = this.mapStripeStatusToPaymentStatus(stripeStatus);
 
         payment.status = paymentStatus === "completed" ? "Completed" :
@@ -135,7 +163,7 @@ export class AdmissionsRepository implements IAdmissionsRepository {
         };
     }
 
-    async finalizeAdmission(params: { applicationId: string, paymentId: string }) {
+    async finalizeAdmission(params: { applicationId: string, paymentId: string }): Promise<{ admission: Admission }> {
         const draft = await AdmissionDraftModel.findOne({ applicationId: params.applicationId });
         if (!draft) throw new Error(AdmissionErrorType.ApplicationNotFound);
 
@@ -170,8 +198,9 @@ export class AdmissionsRepository implements IAdmissionsRepository {
 
         await newAdmission.save();
         await AdmissionDraftModel.deleteOne({ applicationId: params.applicationId });
+
         return {
-            admission: newAdmission.toObject(),
+            admission: AdmissionMapper.toAdmissionDomain(newAdmission.toObject()),
         };
     }
 
@@ -202,7 +231,7 @@ export class AdmissionsRepository implements IAdmissionsRepository {
         }
     }
 
-    async uploadDocument(params: { file: Express.Multer.File, applicationId: string, documentType: string }) {
+    async uploadDocument(params: { file: Express.Multer.File, applicationId: string, documentType: string }): Promise<UploadDocumentResponseDTO> {
         const uploadResult = await this._documentUploadService.uploadDocument(params.file, params.applicationId, params.documentType);
         return {
             success: true,
@@ -216,7 +245,7 @@ export class AdmissionsRepository implements IAdmissionsRepository {
         };
     }
 
-    async uploadMultipleDocuments(params: { files: Express.Multer.File[], applicationId: string, documentTypes: string[] }) {
+    async uploadMultipleDocuments(params: { files: Express.Multer.File[], applicationId: string, documentTypes: string[] }): Promise<UploadMultipleDocumentsResponseDTO> {
         const uploadResults = await this._documentUploadService.uploadMultipleDocuments(params.files, params.applicationId, params.documentTypes);
         return {
             success: true,
@@ -229,14 +258,14 @@ export class AdmissionsRepository implements IAdmissionsRepository {
             }))
         };
     }
- 
-    async getDocumentByKey(params: { userId: string; documentKey: string }) {
+
+    async getDocumentByKey(params: { userId: string; documentKey: string }): Promise<{ cloudinaryUrl?: string; fileName?: string; fileType?: string;[key: string]: unknown } | null> {
         const draft = await AdmissionDraftModel.findOne({ registerId: params.userId }).lean();
         if (!draft || !draft.documents) {
             return null;
         }
         const docsArray = Array.isArray(draft.documents.documents)
-            ? draft.documents.documents
+            ? draft.documents.documents as Array<any>
             : [];
         const found = docsArray.find((doc) => doc.id === params.documentKey);
         return found || null;

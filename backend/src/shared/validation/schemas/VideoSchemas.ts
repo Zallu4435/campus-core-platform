@@ -1,33 +1,37 @@
 import Joi from 'joi';
-import { VideoConstants } from '../../../application/video/constants/VideoConstants';
 
 export const getVideosSchema = Joi.object({
-    page: Joi.number().integer().min(1).default(VideoConstants.Pagination.DEFAULT_PAGE),
-    limit: Joi.number().integer().min(1).max(VideoConstants.Pagination.MAX_LIMIT).default(VideoConstants.Pagination.DEFAULT_LIMIT),
-    status: Joi.string().valid('Active', 'Inactive', 'all').optional(),
+    page: Joi.number().min(1).optional(),
+    limit: Joi.number().min(1).optional(),
     category: Joi.string().optional(),
-    search: Joi.string().allow('').optional(),
-    dateRange: Joi.string().valid(...Object.values(VideoConstants.DateRanges), 'all').optional(),
-    startDate: Joi.date().iso().optional(),
-    endDate: Joi.date().iso().optional()
+    status: Joi.string().optional(),
+    search: Joi.string().optional(),
+    dateRange: Joi.string().optional(),
+    startDate: Joi.string().isoDate().optional(),
+    endDate: Joi.string().isoDate().optional(),
+});
+
+export const getVideoByIdSchema = Joi.object({
+    id: Joi.string().required()
 });
 
 export const createVideoSchema = Joi.object({
-    title: Joi.string().required().min(3).max(100),
-    category: Joi.string().required(), // This is the diploma category/id
+    title: Joi.string().required(),
+    category: Joi.string().required(),
     module: Joi.number().required(),
-    status: Joi.string().valid('Active', 'Inactive').required(),
+    status: Joi.string().required(),
     description: Joi.string().required(),
-    duration: Joi.string().required()
-    // videoFile is handled by Multer, verified in controller or router level check if needed
+    duration: Joi.string().required(),
+    // videoFile is handled by multer
 });
 
 export const updateVideoSchema = Joi.object({
-    title: Joi.string().min(3).max(100).optional(),
+    title: Joi.string().optional(),
     category: Joi.string().optional(),
     module: Joi.number().optional(),
-    status: Joi.string().valid('Active', 'Inactive').optional(),
+    status: Joi.string().optional(),
     description: Joi.string().optional(),
     duration: Joi.string().optional(),
-    videoUrl: Joi.string().uri().optional()
+    videoUrl: Joi.string().uri().optional(),
+    // videoFile is handled by multer
 });

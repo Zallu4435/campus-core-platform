@@ -1,5 +1,5 @@
-import { VideoStatus } from '../enums/VideoStatus';
-import { IVideo } from '../entities/VideoTypes';
+import { VideoStatus } from "../../../domain/video/enums/VideoStatus";
+import { IVideo } from "../../../domain/video/entities/VideoTypes";
 
 interface PaginatedResponseDTO<T> {
     data: T[];
@@ -11,7 +11,7 @@ interface PaginatedResponseDTO<T> {
 export interface VideoSummaryDTO {
     id: string;
     title: string;
-    duration: string;       
+    duration: string;
     module: number;
     status: VideoStatus;
     uploadedAt: Date;
@@ -25,7 +25,7 @@ export interface VideoSummaryDTO {
     };
 }
 
-export interface GetVideosResponseDTO extends PaginatedResponseDTO<VideoSummaryDTO> {}
+export interface GetVideosResponseDTO extends PaginatedResponseDTO<VideoSummaryDTO> { }
 
 export interface GetVideoByIdResponseDTO {
     video: IVideo;
@@ -37,7 +37,7 @@ export interface CreateVideoResponseDTO {
 
 export interface UpdateVideoResponseDTO {
     video: IVideo;
-} 
+}
 
 export interface ResponseDTO<T> {
     data: T | { error: string };

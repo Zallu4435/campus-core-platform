@@ -1,15 +1,15 @@
 import {
     CreateApplicationRequestDTO, GetApplicationRequestDTO, SaveSectionRequestDTO, ProcessPaymentRequestDTO, ConfirmPaymentRequestDTO, FinalizeAdmissionRequestDTO, UploadDocumentRequestDTO, UploadMultipleDocumentsRequestDTO,
-} from "../../../domain/admission/dtos/AdmissionRequestDTOs";
+} from "../dtos/AdmissionRequestDTOs";
 import {
     CreateApplicationResponseDTO, GetApplicationResponseDTO, SaveSectionResponseDTO, ProcessPaymentResponseDTO, ConfirmPaymentResponseDTO, FinalizeAdmissionResponseDTO, UploadDocumentResponseDTO, UploadMultipleDocumentsResponseDTO,
-} from "../../../domain/admission/dtos/AdmissionResponseDTOs";
+} from "../dtos/AdmissionResponseDTOs";
 import { IAdmissionsRepository } from "../repositories/IAdmissionsRepository";
 import {
     InvalidUserIdException, InvalidSectionException, PaymentProcessingFailedException, PaymentNotFoundException, AdmissionFinalizationFailedException, DocumentUploadFailedException
 } from "../../../domain/admission/errors/AdmissionErrors";
 import { isValidObjectId } from "mongoose";
-import { IAdmissionDraft, IAdmission } from '../../../domain/admission/entities/AdmissionTypes';
+import { AdmissionDTOMapper } from "../mappers/AdmissionDTOMapper";
 import {
     ICreateApplicationUseCase,
     IGetApplicationUseCase,
@@ -19,9 +19,9 @@ import {
     IFinalizeAdmissionUseCase,
     IUploadDocumentUseCase,
     IUploadMultipleDocumentsUseCase,
+    IServeDocumentUseCase,
     IGetDocumentByKeyUseCase,
 } from './IAdmissionUseCases';
-
 
 export class CreateApplicationUseCase implements ICreateApplicationUseCase {
     constructor(private _admissionsRepository: IAdmissionsRepository) { }
@@ -32,7 +32,7 @@ export class CreateApplicationUseCase implements ICreateApplicationUseCase {
         return this._admissionsRepository.createApplication(params);
     }
 }
- 
+
 export class GetApplicationUseCase implements IGetApplicationUseCase {
     constructor(private _admissionsRepository: IAdmissionsRepository) { }
     async execute(params: GetApplicationRequestDTO): Promise<GetApplicationResponseDTO> {
@@ -41,7 +41,7 @@ export class GetApplicationUseCase implements IGetApplicationUseCase {
         }
         const draft = await this._admissionsRepository.findDraftByRegisterId(params.userId);
         return {
-            draft: draft ? mapToIAdmissionDraft(draft) : null,
+            draft: draft ? AdmissionDTOMapper.toDraftDTO(draft) : null,
         };
     }
 }
@@ -70,16 +70,15 @@ export class SaveSectionUseCase implements ISaveSectionUseCase {
         const field = sectionMap[params.section];
         if (!field) throw new InvalidSectionException();
 
-        draft[field] = params.data;
-        if (!draft.completedSteps.includes(field)) {
-            draft.completedSteps.push(field);
-        }
+        draft.updateSection(field, params.data);
+        draft.addCompletedStep(field);
+
         await this._admissionsRepository.saveDraft(draft);
 
         return {
             success: true,
             message: "Section saved successfully",
-            data: mapToIAdmissionDraft(draft),
+            data: AdmissionDTOMapper.toDraftDTO(draft),
         };
     }
 }
@@ -112,7 +111,7 @@ export class FinalizeAdmissionUseCase implements IFinalizeAdmissionUseCase {
         }
         const result = await this._admissionsRepository.finalizeAdmission(params);
         return {
-            admission: mapToIAdmission(result.admission),
+            admission: AdmissionDTOMapper.toAdmissionDTO(result.admission),
         };
     }
 }
@@ -149,44 +148,34 @@ export class GetDocumentByKeyUseCase implements IGetDocumentByKeyUseCase {
     }
 }
 
+import axios from 'axios';
 
-function mapToIAdmissionDraft(draft): IAdmissionDraft {
-    return {
-        id: draft._id?.toString(),
-        applicationId: draft.applicationId,
-        registerId: draft.registerId,
-        personal: draft.personal,
-        choiceOfStudy: draft.choiceOfStudy,
-        education: draft.education,
-        achievements: draft.achievements,
-        otherInformation: draft.otherInformation,
-        documents: draft.documents,
-        declaration: draft.declaration,
-        completedSteps: draft.completedSteps,
-        createdAt: draft.createdAt,
-        updatedAt: draft.updatedAt,
-    };
-}
+export class ServeDocumentUseCase implements IServeDocumentUseCase {
+    constructor(private _admissionsRepository: IAdmissionsRepository) { }
+    async execute(params: { userId: string; documentId: string }): Promise<{
+        cloudinaryUrl?: string;
+        fileName?: string;
+        fileType?: string;
+        pdfData: string;
+        [key: string]: unknown;
+    } | null> {
+        const document = await this._admissionsRepository.getDocumentByKey({
+            userId: params.userId,
+            documentKey: params.documentId
+        });
 
-function mapToIAdmission(admission): IAdmission {
-    return {
-        id: admission._id?.toString(),
-        applicationId: admission.applicationId,
-        registerId: admission.registerId,
-        personal: admission.personal,
-        choiceOfStudy: admission.choiceOfStudy,
-        education: admission.education,
-        achievements: admission.achievements,
-        otherInformation: admission.otherInformation,
-        documents: admission.documents,
-        declaration: admission.declaration,
-        completedSteps: admission.completedSteps,
-        createdAt: admission.createdAt,
-        updatedAt: admission.updatedAt,
-        paymentId: admission.paymentId?.toString(),
-        status: admission.status,
-        rejectedBy: admission.rejectedBy,
-        confirmationToken: admission.confirmationToken,
-        tokenExpiry: admission.tokenExpiry,
-    };
+        if (!document || !document.cloudinaryUrl) return null;
+
+        try {
+            const response = await axios.get(document.cloudinaryUrl, { responseType: 'arraybuffer' });
+            const pdfData = Buffer.from(response.data, 'binary').toString('base64');
+
+            return {
+                ...document,
+                pdfData
+            };
+        } catch (error) {
+            return null;
+        }
+    }
 }

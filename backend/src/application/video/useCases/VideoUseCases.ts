@@ -1,4 +1,4 @@
-import { IVideoRepository, IRepoDiploma } from '../repositories/IVideoRepository';
+import { IVideoRepository, RepoDiplomaInfo } from '../repositories/IVideoRepository';
 import { IVideoStorageService } from '../services/IVideoStorageService';
 import { Video, VideoFilter } from '../../../domain/video/entities/Video';
 import {
@@ -7,20 +7,19 @@ import {
     CreateVideoRequestDTO,
     UpdateVideoRequestDTO,
     DeleteVideoRequestDTO
-} from '../../../domain/video/dtos/VideoRequestDTOs';
+} from '../dtos/VideoRequestDTOs';
 import {
     GetVideosResponseDTO,
     GetVideoByIdResponseDTO,
     CreateVideoResponseDTO,
     UpdateVideoResponseDTO,
     ResponseDTO
-} from '../../../domain/video/dtos/VideoResponseDTOs';
+} from '../dtos/VideoResponseDTOs';
 import { VideoConstants } from '../constants/VideoConstants';
 import {
     InvalidVideoIdError,
     VideoNotFoundError,
     InvalidDiplomaIdError,
-    VideoDomainError,
     InvalidVideoDataError
 } from '../../../domain/video/errors/VideoErrors';
 import {
@@ -162,7 +161,6 @@ export class GetVideoByIdUseCase implements IGetVideoByIdUseCase {
             throw new VideoNotFoundError(params.id);
         }
 
-        // Ensuring diploma info is consistent handled by repository/mapper, but verifying here
         let diplomaInfo: IDiplomaInfo | undefined = video.diploma;
 
         if (!diplomaInfo && video.diplomaId) {
@@ -173,7 +171,7 @@ export class GetVideoByIdUseCase implements IGetVideoByIdUseCase {
                     title: diploma.title,
                     category: diploma.category
                 };
-                video.diploma = diplomaInfo; // Update entity
+                video.diploma = diplomaInfo;
             }
         }
 
@@ -253,18 +251,12 @@ export class UpdateVideoUseCase implements IUpdateVideoUseCase {
             updateData.diplomaId = newDiplomaId;
         }
 
-        // Remove category from updateData as it's not on Video entity directly (it's derived from relationship)
-        // But we are passing Partial<Video> to repo. 
-        // Note: Repository update should handle specific fields or ignore helpers. 
-        // Here we just ensure we don't pass 'category' property if it existed (it's in DTO but not Entity)
-
         if (params.videoFile) {
             if (existingVideo.videoUrl) {
                 await this._videoStorageService.deleteVideo(existingVideo.videoUrl);
             }
             updateData.videoUrl = await this._videoStorageService.uploadVideo(params.videoFile.path);
         } else {
-            // If no new file, keep old URL unless explicitly provided
             if (params.videoUrl && params.videoUrl.trim().startsWith('http')) {
                 updateData.videoUrl = params.videoUrl;
             } else {

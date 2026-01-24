@@ -1,6 +1,26 @@
 import { IAdmissionsRepository } from "../../../application/admission/repositories/IAdmissionsRepository";
-import { CreateApplicationUseCase, GetApplicationUseCase, SaveSectionUseCase, ProcessPaymentUseCase, ConfirmPaymentUseCase, FinalizeAdmissionUseCase, UploadDocumentUseCase, UploadMultipleDocumentsUseCase, GetDocumentByKeyUseCase } from "../../../application/admission/useCases/AdmissionUseCases";
-import { ICreateApplicationUseCase, IGetApplicationUseCase, ISaveSectionUseCase, IProcessPaymentUseCase, IConfirmPaymentUseCase, IFinalizeAdmissionUseCase, IUploadDocumentUseCase, IUploadMultipleDocumentsUseCase, IGetDocumentByKeyUseCase } from "../../../application/admission/useCases/IAdmissionUseCases";
+import {
+  ICreateApplicationUseCase,
+  IGetApplicationUseCase,
+  ISaveSectionUseCase,
+  IProcessPaymentUseCase,
+  IConfirmPaymentUseCase,
+  IFinalizeAdmissionUseCase,
+  IUploadDocumentUseCase,
+  IUploadMultipleDocumentsUseCase,
+  IServeDocumentUseCase,
+} from "../../../application/admission/useCases/IAdmissionUseCases";
+import {
+  CreateApplicationUseCase,
+  GetApplicationUseCase,
+  SaveSectionUseCase,
+  ProcessPaymentUseCase,
+  ConfirmPaymentUseCase,
+  FinalizeAdmissionUseCase,
+  UploadDocumentUseCase,
+  UploadMultipleDocumentsUseCase,
+  ServeDocumentUseCase,
+} from "../../../application/admission/useCases/AdmissionUseCases";
 import { AdmissionsRepository } from "../../repositories/admission/AdmissionsRepository";
 import { AdmissionController } from "../../../presentation/http/admission/AdmissionController";
 import { IAdmissionController } from "../../../presentation/http/IHttp";
@@ -15,7 +35,7 @@ export function getAdmissionsComposer(): IAdmissionController {
   const finalizeAdmissionUseCase: IFinalizeAdmissionUseCase = new FinalizeAdmissionUseCase(repository);
   const uploadDocumentUseCase: IUploadDocumentUseCase = new UploadDocumentUseCase(repository);
   const uploadMultipleDocumentsUseCase: IUploadMultipleDocumentsUseCase = new UploadMultipleDocumentsUseCase(repository);
-  const getDocumentByKeyUseCase: IGetDocumentByKeyUseCase = new GetDocumentByKeyUseCase(repository);
+  const serveDocumentUseCase: IServeDocumentUseCase = new ServeDocumentUseCase(repository);
   return new AdmissionController(
     createApplicationUseCase,
     getApplicationUseCase,
@@ -25,6 +45,6 @@ export function getAdmissionsComposer(): IAdmissionController {
     finalizeAdmissionUseCase,
     uploadDocumentUseCase,
     uploadMultipleDocumentsUseCase,
-    getDocumentByKeyUseCase,
+    serveDocumentUseCase,
   );
 }

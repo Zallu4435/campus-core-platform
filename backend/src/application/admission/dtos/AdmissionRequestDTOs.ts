@@ -1,4 +1,4 @@
-import { PaymentMethod, IAdmission } from "../entities/AdmissionTypes";
+import { PaymentMethod, IAdmission } from "../../../domain/admission/entities/AdmissionTypes";
 
 export interface CreateApplicationRequestDTO {
   userId: string;

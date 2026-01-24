@@ -4,14 +4,14 @@ import {
     CreateVideoRequestDTO,
     UpdateVideoRequestDTO,
     DeleteVideoRequestDTO
-} from '../../../domain/video/dtos/VideoRequestDTOs';
+} from '../dtos/VideoRequestDTOs';
 import {
     GetVideosResponseDTO,
     GetVideoByIdResponseDTO,
     CreateVideoResponseDTO,
     UpdateVideoResponseDTO,
     ResponseDTO
-} from '../../../domain/video/dtos/VideoResponseDTOs';
+} from '../dtos/VideoResponseDTOs';
 
 export interface IGetVideosUseCase {
     execute(params: GetVideosRequestDTO): Promise<ResponseDTO<GetVideosResponseDTO>>;
