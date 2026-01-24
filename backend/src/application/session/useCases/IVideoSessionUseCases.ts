@@ -1,5 +1,20 @@
-import { CreateVideoSessionRequestDTO, JoinVideoSessionRequestDTO, UpdateVideoSessionRequestDTO, DeleteVideoSessionRequestDTO } from '../../../domain/session/dtos/VideoSessionRequestDTOs';
-import { CreateVideoSessionResponseDTO, JoinVideoSessionResponseDTO, VideoSessionResponseDTO, UpdateVideoSessionResponseDTO, UpdateVideoSessionStatusResponseDTO, DeleteVideoSessionResponseDTO, UserSessionResponseDTO, SessionListResponseDTO } from '../../../domain/session/dtos/VideoSessionResponseDTOs';
+import {
+    CreateVideoSessionRequestDTO,
+    JoinVideoSessionRequestDTO,
+    UpdateVideoSessionRequestDTO,
+    DeleteVideoSessionRequestDTO,
+    GetSessionAttendanceRequestDTO
+} from '../dtos/VideoSessionRequestDTOs';
+import {
+    CreateVideoSessionResponseDTO,
+    JoinVideoSessionResponseDTO,
+    VideoSessionResponseDTO,
+    UpdateVideoSessionResponseDTO,
+    UpdateVideoSessionStatusResponseDTO,
+    DeleteVideoSessionResponseDTO,
+    SessionListResponseDTO,
+    AttendanceRecordResponseDTO
+} from '../dtos/VideoSessionResponseDTOs';
 import { VideoSessionStatus } from '../../../domain/session/enums/VideoSessionStatus';
 
 export interface ICreateVideoSessionUseCase {
@@ -35,7 +50,7 @@ export interface IUpdateVideoSessionStatusUseCase {
 }
 
 export interface IGetSessionAttendanceUseCase {
-    execute(sessionId: string, filters: any): Promise<any>;
+    execute(sessionId: string, filters: GetSessionAttendanceRequestDTO): Promise<AttendanceRecordResponseDTO[]>;
 }
 
 export interface IUpdateAttendanceStatusUseCase {

@@ -1,5 +1,7 @@
 import { ISessionRepository } from '../../../application/session/repositories/ISessionRepository';
 import { SessionRepository } from '../../repositories/session/SessionRepository';
+import { IAuthRepository } from '../../../application/auth/repositories/IAuthRepository';
+import { AuthRepository } from '../../repositories/auth/AuthRepository';
 import {
   CreateVideoSessionUseCase,
   JoinVideoSessionUseCase,
@@ -33,6 +35,8 @@ import { IVideoSessionController } from '../../../presentation/http/IHttp';
 
 export function getVideoSessionComposer(): IVideoSessionController {
   const repository: ISessionRepository = new SessionRepository();
+  const authRepository: IAuthRepository = new AuthRepository();
+
   const createUseCase: ICreateVideoSessionUseCase = new CreateVideoSessionUseCase(repository);
   const joinUseCase: IJoinVideoSessionUseCase = new JoinVideoSessionUseCase(repository);
   const getUseCase: IGetVideoSessionUseCase = new GetVideoSessionUseCase(repository);
@@ -41,7 +45,7 @@ export function getVideoSessionComposer(): IVideoSessionController {
   const getAllUseCase: IGetAllVideoSessionsUseCase = new GetAllVideoSessionsUseCase(repository);
   const getUserSessionsUseCase: IGetUserSessionsUseCase = new GetUserSessionsUseCase(repository);
   const updateStatusUseCase: IUpdateVideoSessionStatusUseCase = new UpdateVideoSessionStatusUseCase(repository);
-  const getSessionAttendanceUseCase: IGetSessionAttendanceUseCase = new GetSessionAttendanceUseCase(repository);
+  const getSessionAttendanceUseCase: IGetSessionAttendanceUseCase = new GetSessionAttendanceUseCase(repository, authRepository);
   const updateAttendanceStatusUseCase: IUpdateAttendanceStatusUseCase = new UpdateAttendanceStatusUseCase(repository);
   const recordAttendanceJoinUseCase: IRecordAttendanceJoinUseCase = new RecordAttendanceJoinUseCase(repository);
   const recordAttendanceLeaveUseCase: IRecordAttendanceLeaveUseCase = new RecordAttendanceLeaveUseCase(repository);

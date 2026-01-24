@@ -1,6 +1,5 @@
-import { VideoSessionStatus } from '../enums/VideoSessionStatus';
+import { VideoSessionStatus } from "../../../domain/session/enums/VideoSessionStatus";
 
-// Minimal DTO for session list (table display only)
 export interface SessionListResponseDTO {
     id: string;
     title: string;
@@ -10,7 +9,7 @@ export interface SessionListResponseDTO {
     attendees?: number;
     maxAttendees?: number;
     startTime: Date;
-    joinUrl?: string; // Add this line
+    joinUrl?: string;
 }
 
 export interface VideoSessionResponseDTO {
@@ -27,7 +26,7 @@ export interface VideoSessionResponseDTO {
     duration?: number;
     maxAttendees?: number;
     tags?: string[];
-    difficulty?: 'beginner' | 'intermediate' | 'advanced';
+    difficulty?: "beginner" | "intermediate" | "advanced";
     isLive?: boolean;
     hasRecording?: boolean;
     recordingUrl?: string;
@@ -36,7 +35,6 @@ export interface VideoSessionResponseDTO {
     joinUrl?: string;
 }
 
-// New DTO for user-facing session data (lightweight)
 export interface UserSessionResponseDTO {
     id: string;
     title: string;
@@ -46,13 +44,21 @@ export interface UserSessionResponseDTO {
     course?: string;
     duration?: number;
     tags?: string[];
-    difficulty?: 'beginner' | 'intermediate' | 'advanced';
+    difficulty?: "beginner" | "intermediate" | "advanced";
     hasRecording?: boolean;
     startTime: Date;
     joinUrl?: string;
     isLive?: boolean;
     isEnrolled?: boolean;
     userAttendanceStatus?: string;
+}
+
+export interface AttendanceRecordResponseDTO {
+    id: string;
+    username: string;
+    email: string;
+    intervals: Array<{ joinedAt: Date; leftAt?: Date }>;
+    status: string | null;
 }
 
 export interface CreateVideoSessionResponseDTO {
@@ -75,4 +81,4 @@ export interface UpdateVideoSessionStatusResponseDTO {
 
 export interface DeleteVideoSessionResponseDTO {
     message: string;
-} 
+}

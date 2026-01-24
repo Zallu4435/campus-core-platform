@@ -10,7 +10,7 @@ export interface CreateVideoSessionRequestDTO {
     duration?: number;
     maxAttendees?: number;
     tags?: string[];
-    difficulty?: 'beginner' | 'intermediate' | 'advanced';
+    difficulty?: "beginner" | "intermediate" | "advanced";
     isLive?: boolean;
     hasRecording?: boolean;
     recordingUrl?: string;
@@ -38,7 +38,7 @@ export interface UpdateVideoSessionRequestDTO {
         duration?: number;
         maxAttendees?: number;
         tags?: string[];
-        difficulty?: 'beginner' | 'intermediate' | 'advanced';
+        difficulty?: "beginner" | "intermediate" | "advanced";
         isLive?: boolean;
         hasRecording?: boolean;
         recordingUrl?: string;
@@ -65,4 +65,9 @@ export interface UpdateAttendanceStatusRequestDTO {
 
 export interface GetSessionAttendanceRequestDTO {
     sessionId: string;
-} 
+    search?: string;
+    decision?: string;
+    attendanceLevel?: string;
+    startDate?: string;
+    endDate?: string;
+}

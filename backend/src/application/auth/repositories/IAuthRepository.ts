@@ -43,4 +43,5 @@ export interface IAuthRepository {
   deleteSessionBySessionId(sessionId: string): Promise<void>;
   deleteAllSessionsByUserId(userId: string): Promise<void>;
   getAllSessions(): Promise<RefreshSessionData[]>;
+  findUsersByIds(ids: string[]): Promise<User[]>;
 }

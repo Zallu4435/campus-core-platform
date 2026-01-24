@@ -1,35 +1,36 @@
+import { FilterQuery } from 'mongoose';
 import { ISessionRepository } from '../../../application/session/repositories/ISessionRepository';
-import { PaymentFilter, VideoSession, VideoSessionFilter } from '../../../domain/session/entities/VideoSession';
-import { VideoSessionModel } from '../../database/mongoose/session/session.model';
-import { User } from '../../database/mongoose/auth/user.model';
+import { VideoSession } from '../../../domain/session/entities/VideoSession';
+import { VideoSessionModel, VideoSessionDoc } from '../../database/mongoose/session/session.model';
+import { VideoSessionMapper } from './mappers/VideoSessionMapper';
 
 export class SessionRepository implements ISessionRepository {
   async create(sessionData: Partial<VideoSession>): Promise<VideoSession> {
-    const doc = await VideoSessionModel.create(sessionData);
-    return doc.toObject() as VideoSession;
+    const persistenceData = sessionData as unknown as Record<string, unknown>;
+    const doc = await VideoSessionModel.create(persistenceData);
+    return VideoSessionMapper.toDomain(doc as unknown as VideoSessionDoc);
   }
 
   async join(sessionId: string, participantId: string): Promise<VideoSession> {
     const session = await VideoSessionModel.findById(sessionId);
     if (!session) throw new Error('Session not found');
+
     if (!session.participants.includes(participantId)) {
       session.participants.push(participantId);
       await session.save();
     }
-    return session.toObject() as VideoSession;
+    return VideoSessionMapper.toDomain(session);
   }
 
   async getById(sessionId: string): Promise<VideoSession | null> {
-    const session = await VideoSessionModel.findById(sessionId);
-    return session ? (session.toObject() as VideoSession) : null;
+    const session = await VideoSessionModel.findById(sessionId).lean() as VideoSessionDoc | null;
+    return session ? VideoSessionMapper.toDomain(session) : null;
   }
 
   async update(sessionId: string, data: Partial<VideoSession>): Promise<VideoSession | null> {
-    const session = await VideoSessionModel.findByIdAndUpdate(sessionId, data, { new: true });
-    if (!session) {
-      console.log('Session not found for update:', sessionId);
-    }
-    return session ? (session.toObject() as VideoSession) : null;
+    const persistenceData = data as unknown as Record<string, unknown>;
+    const session = await VideoSessionModel.findByIdAndUpdate(sessionId, persistenceData, { new: true }).lean() as VideoSessionDoc | null;
+    return session ? VideoSessionMapper.toDomain(session) : null;
   }
 
   async delete(sessionId: string): Promise<void> {
@@ -37,7 +38,7 @@ export class SessionRepository implements ISessionRepository {
   }
 
   async getAll(params: { search?: string; status?: string; instructor?: string; course?: string } = {}): Promise<VideoSession[]> {
-    const query: PaymentFilter = {};
+    const query: FilterQuery<VideoSessionDoc> = {};
 
     if (params.status && params.status !== 'all') {
       if (params.status === 'upcoming') {
@@ -70,164 +71,38 @@ export class SessionRepository implements ISessionRepository {
       if (query.$or) {
         query.$and = [
           { $or: query.$or },
-          { $or: searchConditions } 
+          { $or: searchConditions }
         ];
-        delete query.$or; 
+        delete query.$or;
       } else {
         query.$or = searchConditions;
       }
     }
 
-    const sessions = await VideoSessionModel.find(query).sort({ createdAt: -1 });
-    return sessions.map(doc => doc.toObject() as VideoSession);
+    const sessions = await VideoSessionModel.find(query).sort({ createdAt: -1 }).lean() as VideoSessionDoc[];
+    return VideoSessionMapper.toDomainList(sessions);
   }
 
   async getUserSessions(params: { search?: string; status?: string; instructor?: string; course?: string; userId?: string } = {}): Promise<VideoSession[]> {
-    const sessions = await this.getAll(params);
-    return sessions;
-  }
-
-  async getSessionAttendance(sessionId: string, filters: VideoSessionFilter = {}) {
-    const session = await VideoSessionModel.findById(sessionId);
-    if (!session) throw new Error('Session not found');
-    // Debug: session status and counts
-    console.debug('[SessionRepository.getSessionAttendance] sessionId:', sessionId, 'status:', session.status, 'attendanceCount:', Array.isArray(session.attendance) ? session.attendance.length : 0);
-    let attendance = session.attendance || [];
-
-    if (filters.search && filters.search.trim() !== '') {
-      const search = filters.search.toLowerCase();
-      const userIds = attendance.map((a) => a.userId);
-      const users = await User.find({ _id: { $in: userIds } }).lean();
-      const userMap = new Map(users.map((u) => [u._id.toString(), u]));
-      attendance = attendance.filter((a) => {
-        const user = userMap.get(a.userId);
-        return user && (
-          (user.firstName && user.firstName.toLowerCase().includes(search)) ||
-          (user.lastName && user.lastName.toLowerCase().includes(search)) ||
-          (user.email && user.email.toLowerCase().includes(search))
-        );
-      });
-    }
-
-    if (filters.decision && filters.decision.trim() !== '' && filters.decision !== 'all') {
-      const decision = filters.decision.toLowerCase();
-
-      attendance = attendance.filter((a) => {
-
-        if (!a.status) {
-          const result = decision === 'pending';
-          return result;
-        }
-
-        const statusLower = a.status.toLowerCase();
-
-        let result = statusLower === decision;
-        if (decision === 'approved' && (statusLower === 'approve' || statusLower === 'approved')) {
-          result = true;
-        } else if (decision === 'approve' && (statusLower === 'approve' || statusLower === 'approved')) {
-          result = true;
-        } else if (decision === 'denied' && (statusLower === 'deny' || statusLower === 'denied')) {
-          result = true;
-        } else if (decision === 'deny' && (statusLower === 'deny' || statusLower === 'denied')) {
-          result = true;
-        } else if (decision === 'pending' && (statusLower === 'pending' || !a.status)) {
-          result = true;
-        }
-
-        return result;
-      });
-    }
-
-    if (filters.attendanceLevel && filters.attendanceLevel.trim() !== '' && filters.attendanceLevel !== 'all') {
-      const level = filters.attendanceLevel.toLowerCase();
-      attendance = attendance.filter((a) => {
-        let totalMinutes = 0;
-        if (Array.isArray(a.intervals)) {
-          totalMinutes = a.intervals.reduce((sum: number, interval) => {
-            if (interval.joinedAt && interval.leftAt) {
-              const joined = new Date(interval.joinedAt).getTime();
-              const left = new Date(interval.leftAt).getTime();
-              if (!isNaN(joined) && !isNaN(left) && left > joined) {
-                return sum + (left - joined) / 60000;
-              }
-            }
-            return sum;
-          }, 0);
-        }
-        let calculatedLevel = 'low';
-        if (totalMinutes >= 60) calculatedLevel = 'high';
-        else if (totalMinutes >= 30) calculatedLevel = 'medium';
-
-        return calculatedLevel === level;
-      });
-    }
-
-    if (filters.startDate || filters.endDate) {
-      attendance = attendance.filter((a) => {
-        if (!Array.isArray(a.intervals) || a.intervals.length === 0) {
-          return false;
-        }
-
-        return a.intervals.some((interval) => {
-          if (!interval.joinedAt) return false;
-
-          const joinDate = new Date(interval.joinedAt);
-          let startDate = null;
-          let endDate = null;
-
-          if (filters.startDate) {
-            startDate = new Date(filters.startDate);
-            startDate.setHours(0, 0, 0, 0);
-          }
-
-          if (filters.endDate) {
-            endDate = new Date(filters.endDate);
-            endDate.setHours(23, 59, 59, 999);
-          }
-
-          if (startDate && joinDate < startDate) return false;
-
-          if (endDate && joinDate > endDate) return false;
-
-          return true;
-        });
-      });
-    }
-
-    console.debug('[SessionRepository.getSessionAttendance] attendance after filters count:', attendance.length, 'filters:', filters);
-    const userIds = attendance.map((a) => a.userId);
-    const users = await User.find({ _id: { $in: userIds } }).lean();
-    const userMap = new Map(users.map((u) => [u._id.toString(), u]));
-    const result = attendance
-      .filter((a) => userMap.has(a.userId))
-      .map((a) => {
-        const user = userMap.get(a.userId);
-        return {
-          id: a.userId,
-          username: user ? (user.firstName + (user.lastName ? ' ' + user.lastName : '')) : '',
-          email: user ? user.email : '',
-          intervals: a.intervals || [],
-          status: a.status || null
-        };
-      });
-    console.debug('[SessionRepository.getSessionAttendance] result count:', result.length);
-    return result;
+    return this.getAll(params);
   }
 
   async updateAttendanceStatus(sessionId: string, userId: string, status: string, name: string): Promise<void> {
     const session = await VideoSessionModel.findById(sessionId);
     if (!session) throw new Error('Session not found');
 
-    const attendanceIndex = session.attendance.findIndex((a) => a.userId === userId);
+    const attendanceIndex = session.attendance?.findIndex((a) => a.userId === userId) ?? -1;
     if (attendanceIndex === -1) throw new Error('Attendance record not found');
 
-    session.attendance[attendanceIndex].status = status;
+    if (session.attendance) {
+      session.attendance[attendanceIndex].status = status;
+    }
 
     if (status === 'approved' || status === 'approve') {
-      session.attendeeList = session.attendeeList.filter((a) => a.id !== userId);
+      session.attendeeList = session.attendeeList?.filter((a) => a.id !== userId) ?? [];
       session.attendeeList.push({ id: userId, name });
     } else {
-      session.attendeeList = session.attendeeList.filter((a) => a.id !== userId);
+      session.attendeeList = session.attendeeList?.filter((a) => a.id !== userId) ?? [];
     }
 
     session.markModified('attendance');
@@ -275,7 +150,7 @@ export class SessionRepository implements ISessionRepository {
       throw new Error('Session not found');
     }
 
-    const attendance = session.attendance.find((a) => a.userId === userId);
+    const attendance = session.attendance?.find((a) => a.userId === userId);
     if (!attendance || !attendance.intervals || attendance.intervals.length === 0) {
       throw new Error('No attendance record found');
     }
@@ -307,4 +182,4 @@ export class SessionRepository implements ISessionRepository {
       throw new Error('Failed to update attendance leave');
     }
   }
-} 
+}

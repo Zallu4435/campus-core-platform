@@ -308,4 +308,9 @@ export class AuthRepository implements IAuthRepository {
     async getAllSessions(): Promise<RefreshSessionData[]> {
         return await RefreshSession.find({});
     }
+
+    async findUsersByIds(ids: string[]): Promise<User[]> {
+        const docs = await UserModel.find({ _id: { $in: ids } });
+        return docs.map(doc => UserMapper.toDomain(doc));
+    }
 }

@@ -1,66 +1,32 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import { VideoSessionStatus } from '../../../../domain/session/enums/VideoSessionStatus';
+import { VideoSessionProps } from '../../../../domain/session/entities/VideoSessionTypes';
 
-export interface Attendee {
-    id: string;
-    name: string;
-}
-
-export interface AttendanceInterval {
-    joinedAt: Date;
-    leftAt?: Date;
-}
-
-export interface AttendanceRecord {
-    userId: string;
-    intervals: AttendanceInterval[];
-    status?: string;
-}
-
-export interface IVideoSession extends Document {
-    title: string;
-    hostId: string;
-    participants: string[];
-    startTime: Date;
-    endTime: Date | null;
-    status: VideoSessionStatus;
-    description?: string;
-    instructor?: string;
-    course?: string;
-    duration?: number;
-    maxAttendees?: number;
-    tags?: string[];
-    difficulty?: 'beginner' | 'intermediate' | 'advanced';
-    isLive?: boolean;
-    hasRecording?: boolean;
-    recordingUrl?: string;
-    attendees?: number;
-    attendeeList?: Attendee[];
-    joinUrl?: string;
-    attendance?: AttendanceRecord[];
+export interface VideoSessionDoc extends Omit<VideoSessionProps, 'id'>, Document {
+    _id: mongoose.Types.ObjectId;
     createdAt: Date;
     updatedAt: Date;
 }
 
-const AttendeeSchema = new Schema<Attendee>({
+const AttendeeSchema = new Schema({
     id: { type: String, required: true },
     name: { type: String, required: true }
 }, { _id: false });
 
-const AttendanceIntervalSchema = new Schema<AttendanceInterval>({
+const AttendanceIntervalSchema = new Schema({
     joinedAt: { type: Date, required: true },
     leftAt: { type: Date }
 }, { _id: false });
 
-const AttendanceRecordSchema = new Schema<AttendanceRecord>({
+const AttendanceRecordSchema = new Schema({
     userId: { type: String, required: true },
     intervals: { type: [AttendanceIntervalSchema], default: [] },
     status: { type: String },
 }, { _id: false });
 
-const VideoSessionSchema = new Schema<IVideoSession>({
+const VideoSessionSchema = new Schema<VideoSessionDoc>({
     title: { type: String, required: true, trim: true },
-    hostId: { type: String, },
+    hostId: { type: String, required: true },
     participants: { type: [String], default: [] },
     startTime: { type: Date, required: true },
     endTime: { type: Date, default: null },
@@ -81,4 +47,4 @@ const VideoSessionSchema = new Schema<IVideoSession>({
     attendance: { type: [AttendanceRecordSchema], default: [] },
 }, { timestamps: true });
 
-export const VideoSessionModel = mongoose.model<IVideoSession>('VideoSession', VideoSessionSchema); 
+export const VideoSessionModel = mongoose.model<VideoSessionDoc>('VideoSession', VideoSessionSchema); 
