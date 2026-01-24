@@ -3,23 +3,30 @@ import {
   IApproveSportRequestUseCase,
   IRejectSportRequestUseCase,
   IGetSportRequestDetailsUseCase,
-  IJoinSportUseCase,
+  IJoinSportUseCase
 } from "../../../application/sports/useCases/ISportRequestUseCases";
-import { ISportRequestController, IHttpRequest, IHttpResponse, HttpSuccess, HttpErrors } from "../IHttp";
+import {
+  GetSportRequestsRequestDTO,
+  ApproveSportRequestRequestDTO,
+  RejectSportRequestRequestDTO,
+  GetSportRequestDetailsRequestDTO,
+  JoinSportRequestDTO
+} from "../../../application/sports/dtos/SportRequestDTOs";
+import { IHttpRequest, IHttpResponse, HttpErrors, HttpSuccess, ISportRequestController } from "../IHttp";
 
 export class SportRequestController implements ISportRequestController {
-  private _httpSuccess: HttpSuccess;
   private _httpErrors: HttpErrors;
+  private _httpSuccess: HttpSuccess;
 
   constructor(
-    private readonly _getSportRequestsUseCase: IGetSportRequestsUseCase,
-    private readonly _approveSportRequestUseCase: IApproveSportRequestUseCase,
-    private readonly _rejectSportRequestUseCase: IRejectSportRequestUseCase,
-    private readonly _getSportRequestDetailsUseCase: IGetSportRequestDetailsUseCase,
-    private readonly _joinSportUseCase: IJoinSportUseCase
+    private _getSportRequestsUseCase: IGetSportRequestsUseCase,
+    private _approveSportRequestUseCase: IApproveSportRequestUseCase,
+    private _rejectSportRequestUseCase: IRejectSportRequestUseCase,
+    private _getSportRequestDetailsUseCase: IGetSportRequestDetailsUseCase,
+    private _joinSportUseCase: IJoinSportUseCase
   ) {
-    this._httpSuccess = new HttpSuccess();
     this._httpErrors = new HttpErrors();
+    this._httpSuccess = new HttpSuccess();
   }
 
   async getSportRequests(httpRequest: IHttpRequest): Promise<IHttpResponse> {
@@ -28,95 +35,63 @@ export class SportRequestController implements ISportRequestController {
       limit = "10",
       status = "all",
       type = "all",
-      startDate,
-      endDate,
-      search,
-    } = httpRequest.query;
+      startDate = "",
+      endDate = "",
+      search = ""
+    } = httpRequest.query || {};
 
-    if (
-      isNaN(Number(page)) ||
-      isNaN(Number(limit)) ||
-      Number(page) < 1 ||
-      Number(limit) < 1
-    ) {
-      return this._httpErrors.error_400();
-    }
-
-    const result = await this._getSportRequestsUseCase.execute({
+    const getSportRequestsRequestDTO: GetSportRequestsRequestDTO = {
       page: Number(page),
       limit: Number(limit),
       status: String(status),
       type: String(type),
-      startDate: startDate ? String(startDate) : undefined,
-      endDate: endDate ? String(endDate) : undefined,
-      search: search ? String(search) : undefined,
-    });
+      startDate: String(startDate),
+      endDate: String(endDate),
+      search: String(search),
+    };
 
-    return this._httpSuccess.success_200({
-      data: result.data,
-      totalPages: result.totalPages,
-      totalItems: result.totalItems,
-      currentPage: result.currentPage,
-    });
+    const response = await this._getSportRequestsUseCase.execute(getSportRequestsRequestDTO);
+    return this._httpSuccess.success_200(response);
   }
 
   async approveSportRequest(httpRequest: IHttpRequest): Promise<IHttpResponse> {
-    const { id } = httpRequest.params;
-
-    if (!id) {
-      return this._httpErrors.error_400();
-    }
-
-    const result = await this._approveSportRequestUseCase.execute({ id });
-    return this._httpSuccess.success_200(result);
+    const { id } = httpRequest.params || {};
+    const approveSportRequestRequestDTO: ApproveSportRequestRequestDTO = { id };
+    const response = await this._approveSportRequestUseCase.execute(approveSportRequestRequestDTO);
+    return this._httpSuccess.success_200(response);
   }
 
   async rejectSportRequest(httpRequest: IHttpRequest): Promise<IHttpResponse> {
-    const { id } = httpRequest.params;
-
-    if (!id) {
-      return this._httpErrors.error_400();
-    }
-
-    const result = await this._rejectSportRequestUseCase.execute({ id });
-    return this._httpSuccess.success_200(result);
+    const { id } = httpRequest.params || {};
+    const rejectSportRequestRequestDTO: RejectSportRequestRequestDTO = { id };
+    const response = await this._rejectSportRequestUseCase.execute(rejectSportRequestRequestDTO);
+    return this._httpSuccess.success_200(response);
   }
 
   async getSportRequestDetails(httpRequest: IHttpRequest): Promise<IHttpResponse> {
-    const { id } = httpRequest.params;
-
-    if (!id) {
-      return this._httpErrors.error_400();
-    }
-
-    const requestDetails = await this._getSportRequestDetailsUseCase.execute({ id });
-    return this._httpSuccess.success_200(requestDetails);
+    const { id } = httpRequest.params || {};
+    const getSportRequestDetailsRequestDTO: GetSportRequestDetailsRequestDTO = { id };
+    const response = await this._getSportRequestDetailsUseCase.execute(getSportRequestDetailsRequestDTO);
+    return this._httpSuccess.success_200(response);
   }
 
   async joinSport(httpRequest: IHttpRequest): Promise<IHttpResponse> {
-    const { sportId } = httpRequest.params;
-    const { reason, additionalInfo } = httpRequest.body;
-    const studentId = httpRequest.headers?.user?.id;
+    const { sportId } = httpRequest.params || {};
+    const userId = httpRequest.user?.id; // Using strict property access
+    const { whyJoin, additionalInfo } = httpRequest.body || {};
 
-    if (!sportId) {
+    if (!sportId || !userId) {
       return this._httpErrors.error_400();
     }
 
-    if (!studentId) {
-      return this._httpErrors.error_400();
-    }
-
-    if (!reason) {
-      return this._httpErrors.error_400();
-    }
-
-    const result = await this._joinSportUseCase.execute({
+    const joinSportRequestDTO: JoinSportRequestDTO = {
       sportId,
-      studentId,
-      reason,
-      additionalInfo,
-    });
+      userId,
+      whyJoin,
+      additionalInfo
+    };
 
-    return this._httpSuccess.success_200(result);
+    const response = await this._joinSportUseCase.execute(joinSportRequestDTO);
+    return this._httpSuccess.success_201(response);
   }
-} 
+}

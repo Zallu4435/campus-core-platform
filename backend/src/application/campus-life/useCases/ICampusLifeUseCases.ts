@@ -9,12 +9,14 @@ import {
 } from "../dtos/CampusEventDTOs";
 import {
   GetSportsRequestDTO,
-  GetSportsResponseDTO,
   GetSportByIdRequestDTO,
-  GetSportByIdResponseDTO,
   JoinSportRequestDTO,
+} from "../../sports/dtos/SportRequestDTOs";
+import {
+  GetSportsResponseDTO,
+  GetSportByIdResponseDTO,
   JoinSportResponseDTO
-} from "../dtos/SportDTOs";
+} from "../../sports/dtos/SportResponseDTOs";
 import {
   GetClubsRequestDTO,
   GetClubsResponseDTO,

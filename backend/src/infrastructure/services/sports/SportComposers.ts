@@ -4,27 +4,26 @@ import {
   GetSportByIdUseCase,
   CreateSportUseCase,
   UpdateSportUseCase,
-  DeleteSportUseCase,
+  DeleteSportUseCase
 } from "../../../application/sports/useCases/SportUseCases";
 import {
   IGetSportsUseCase,
   IGetSportByIdUseCase,
   ICreateSportUseCase,
   IUpdateSportUseCase,
-  IDeleteSportUseCase,
+  IDeleteSportUseCase
 } from "../../../application/sports/useCases/ISportUseCases";
-import { SportsRepository } from "../../../infrastructure/repositories/sports/SportsRepository";
 import { SportsController } from "../../../presentation/http/sports/SportsController";
+import { SportsRepository } from "../../repositories/sports/SportsRepository";
 import { ISportsController } from "../../../presentation/http/IHttp";
 
 export function getSportsComposer(): ISportsController {
-  const sportsRepository: ISportsRepository = new SportsRepository();
-
-  const getSportsUseCase: IGetSportsUseCase = new GetSportsUseCase(sportsRepository);
-  const getSportByIdUseCase: IGetSportByIdUseCase = new GetSportByIdUseCase(sportsRepository);
-  const createSportUseCase: ICreateSportUseCase = new CreateSportUseCase(sportsRepository);
-  const updateSportUseCase: IUpdateSportUseCase = new UpdateSportUseCase(sportsRepository);
-  const deleteSportUseCase: IDeleteSportUseCase = new DeleteSportUseCase(sportsRepository);
+  const repository: ISportsRepository = new SportsRepository();
+  const getSportsUseCase: IGetSportsUseCase = new GetSportsUseCase(repository);
+  const getSportByIdUseCase: IGetSportByIdUseCase = new GetSportByIdUseCase(repository);
+  const createSportUseCase: ICreateSportUseCase = new CreateSportUseCase(repository);
+  const updateSportUseCase: IUpdateSportUseCase = new UpdateSportUseCase(repository);
+  const deleteSportUseCase: IDeleteSportUseCase = new DeleteSportUseCase(repository);
 
   return new SportsController(
     getSportsUseCase,

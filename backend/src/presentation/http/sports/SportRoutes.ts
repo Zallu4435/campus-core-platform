@@ -3,45 +3,103 @@ import { expressAdapter } from "../../adapters/ExpressAdapter";
 import { getSportsComposer } from "../../../infrastructure/services/sports/SportComposers";
 import { getSportRequestsComposer } from "../../../infrastructure/services/sports/SportRequestComposers";
 import { authMiddleware } from "../../../shared/middlewares/authMiddleware";
+import { validate } from "../../../shared/middlewares/validationMiddleware";
+import {
+  getSportsSchema,
+  sportIdParamSchema,
+  createSportSchema,
+  updateSportSchema,
+  getSportRequestsSchema,
+  sportRequestIdParamSchema
+} from "../../../shared/validation/schemas/SportSchemas";
 
 // --- Sport Router ---
 const sportRouter = Router();
 const sportController = getSportsComposer();
 
-sportRouter.get("/", authMiddleware, (req, res, next) =>
-  expressAdapter(req, res, next, sportController.getSports.bind(sportController))
+sportRouter.get(
+  "/",
+  authMiddleware,
+  validate(getSportsSchema),
+  (req, res, next) =>
+    expressAdapter(req, res, next, sportController.getSports.bind(sportController))
 );
-sportRouter.get("/:id", authMiddleware, (req, res, next) =>
-  expressAdapter(req, res, next, sportController.getSportById.bind(sportController))
+
+sportRouter.get(
+  "/:id",
+  authMiddleware,
+  validate(sportIdParamSchema),
+  (req, res, next) =>
+    expressAdapter(req, res, next, sportController.getSportById.bind(sportController))
 );
-sportRouter.post("/", authMiddleware, (req, res, next) =>
-  expressAdapter(req, res, next, sportController.createSport.bind(sportController))
+
+sportRouter.post(
+  "/",
+  authMiddleware,
+  validate(createSportSchema),
+  (req, res, next) =>
+    expressAdapter(req, res, next, sportController.createSport.bind(sportController))
 );
-sportRouter.put("/:id", authMiddleware, (req, res, next) =>
-  expressAdapter(req, res, next, sportController.updateSport.bind(sportController))
+
+sportRouter.put(
+  "/:id",
+  authMiddleware,
+  validate(updateSportSchema),
+  (req, res, next) =>
+    expressAdapter(req, res, next, sportController.updateSport.bind(sportController))
 );
-sportRouter.delete("/:id", authMiddleware, (req, res, next) =>
-  expressAdapter(req, res, next, sportController.deleteSport.bind(sportController))
+
+sportRouter.delete(
+  "/:id",
+  authMiddleware,
+  validate(sportIdParamSchema),
+  (req, res, next) =>
+    expressAdapter(req, res, next, sportController.deleteSport.bind(sportController))
 );
 
 // --- Sport Request Router ---
 const sportRequestRouter = Router();
 const sportRequestController = getSportRequestsComposer();
 
-sportRequestRouter.get("/", authMiddleware, (req, res, next) =>
-  expressAdapter(req, res, next, sportRequestController.getSportRequests.bind(sportRequestController))
-);
-sportRequestRouter.post("/:id/approve", authMiddleware, (req, res, next) =>
-  expressAdapter(req, res, next, sportRequestController.approveSportRequest.bind(sportRequestController))
-);
-sportRequestRouter.post("/:id/reject", authMiddleware, (req, res, next) =>
-  expressAdapter(req, res, next, sportRequestController.rejectSportRequest.bind(sportRequestController))
-);
-sportRequestRouter.get("/:id", authMiddleware, (req, res, next) =>
-  expressAdapter(req, res, next, sportRequestController.getSportRequestDetails.bind(sportRequestController))
-);
-sportRequestRouter.post("/join", authMiddleware, (req, res, next) =>
-  expressAdapter(req, res, next, sportRequestController.joinSport.bind(sportRequestController))
+sportRequestRouter.get(
+  "/",
+  authMiddleware,
+  validate(getSportRequestsSchema),
+  (req, res, next) =>
+    expressAdapter(req, res, next, sportRequestController.getSportRequests.bind(sportRequestController))
 );
 
-export { sportRouter, sportRequestRouter }; 
+sportRequestRouter.get(
+  "/:id",
+  authMiddleware,
+  validate(sportRequestIdParamSchema),
+  (req, res, next) =>
+    expressAdapter(req, res, next, sportRequestController.getSportRequestDetails.bind(sportRequestController))
+);
+
+sportRequestRouter.post(
+  "/:id/approve",
+  authMiddleware,
+  validate(sportRequestIdParamSchema),
+  (req, res, next) =>
+    expressAdapter(req, res, next, sportRequestController.approveSportRequest.bind(sportRequestController))
+);
+
+sportRequestRouter.post(
+  "/:id/reject",
+  authMiddleware,
+  validate(sportRequestIdParamSchema),
+  (req, res, next) =>
+    expressAdapter(req, res, next, sportRequestController.rejectSportRequest.bind(sportRequestController))
+);
+
+// Add joinSport route
+sportRequestRouter.post(
+  "/join/:id", // Standardized to use :id for sportId in params
+  authMiddleware,
+  validate(sportIdParamSchema),
+  (req, res, next) =>
+    expressAdapter(req, res, next, sportRequestController.joinSport.bind(sportRequestController))
+);
+
+export { sportRouter, sportRequestRouter };

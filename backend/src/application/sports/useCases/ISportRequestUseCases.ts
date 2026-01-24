@@ -1,16 +1,14 @@
-import { ISportsRepository } from "../repositories/ISportsRepository";
 import {
   GetSportRequestsRequestDTO,
   ApproveSportRequestRequestDTO,
   RejectSportRequestRequestDTO,
   GetSportRequestDetailsRequestDTO,
-  JoinSportRequestDTO,
-} from "../../../domain/sports/dtos/SportRequestDTOs";
+  JoinSportRequestDTO
+} from "../dtos/SportRequestDTOs";
 import {
   GetSportRequestsResponseDTO,
-  GetSportRequestDetailsResponseDTO,
-  JoinSportResponseDTO,
-} from "../../../domain/sports/dtos/SportResponseDTOs";
+  GetSportRequestDetailsResponseDTO
+} from "../dtos/SportResponseDTOs";
 
 export interface IGetSportRequestsUseCase {
   execute(params: GetSportRequestsRequestDTO): Promise<GetSportRequestsResponseDTO>;
@@ -29,5 +27,5 @@ export interface IGetSportRequestDetailsUseCase {
 }
 
 export interface IJoinSportUseCase {
-  execute(params: JoinSportRequestDTO): Promise<JoinSportResponseDTO>;
+  execute(params: JoinSportRequestDTO): Promise<{ message: string }>;
 }

@@ -1,19 +1,9 @@
+import { GetSportsRequestDTO, GetSportByIdRequestDTO, CreateSportRequestDTO, UpdateSportRequestDTO, DeleteSportRequestDTO } from "../dtos/SportRequestDTOs";
+import { GetSportsResponseDTO, GetSportByIdResponseDTO, CreateSportResponseDTO, UpdateSportResponseDTO } from "../dtos/SportResponseDTOs";
+import { RepositorySportData } from "../dtos/SportBaseDTOs";
 import { ISportsRepository } from "../repositories/ISportsRepository";
-import {
-  GetSportsRequestDTO,
-  GetSportByIdRequestDTO,
-  CreateSportRequestDTO,
-  UpdateSportRequestDTO,
-  DeleteSportRequestDTO,
-} from "../../../domain/sports/dtos/SportRequestDTOs";
-import {
-  GetSportsResponseDTO,
-  GetSportByIdResponseDTO,
-  CreateSportResponseDTO,
-  UpdateSportResponseDTO,
-  SportSummaryDTO,
-} from "../../../domain/sports/dtos/SportResponseDTOs";
-import { Sport, SportDocument, SportStatus } from "../../../domain/sports/entities/SportTypes";
+import { Sport } from "../../../domain/sports/entities/Sport";
+import { SportStatus } from "../../../domain/sports/entities/SportTypes";
 import {
   IGetSportsUseCase,
   IGetSportByIdUseCase,
@@ -22,6 +12,10 @@ import {
   IDeleteSportUseCase
 } from './ISportUseCases';
 
+function isValidObjectId(id: string): boolean {
+  return typeof id === 'string' && /^[a-fA-F0-9]{24}$/.test(id);
+}
+
 export class GetSportsUseCase implements IGetSportsUseCase {
   constructor(private sportsRepository: ISportsRepository) { }
 
@@ -29,45 +23,28 @@ export class GetSportsUseCase implements IGetSportsUseCase {
     if (isNaN(params.page) || params.page < 1 || isNaN(params.limit) || params.limit < 1) {
       throw new Error("Invalid page or limit parameters");
     }
-    const { sports, totalItems, totalPages, currentPage } = await this.sportsRepository.getSports(params.page, params.limit, params.sportType, params.status, params.coach, params.startDate, params.endDate, params.search);
-    const mappedSports: SportSummaryDTO[] = sports.map((sport: SportDocument) => ({
-      id: sport._id?.toString() || sport.id,
-      title: sport.title,
-      type: sport.type,
-      headCoach: sport.headCoach,
-      playerCount: sport.participants || 0,
-      status: sport.status,
-      formedOn: sport.createdAt ? new Date(sport.createdAt).toISOString() : undefined,
-      logo: sport.logo || "",
-      division: sport.division || "",
-      participants: sport.participants || 0,
-      icon: sport.icon,
-      color: sport.color,
-      createdAt: sport.createdAt ? new Date(sport.createdAt).toISOString() : undefined
-    }));
-    return {
-      data: mappedSports,
-      totalItems,
-      totalPages,
-      currentPage,
-    };
+    return await this.sportsRepository.getSports(params);
   }
 }
 
-export class GetSportByIdUseCase implements IGetSportByIdUseCase{
+export class GetSportByIdUseCase implements IGetSportByIdUseCase {
   constructor(private _sportsRepository: ISportsRepository) { }
 
   async execute(params: GetSportByIdRequestDTO): Promise<GetSportByIdResponseDTO> {
-    if (!params.id || typeof params.id !== 'string') {
+    if (!isValidObjectId(params.id)) {
       throw new Error("Invalid sport ID");
     }
     const sport = await this._sportsRepository.getById(params.id);
     if (!sport) {
       throw new Error("Sport not found");
     }
-    return {
-      sport: sport as unknown as Sport
+
+    const sportData: RepositorySportData = {
+      ...sport,
+      _id: sport._id?.toString() || ""
     };
+
+    return { sport: sportData };
   }
 }
 
@@ -75,25 +52,20 @@ export class CreateSportUseCase implements ICreateSportUseCase {
   constructor(private _sportsRepository: ISportsRepository) { }
 
   async execute(params: CreateSportRequestDTO): Promise<CreateSportResponseDTO> {
-    const normalizedParams = {
+    // Basic validation via Domain Entity
+    Sport.create({
       ...params,
-      status: (params.status && Object.values(SportStatus).includes(params.status as SportStatus))
-        ? params.status as SportStatus
-        : SportStatus.Active,
-      category: params.category ?? "",
-      organizer: params.organizer ?? "",
-      organizerType: params.organizerType ?? "",
-      icon: params.icon ?? "",
-      color: params.color ?? "",
-      division: params.division ?? "",
-      headCoach: params.headCoach ?? "",
-      homeGames: params.homeGames ?? 0,
-      record: params.record ?? "",
-      upcomingGames: params.upcomingGames ?? [],
-      participants: params.participants ?? 0,
+      status: params.status as SportStatus || SportStatus.Active
+    });
+
+    const newSport = await this._sportsRepository.create(params);
+
+    return {
+      sport: {
+        ...newSport,
+        _id: newSport._id?.toString() || ""
+      }
     };
-    const newSport = await this._sportsRepository.create(normalizedParams);
-    return { sport: newSport as unknown as Sport };
   }
 }
 
@@ -101,18 +73,21 @@ export class UpdateSportUseCase implements IUpdateSportUseCase {
   constructor(private _sportsRepository: ISportsRepository) { }
 
   async execute(params: UpdateSportRequestDTO): Promise<UpdateSportResponseDTO> {
-    if (!params.id || typeof params.id !== 'string') {
+    if (!isValidObjectId(params.id)) {
       throw new Error("Invalid sport ID");
     }
     const { id, ...updateData } = params;
-    if (updateData.status) {
-      updateData.status = updateData.status.toLowerCase() as SportStatus;
-    }
-    const updatedSport = await this._sportsRepository.updateById(id, { ...updateData, id });
+    const updatedSport = await this._sportsRepository.updateById(id, updateData);
     if (!updatedSport) {
       throw new Error("Sport not found");
     }
-    return { sport: updatedSport as unknown as Sport };
+
+    return {
+      sport: {
+        ...updatedSport,
+        _id: updatedSport._id?.toString() || ""
+      }
+    };
   }
 }
 
@@ -120,7 +95,7 @@ export class DeleteSportUseCase implements IDeleteSportUseCase {
   constructor(private _sportsRepository: ISportsRepository) { }
 
   async execute(params: DeleteSportRequestDTO): Promise<{ message: string }> {
-    if (!params.id || typeof params.id !== 'string') {
+    if (!isValidObjectId(params.id)) {
       throw new Error("Invalid sport ID");
     }
     await this._sportsRepository.deleteById(params.id);

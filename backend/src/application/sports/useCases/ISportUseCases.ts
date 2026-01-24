@@ -1,16 +1,5 @@
-import {
-  GetSportsRequestDTO,
-  GetSportByIdRequestDTO,
-  CreateSportRequestDTO,
-  UpdateSportRequestDTO,
-  DeleteSportRequestDTO,
-} from "../../../domain/sports/dtos/SportRequestDTOs";
-import {
-  GetSportsResponseDTO,
-  GetSportByIdResponseDTO,
-  CreateSportResponseDTO,
-  UpdateSportResponseDTO,
-} from "../../../domain/sports/dtos/SportResponseDTOs";
+import { GetSportsRequestDTO, GetSportByIdRequestDTO, CreateSportRequestDTO, UpdateSportRequestDTO, DeleteSportRequestDTO } from "../dtos/SportRequestDTOs";
+import { GetSportsResponseDTO, GetSportByIdResponseDTO, CreateSportResponseDTO, UpdateSportResponseDTO } from "../dtos/SportResponseDTOs";
 
 export interface IGetSportsUseCase {
   execute(params: GetSportsRequestDTO): Promise<GetSportsResponseDTO>;

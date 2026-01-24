@@ -1,90 +1,73 @@
-import {
-  IGetSportsUseCase,
-  IGetSportByIdUseCase,
-  ICreateSportUseCase,
-  IUpdateSportUseCase,
-  IDeleteSportUseCase,
-} from "../../../application/sports/useCases/ISportUseCases";
-import { ISportsController, IHttpRequest, IHttpResponse, HttpSuccess, HttpErrors } from "../IHttp";
+import { IGetSportsUseCase, IGetSportByIdUseCase, ICreateSportUseCase, IUpdateSportUseCase, IDeleteSportUseCase } from "../../../application/sports/useCases/ISportUseCases";
+import { GetSportsRequestDTO, GetSportByIdRequestDTO, CreateSportRequestDTO, UpdateSportRequestDTO, DeleteSportRequestDTO } from "../../../application/sports/dtos/SportRequestDTOs";
+import { IHttpRequest, IHttpResponse, HttpErrors, HttpSuccess, ISportsController } from "../IHttp";
 
 export class SportsController implements ISportsController {
-  private _httpSuccess: HttpSuccess;
   private _httpErrors: HttpErrors;
+  private _httpSuccess: HttpSuccess;
 
   constructor(
-    private readonly _getSportsUseCase: IGetSportsUseCase,
-    private readonly _getSportByIdUseCase: IGetSportByIdUseCase,
-    private readonly _createSportUseCase: ICreateSportUseCase,
-    private readonly _updateSportUseCase: IUpdateSportUseCase,
-    private readonly _deleteSportUseCase: IDeleteSportUseCase
+    private _getSportsUseCase: IGetSportsUseCase,
+    private _getSportByIdUseCase: IGetSportByIdUseCase,
+    private _createSportUseCase: ICreateSportUseCase,
+    private _updateSportUseCase: IUpdateSportUseCase,
+    private _deleteSportUseCase: IDeleteSportUseCase
   ) {
-    this._httpSuccess = new HttpSuccess();
     this._httpErrors = new HttpErrors();
+    this._httpSuccess = new HttpSuccess();
   }
 
   async getSports(httpRequest: IHttpRequest): Promise<IHttpResponse> {
-    const { page = "1", limit = "10", sportType = "all", status = "all", coach = "all", startDate, endDate, search } = httpRequest.query;
+    const {
+      page = "1",
+      limit = "10",
+      sportType,
+      status,
+      coach,
+      startDate,
+      endDate,
+      search
+    } = httpRequest.query || {};
 
-    if (
-      isNaN(Number(page)) ||
-      isNaN(Number(limit)) ||
-      Number(page) < 1 ||
-      Number(limit) < 1
-    ) {
-      return this._httpErrors.error_400();
-    }
-
-    const result = await this._getSportsUseCase.execute({
+    const getSportsRequestDTO: GetSportsRequestDTO = {
       page: Number(page),
       limit: Number(limit),
-      sportType: String(sportType),
-      status: String(status),
-      coach: String(coach),
+      sportType: sportType ? String(sportType) : undefined,
+      status: status ? String(status) : undefined,
+      coach: coach ? String(coach) : undefined,
       startDate: startDate ? String(startDate) : undefined,
       endDate: endDate ? String(endDate) : undefined,
       search: search ? String(search) : undefined,
-    });
+    };
 
-    return this._httpSuccess.success_200(result);
+    const response = await this._getSportsUseCase.execute(getSportsRequestDTO);
+    return this._httpSuccess.success_200(response);
   }
 
   async getSportById(httpRequest: IHttpRequest): Promise<IHttpResponse> {
-    const { id } = httpRequest.params;
-
-    if (!id) {
-      return this._httpErrors.error_400();
-    }
-
-    const sport = await this._getSportByIdUseCase.execute({ id });
-    return this._httpSuccess.success_200(sport);
+    const { id } = httpRequest.params || {};
+    const getSportByIdRequestDTO: GetSportByIdRequestDTO = { id };
+    const response = await this._getSportByIdUseCase.execute(getSportByIdRequestDTO);
+    return this._httpSuccess.success_200(response);
   }
 
   async createSport(httpRequest: IHttpRequest): Promise<IHttpResponse> {
-    const sportData = httpRequest.body;
-    const sport = await this._createSportUseCase.execute(sportData);
-    return this._httpSuccess.success_201(sport);
+    const createSportRequestDTO: CreateSportRequestDTO = httpRequest.body;
+    const response = await this._createSportUseCase.execute(createSportRequestDTO);
+    return this._httpSuccess.success_201(response);
   }
 
   async updateSport(httpRequest: IHttpRequest): Promise<IHttpResponse> {
-    const { id } = httpRequest.params;
-    const sportData = httpRequest.body;
-
-    if (!id) {
-      return this._httpErrors.error_400();
-    }
-
-    const sport = await this._updateSportUseCase.execute({ id, ...sportData });
-    return this._httpSuccess.success_200(sport);
+    const { id } = httpRequest.params || {};
+    const updateSportRequestDTO: UpdateSportRequestDTO = { id, ...httpRequest.body };
+    const response = await this._updateSportUseCase.execute(updateSportRequestDTO);
+    return this._httpSuccess.success_200(response);
   }
 
   async deleteSport(httpRequest: IHttpRequest): Promise<IHttpResponse> {
-    const { id } = httpRequest.params;
-
-    if (!id) {
-      return this._httpErrors.error_400();
-    }
-
-    const result = await this._deleteSportUseCase.execute({ id });
-    return this._httpSuccess.success_200(result);
+    const { id } = httpRequest.params || {};
+    const deleteSportRequestDTO: DeleteSportRequestDTO = { id };
+    const response = await this._deleteSportUseCase.execute(deleteSportRequestDTO);
+    return this._httpSuccess.success_200(response);
   }
-} 
+}

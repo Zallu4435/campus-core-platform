@@ -1,29 +1,49 @@
+import { FilterQuery } from "mongoose";
 import { ISportsRepository } from "../../../application/sports/repositories/ISportsRepository";
 import { TeamModel, SportRequestModel } from "../../database/mongoose/sport/sports.model";
 import { User as UserModel } from "../../database/mongoose/auth/user.model";
-import { Sport, SportDocument, SportFilter } from "../../../domain/sports/entities/SportTypes";
+import { Sport as SportType, SportDoc, SportRequestDoc, SportStatus, SportRequestStatus } from "../../../domain/sports/entities/SportTypes";
 import { BaseRepository } from "../../../application/repositories/BaseRepository";
+import {
+  GetSportsRequestDTO,
+  CreateSportRequestDTO,
+  GetSportRequestsRequestDTO,
+  GetSportRequestDetailsRequestDTO
+} from "../../../application/sports/dtos/SportRequestDTOs";
+import {
+  GetSportsResponseDTO,
+  GetSportRequestsResponseDTO,
+  GetSportRequestDetailsResponseDTO
+} from "../../../application/sports/dtos/SportResponseDTOs";
+import { SportDataDTO, SportRequestDataDTO } from "../../../application/sports/dtos/SportBaseDTOs";
+import { SportMapper } from "./mappers/SportMapper";
+import { SportRequestMapper } from "./mappers/SportRequestMapper";
 
-export class SportsRepository extends BaseRepository<Sport, Record<string, unknown>, Record<string, unknown>, Record<string, unknown>, SportDocument> implements ISportsRepository {
+export class SportsRepository extends BaseRepository<SportType, CreateSportRequestDTO, Partial<SportDataDTO>, Record<string, unknown>, SportType> implements ISportsRepository {
   constructor() {
     super(TeamModel);
   }
 
-  async getSports(page: number, limit: number, sportType: string, status: string, coach: string, startDate: string, endDate: string, search: string) {
-    const query: SportFilter = {};
+  async getSports(params: GetSportsRequestDTO): Promise<GetSportsResponseDTO> {
+    const { page, limit, sportType, status, coach, startDate, endDate, search } = params;
+    const query: FilterQuery<SportDoc> = {};
+
     if (sportType && sportType !== "all") {
       query.type = { $regex: `^${sportType}$`, $options: "i" };
     }
     if (status && status !== "all") {
-
       const normalizedStatus = status.toLowerCase();
-      query.status = { $regex: `^${normalizedStatus}$`, $options: "i" };
+      query.status = { $regex: `^${normalizedStatus}$`, $options: "i" } as unknown as SportStatus;
     }
     if (coach && coach !== "all") {
       query.headCoach = { $regex: coach, $options: "i" };
     }
     if (startDate && endDate) {
-      query.createdAt = { $gte: new Date(startDate), $lte: new Date(endDate) };
+      const dateQuery: { $gte?: Date; $lte?: Date } = {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate)
+      };
+      query.createdAt = dateQuery as unknown as Date;
     }
     if (search && search.trim() !== "") {
       query.$or = [
@@ -34,118 +54,127 @@ export class SportsRepository extends BaseRepository<Sport, Record<string, unkno
         { division: { $regex: search, $options: "i" } },
       ];
     }
-    const totalItems = await TeamModel.countDocuments(query);
-    const totalPages = Math.ceil(totalItems / limit);
+
     const skip = (page - 1) * limit;
     const sports = await TeamModel.find(query)
       .sort({ updatedAt: -1, createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .lean();
-    return { sports: sports as unknown as SportDocument[], totalItems, totalPages, currentPage: page };
+      .lean() as unknown as SportDoc[];
+
+    const totalItems = await TeamModel.countDocuments(query);
+    const totalPages = Math.ceil(totalItems / limit);
+
+    return {
+      data: SportMapper.toSummaryDTOList(sports),
+      totalItems,
+      totalPages,
+      currentPage: page
+    };
   }
 
-  async getSportRequests(page: number, limit: number, status: string, type: string, startDate: string, endDate: string, search: string) {
-    const query: SportFilter = {};
+  async getSportRequests(params: GetSportRequestsRequestDTO): Promise<GetSportRequestsResponseDTO> {
+    const { page, limit, status, type, startDate, endDate, search } = params;
+    const query: FilterQuery<SportRequestDoc> = {};
+
     if (status && status.toLowerCase() !== "all") {
-      query.status = status;
+      query.status = status as SportRequestStatus;
     }
-    const sportQuery: SportFilter = {};
+
+    const sportQuery: FilterQuery<SportDoc> = {};
     if (type && type.toLowerCase() !== "all") {
       sportQuery.type = { $regex: `^${type}$`, $options: "i" };
     }
-    let matchingSports = [];
-    let userIds = [];
+
     if (search && search.trim() !== "") {
       sportQuery.$or = [
         { title: { $regex: search, $options: "i" } },
         { type: { $regex: search, $options: "i" } },
       ];
     }
-    matchingSports = await TeamModel.find(sportQuery).select("_id title type").lean();
+
+    const matchingSports = await TeamModel.find(sportQuery).select("_id").lean();
     const sportIds = matchingSports.map((sport) => sport._id);
+
     if (search && search.trim() !== "") {
       const userMatches = await UserModel.find({ email: { $regex: search, $options: "i" } }).select("_id").lean();
-      userIds = userMatches.map((u) => u._id);
+      const userIds = userMatches.map((u) => u._id);
+
       if (sportIds.length === 0 && userIds.length === 0) {
         return { requests: [], totalItems: 0, totalPages: 0, currentPage: page };
       }
+
       query.$or = [];
-      if (sportIds.length > 0) query.$or.push({ sportId: { $in: sportIds } });
-      if (userIds.length > 0) query.$or.push({ userId: { $in: userIds } });
-    } else {
-      if (sportIds.length > 0) {
-        query.sportId = { $in: sportIds };
-      }
+      if (sportIds.length > 0) query.$or.push({ sportId: { $in: sportIds } } as unknown as FilterQuery<SportRequestDoc>);
+      if (userIds.length > 0) query.$or.push({ userId: { $in: userIds } } as unknown as FilterQuery<SportRequestDoc>);
+    } else if (sportIds.length > 0) {
+      query.sportId = { $in: sportIds } as unknown as string;
     }
+
     if (startDate && endDate) {
-      query.createdAt = {
+      const dateQuery: { $gte?: Date; $lte?: Date } = {
         $gte: new Date(startDate),
         $lte: new Date(endDate)
       };
+      query.createdAt = dateQuery as unknown as Date;
     }
+
     const totalItems = await SportRequestModel.countDocuments(query);
     const totalPages = Math.ceil(totalItems / limit);
     const skip = (page - 1) * limit;
+
     const requests = await SportRequestModel.find(query)
       .populate({ path: "sportId", select: "title type" })
-      .populate({ path: "userId", select: "email" })
+      .populate({ path: "userId", select: "firstName lastName email" })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .lean();
-    return { requests, totalItems, totalPages, currentPage: page };
+      .lean() as unknown as SportRequestDoc[];
+
+    return {
+      requests: SportRequestMapper.toDTOList(requests),
+      totalItems,
+      totalPages,
+      currentPage: page
+    };
   }
 
-  async approveSportRequest(id: string): Promise<void> {
+  async updateSportRequestStatus(id: string, status: SportRequestStatus): Promise<void> {
     await SportRequestModel.findByIdAndUpdate(
       id,
-      { status: "approved", updatedAt: new Date() },
+      { status, updatedAt: new Date() },
       { runValidators: true }
     );
-
-    const sportRequest = await SportRequestModel.findById(id);
-    if (sportRequest && sportRequest.userId) {
-      const userId = typeof sportRequest.userId === 'string' ? sportRequest.userId : sportRequest.userId._id.toString();
-      const sportTitle = typeof sportRequest.sportId === 'string' ? 'a sport' : sportRequest.sportId.title || 'a sport';
-      
-      await this.sendRequestApprovalNotification('sport', id, userId, sportTitle);
-    }
   }
 
-  async rejectSportRequest(id: string): Promise<void> {
-    await SportRequestModel.findByIdAndUpdate(
-      id,
-      { status: "rejected", updatedAt: new Date() },
-      { runValidators: true }
+  async incrementSportParticipants(sportId: string): Promise<void> {
+    await TeamModel.findByIdAndUpdate(
+      sportId,
+      { $inc: { participants: 1 }, updatedAt: new Date() }
     );
-
-    const sportRequest = await SportRequestModel.findById(id);
-    if (sportRequest && sportRequest.userId) {
-      const userId = typeof sportRequest.userId === 'string' ? sportRequest.userId : sportRequest.userId._id.toString();
-      const sportTitle = typeof sportRequest.sportId === 'string' ? 'a sport' : sportRequest.sportId.title || 'a sport';
-      
-      await this.sendRequestRejectionNotification('sport', id, userId, sportTitle);
-    }
   }
 
-  async getSportRequestDetails(id: string) {
-    return await SportRequestModel.findById(id)
+  async getSportRequestDetails(params: GetSportRequestDetailsRequestDTO): Promise<GetSportRequestDetailsResponseDTO> {
+    const doc = await SportRequestModel.findById(params.id)
       .populate({ path: "sportId", select: "title type headCoach participants division" })
       .populate({ path: "userId", select: "firstName lastName email" })
-      .lean();
+      .lean() as unknown as SportRequestDoc;
+
+    if (!doc) throw new Error("Sport request not found");
+
+    return {
+      request: SportRequestMapper.toDTO(doc)
+    };
   }
 
-  async joinSport(id: string) {
-    const sportRequest = new SportRequestModel({
-      sportId: id,
-      userId: id,
-      status: "pending",
-      whyJoin: "",
-      additionalInfo: "",
-      createdAt: new Date(),
+  async createSportRequest(params: SportRequestDataDTO & { status: SportRequestStatus }): Promise<void> {
+    const newRequest = new SportRequestModel({
+      sportId: params.sportId,
+      userId: params.userId,
+      whyJoin: params.whyJoin,
+      additionalInfo: params.additionalInfo || "",
+      status: params.status,
     });
-    await sportRequest.save();
-    return sportRequest;
+    await newRequest.save();
   }
-} 
+}

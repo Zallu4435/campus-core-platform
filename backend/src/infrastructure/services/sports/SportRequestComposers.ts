@@ -4,27 +4,26 @@ import {
   ApproveSportRequestUseCase,
   RejectSportRequestUseCase,
   GetSportRequestDetailsUseCase,
-  JoinSportUseCase,
+  JoinSportUseCase
 } from "../../../application/sports/useCases/SportRequestUseCases";
 import {
   IGetSportRequestsUseCase,
   IApproveSportRequestUseCase,
   IRejectSportRequestUseCase,
   IGetSportRequestDetailsUseCase,
-  IJoinSportUseCase,
+  IJoinSportUseCase
 } from "../../../application/sports/useCases/ISportRequestUseCases";
-import { SportsRepository } from "../../../infrastructure/repositories/sports/SportsRepository";
 import { SportRequestController } from "../../../presentation/http/sports/SportRequestController";
+import { SportsRepository } from "../../repositories/sports/SportsRepository";
 import { ISportRequestController } from "../../../presentation/http/IHttp";
 
 export function getSportRequestsComposer(): ISportRequestController {
-  const sportsRepository: ISportsRepository = new SportsRepository();
-
-  const getSportRequestsUseCase: IGetSportRequestsUseCase = new GetSportRequestsUseCase(sportsRepository);
-  const approveSportRequestUseCase: IApproveSportRequestUseCase = new ApproveSportRequestUseCase(sportsRepository);
-  const rejectSportRequestUseCase: IRejectSportRequestUseCase = new RejectSportRequestUseCase(sportsRepository);
-  const getSportRequestDetailsUseCase: IGetSportRequestDetailsUseCase = new GetSportRequestDetailsUseCase(sportsRepository);
-  const joinSportUseCase: IJoinSportUseCase = new JoinSportUseCase(sportsRepository);
+  const repository: ISportsRepository = new SportsRepository();
+  const getSportRequestsUseCase: IGetSportRequestsUseCase = new GetSportRequestsUseCase(repository);
+  const approveSportRequestUseCase: IApproveSportRequestUseCase = new ApproveSportRequestUseCase(repository);
+  const rejectSportRequestUseCase: IRejectSportRequestUseCase = new RejectSportRequestUseCase(repository);
+  const getSportRequestDetailsUseCase: IGetSportRequestDetailsUseCase = new GetSportRequestDetailsUseCase(repository);
+  const joinSportUseCase: IJoinSportUseCase = new JoinSportUseCase(repository);
 
   return new SportRequestController(
     getSportRequestsUseCase,

@@ -73,7 +73,6 @@ export class CampusLifeController implements ICampusLifeController {
     if (!httpRequest.user) {
       return this._httpErrors.error_401();
     }
-    // Admin check moved to middleware
     const result = await this._getEventByIdUseCase.execute({ eventId });
     if (!result.success) {
       return this._httpErrors.error_404();
@@ -87,7 +86,9 @@ export class CampusLifeController implements ICampusLifeController {
       return this._httpErrors.error_401();
     }
     const result = await this._getSportsUseCase.execute({
-      type: type ? String(type) as 'VARSITY SPORTS' | 'INTRAMURAL SPORTS' : undefined,
+      page: 1, // Default for compatibility
+      limit: 10, // Default for compatibility
+      sportType: type ? String(type) : undefined,
       search: String(search),
       userId: httpRequest.user.id,
     });
@@ -98,11 +99,11 @@ export class CampusLifeController implements ICampusLifeController {
   }
 
   async getSportById(httpRequest: IHttpRequest): Promise<IHttpResponse> {
-    const { sportId } = httpRequest.params;
+    const { id, sportId } = httpRequest.params;
     if (!httpRequest.user) {
       return this._httpErrors.error_401();
     }
-    const result = await this._getSportByIdUseCase.execute({ sportId });
+    const result = await this._getSportByIdUseCase.execute({ id: id || sportId });
     if (!result.success) {
       return this._httpErrors.error_404();
     }
@@ -162,17 +163,19 @@ export class CampusLifeController implements ICampusLifeController {
   }
 
   async joinSport(httpRequest: IHttpRequest): Promise<IHttpResponse> {
-    const { sportId } = httpRequest.params;
-    const { reason, additionalInfo } = httpRequest.body;
+    const { id, sportId } = httpRequest.params;
+    const { reason, additionalInfo, whyJoin } = httpRequest.body;
     const studentId = httpRequest.user?.userId;
+
     if (!httpRequest.user || !studentId) {
       return this._httpErrors.error_401();
     }
     const result = await this._joinSportUseCase.execute({
-      sportId,
-      studentId,
-      reason,
+      sportId: id || sportId,
+      userId: httpRequest.user.id,
+      whyJoin: whyJoin || reason,
       additionalInfo,
+      studentId,
     });
     if (!result.success) {
       return this._httpErrors.error_400();

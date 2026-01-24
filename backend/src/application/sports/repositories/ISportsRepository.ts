@@ -1,23 +1,27 @@
-import { SportDocument, SportRequest, CreateSportData, UpdateSportData, SportFilter } from "../../../domain/sports/entities/SportTypes";
-import { IBaseRepository } from "../../repositories";
+import {
+  GetSportsRequestDTO,
+  CreateSportRequestDTO,
+  GetSportRequestsRequestDTO,
+  GetSportRequestDetailsRequestDTO,
+} from "../dtos/SportRequestDTOs";
+import {
+  GetSportsResponseDTO,
+  GetSportRequestsResponseDTO,
+  GetSportRequestDetailsResponseDTO
+} from "../dtos/SportResponseDTOs";
+import { SportDataDTO, SportRequestDataDTO } from "../dtos/SportBaseDTOs";
+import { IBaseRepository } from "../../repositories/IBaseRepository";
+import { Sport, SportRequestStatus } from "../../../domain/sports/entities/SportTypes";
 
-export interface ISportsRepository extends 
-  IBaseRepository<SportDocument, CreateSportData, UpdateSportData, SportFilter, SportDocument> {
-  
-  getSports(page: number, limit: number, sportType: string, status: string, coach: string, startDate: string, endDate: string, search: string): Promise<{
-    sports: SportDocument[];
-    totalItems: number;
-    totalPages: number;
-    currentPage: number;
-  }>;
-  getSportRequests(page: number, limit: number, status: string, type: string, startDate: string, endDate: string, search: string): Promise<{
-    requests: SportRequest[];
-    totalItems: number;
-    totalPages: number;
-    currentPage: number;
-  }>;
-  approveSportRequest(id: string): Promise<void>;
-  rejectSportRequest(id: string): Promise<void>;
-  getSportRequestDetails(id: string): Promise<SportRequest | null>;
-  joinSport(id: string): Promise<SportRequest>;
-}  
+export interface ISportsRepository extends
+  IBaseRepository<Sport, CreateSportRequestDTO, Partial<SportDataDTO>, Record<string, unknown>, Sport> {
+
+  getSports(params: GetSportsRequestDTO): Promise<GetSportsResponseDTO>;
+  getSportRequests(params: GetSportRequestsRequestDTO): Promise<GetSportRequestsResponseDTO>;
+  updateSportRequestStatus(id: string, status: SportRequestStatus): Promise<void>;
+  incrementSportParticipants(sportId: string): Promise<void>;
+  getSportRequestDetails(params: GetSportRequestDetailsRequestDTO): Promise<GetSportRequestDetailsResponseDTO>;
+  sendRequestApprovalNotification(type: string, id: string, userId: string, title: string): Promise<void>;
+  sendRequestRejectionNotification(type: string, id: string, userId: string, title: string): Promise<void>;
+  createSportRequest(params: SportRequestDataDTO & { status: SportRequestStatus }): Promise<void>;
+}
