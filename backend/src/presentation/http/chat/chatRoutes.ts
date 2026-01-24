@@ -2,25 +2,33 @@ import { Router } from "express";
 import { expressAdapter } from "../../adapters/ExpressAdapter";
 import { getChatComposer } from "../../../infrastructure/services/chat/ChatComposers";
 import { authMiddleware } from "../../../shared/middlewares/authMiddleware";
-import { chatAttachmentUpload } from '../../../config/cloudinary.config';
-import { profilePictureUpload } from '../../../config/cloudinary.config';
+import { validate } from "../../../shared/middlewares/validationMiddleware";
+import { chatAttachmentUpload, profilePictureUpload } from '../../../config/cloudinary.config';
+import {
+  getChatsSchema,
+  searchChatsSchema,
+  getChatMessagesSchema,
+  sendMessageSchema,
+  createChatSchema,
+  createGroupChatSchema
+} from "../../../shared/validation/schemas/ChatSchemas";
 
 const chatRouter = Router();
 const chatController = getChatComposer();
 
-chatRouter.get("/users/search", authMiddleware, (req, res, next) =>
+chatRouter.get("/users/search", authMiddleware, validate(searchChatsSchema, 'query'), (req, res, next) =>
   expressAdapter(req, res, next, chatController.searchUsers.bind(chatController))
 );
 
-chatRouter.post("/", authMiddleware, (req, res, next) =>
+chatRouter.post("/", authMiddleware, validate(createChatSchema, 'body'), (req, res, next) =>
   expressAdapter(req, res, next, chatController.createChat.bind(chatController))
 );
 
-chatRouter.get("/", authMiddleware, (req, res, next) =>
+chatRouter.get("/", authMiddleware, validate(getChatsSchema, 'query'), (req, res, next) =>
   expressAdapter(req, res, next, chatController.getChats.bind(chatController))
 );
 
-chatRouter.get("/search", authMiddleware, (req, res, next) =>
+chatRouter.get("/search", authMiddleware, validate(searchChatsSchema, 'query'), (req, res, next) =>
   expressAdapter(req, res, next, chatController.searchChats.bind(chatController))
 );
 
@@ -28,7 +36,7 @@ chatRouter.get("/:chatId", authMiddleware, (req, res, next) =>
   expressAdapter(req, res, next, chatController.getChatDetails.bind(chatController))
 );
 
-chatRouter.get("/:chatId/messages", authMiddleware, (req, res, next) =>
+chatRouter.get("/:chatId/messages", authMiddleware, validate(getChatMessagesSchema, 'query'), (req, res, next) =>
   expressAdapter(req, res, next, chatController.getChatMessages.bind(chatController))
 );
 
@@ -36,6 +44,8 @@ chatRouter.post(
   "/:chatId/messages",
   authMiddleware,
   chatAttachmentUpload.array('files'),
+  // Validation for multipart form-data is tricky with simple body validation middleware if attachments are involved differently
+  // validate(sendMessageSchema, 'body'), 
   (req, res, next) => expressAdapter(req, res, next, chatController.sendMessage.bind(chatController))
 );
 
@@ -59,7 +69,7 @@ chatRouter.delete("/messages/:messageId/reactions", authMiddleware, (req, res, n
   expressAdapter(req, res, next, chatController.removeReaction.bind(chatController))
 );
 
-chatRouter.post("/group", authMiddleware, profilePictureUpload.single('avatar'), (req, res, next) =>
+chatRouter.post("/group", authMiddleware, profilePictureUpload.single('avatar'), validate(createGroupChatSchema, 'body'), (req, res, next) =>
   expressAdapter(req, res, next, chatController.createGroupChat.bind(chatController))
 );
 

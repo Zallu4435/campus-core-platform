@@ -21,14 +21,14 @@ import {
   DeleteChatRequestDTO,
   BlockChatRequestDTO,
   ClearChatRequestDTO
-} from "../../../domain/chat/dtos/ChatRequestDTOs";
+} from "../dtos/ChatRequestDTOs";
 import {
   GetChatsResponseDTO,
   GetChatMessagesResponseDTO,
   ChatDetailsResponseDTO,
   SearchUsersResponseDTO,
   ChatSummaryDTO,
-} from "../../../domain/chat/dtos/ChatResponseDTOs";
+} from "../dtos/ChatResponseDTOs";
 
 export interface IGetChatsUseCase {
   execute(params: GetChatsRequestDTO): Promise<GetChatsResponseDTO>;

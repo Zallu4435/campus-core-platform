@@ -47,44 +47,49 @@ import {
   DeleteChatRequestDTO,
   BlockChatRequestDTO,
   ClearChatRequestDTO
-} from "../../../domain/chat/dtos/ChatRequestDTOs";
+} from "../dtos/ChatRequestDTOs";
 import {
   GetChatsResponseDTO,
   GetChatMessagesResponseDTO,
   ChatDetailsResponseDTO,
   SearchUsersResponseDTO,
   ChatSummaryDTO,
-} from "../../../domain/chat/dtos/ChatResponseDTOs";
-import { MessageType } from "../../../domain/chat/entities/Message";
-import { RepositoryChat, RepositoryMessage, RepositoryObjectIdLike, RepositoryUser } from "../../../domain/chat/entities/MessageType";
-
-const toId = (id: RepositoryObjectIdLike): string =>
-  typeof id === 'string' ? id : id.toString();
+} from "../dtos/ChatResponseDTOs";
+import { Message, MessageType } from "../../../domain/chat/entities/Message";
+import { Chat } from "../../../domain/chat/entities/Chat";
 
 export class GetChatsUseCase implements IGetChatsUseCase {
   constructor(private _chatRepository: IChatRepository) { }
 
   async execute(params: GetChatsRequestDTO): Promise<GetChatsResponseDTO> {
     const { userId, page, limit } = params;
-    const { chats, totalItems, totalPages, currentPage } = await this._chatRepository.getChats({ userId, page, limit });
+    const { data: chats, totalItems, totalPages, currentPage } = await this._chatRepository.getChats({ userId, page, limit });
 
-    const data = await Promise.all(chats.map(async (chat: RepositoryChat) => {
-      const unreadCount = await this._chatRepository.getUnreadCountForChat({ chatId: chat._id.toString(), userId });
-      const lastMessage = await this._chatRepository.getLastMessageForChat({ chatId: chat._id.toString(), userId });
-      const participantUsers = await this._chatRepository.getUsersByIds(chat.participants.map((p: RepositoryObjectIdLike) => p.toString()));
+    const data = await Promise.all(chats.map(async (chat: Chat) => {
+      const unreadCount = await this._chatRepository.getUnreadCountForChat({ chatId: chat.id, userId });
+      const lastMessage = await this._chatRepository.getLastMessageForChat({ chatId: chat.id, userId });
+      const participantUsers = await this._chatRepository.getUsersByIds(chat.participants);
 
       return {
-        id: toId(chat._id),
+        id: chat.id,
         type: chat.type,
-        name: chat.name,
-        avatar: chat.avatar,
-        lastMessage: lastMessage || undefined,
+        name: chat.name || "",
+        avatar: chat.avatar || "",
+        lastMessage: lastMessage ? {
+          id: lastMessage.id,
+          content: lastMessage.content,
+          type: lastMessage.type,
+          senderId: lastMessage.senderId,
+          status: lastMessage.status,
+          createdAt: lastMessage.createdAt,
+          // attachments: lastMessage.attachments?.map(a => ({...a, mimetype: a.mimetype || ''})) 
+        } : undefined,
         participants: participantUsers.map((user) => ({
           id: user.id,
           firstName: user.firstName,
           lastName: user.lastName,
           email: user.email,
-          avatar: user.avatar,
+          avatar: user.avatar || "",
           isOnline: false
         })),
         admins: chat.admins,
@@ -102,7 +107,7 @@ export class SearchChatsUseCase implements ISearchChatsUseCase {
 
   async execute(params: SearchChatsRequestDTO): Promise<GetChatsResponseDTO> {
     const { userId, query, page, limit } = params;
-    const { chats, totalItems, totalPages, currentPage, matchingUserIds } = await this._chatRepository.searchChats({ userId, query, page, limit });
+    const { data: chats, totalItems, totalPages, currentPage, matchingUserIds } = await this._chatRepository.searchChats({ userId, query, page, limit });
 
     if (chats.length === 0 && matchingUserIds.length > 0) {
       const newChats: ChatSummaryDTO[] = matchingUserIds.map((matchedId) => ({
@@ -110,7 +115,7 @@ export class SearchChatsUseCase implements ISearchChatsUseCase {
         type: 'direct',
         name: '',
         avatar: '',
-        lastMessage: null,
+        lastMessage: undefined,
         participants: [
           { id: userId, firstName: '', lastName: '', email: '', avatar: '', isOnline: false },
           { id: matchedId, firstName: '', lastName: '', email: '', avatar: '', isOnline: false }
@@ -121,25 +126,33 @@ export class SearchChatsUseCase implements ISearchChatsUseCase {
       return { data: newChats, totalItems: newChats.length, totalPages: 1, currentPage: page };
     }
 
-    const data = await Promise.all(chats.map(async (chat: RepositoryChat) => {
-      const unreadCount = await this._chatRepository.getUnreadCountForChat({ chatId: chat._id.toString(), userId });
-      const lastMessage = await this._chatRepository.getLastMessageForChat({ chatId: chat._id.toString(), userId });
-      const participantUsers = await this._chatRepository.getUsersByIds(chat.participants.map((p: RepositoryObjectIdLike) => p.toString()));
+    const data = await Promise.all(chats.map(async (chat: Chat) => {
+      const unreadCount = await this._chatRepository.getUnreadCountForChat({ chatId: chat.id, userId });
+      const lastMessage = await this._chatRepository.getLastMessageForChat({ chatId: chat.id, userId });
+      const participantUsers = await this._chatRepository.getUsersByIds(chat.participants);
 
       return {
-        id: toId(chat._id),
+        id: chat.id,
         type: chat.type,
-        name: chat.name,
-        avatar: chat.avatar,
-        lastMessage: lastMessage || undefined,
+        name: chat.name || "",
+        avatar: chat.avatar || "",
+        lastMessage: lastMessage ? {
+          id: lastMessage.id,
+          content: lastMessage.content,
+          type: lastMessage.type,
+          senderId: lastMessage.senderId,
+          status: lastMessage.status,
+          createdAt: lastMessage.createdAt,
+        } : undefined,
         participants: participantUsers.map((user) => ({
           id: user.id,
           firstName: user.firstName,
           lastName: user.lastName,
           email: user.email,
-          avatar: user.avatar,
+          avatar: user.avatar || "",
           isOnline: false
         })),
+        admins: chat.admins,
         unreadCount,
         updatedAt: chat.updatedAt,
       };
@@ -157,13 +170,13 @@ export class GetChatMessagesUseCase implements IGetChatMessagesUseCase {
     const page = params.page ?? 1;
     const limit = params.limit ?? 20;
 
-    const { messages, totalItems, totalPages, currentPage } = await this._chatRepository.getChatMessages({ chatId, userId, page, limit, before });
+    const { data: messages, totalItems, totalPages, currentPage } = await this._chatRepository.getChatMessages({ chatId, userId, page, limit, before });
 
     const mapped = messages
-      .slice() 
+      .slice()
       .reverse()
-      .map((message: RepositoryMessage) => ({
-        id: toId(message._id),
+      .map((message: Message) => ({
+        id: message.id,
         chatId: message.chatId,
         senderId: message.senderId,
         content: message.content,
@@ -178,8 +191,6 @@ export class GetChatMessagesUseCase implements IGetChatMessagesUseCase {
           thumbnail: a.thumbnail,
           duration: a.duration,
         })),
-        replyTo: message.replyTo,
-        forwardedFrom: message.forwardedFrom,
         createdAt: message.createdAt,
         updatedAt: message.updatedAt,
         isDeleted: message.isDeleted || false,
@@ -207,8 +218,17 @@ export class SendMessageUseCase implements ISendMessageUseCase {
 
   async execute(params: SendMessageRequestDTO): Promise<void> {
     const { chatId, senderId, content, attachments } = params;
-    const type = params.type as unknown as MessageType;
-    return this._chatRepository.sendMessage({ chatId, senderId, content, type, attachments });
+    // Strictly parsing type
+    const type = params.type as MessageType;
+    const mappedAttachments = attachments?.map(a => ({
+      type: a.type as MessageType,
+      url: a.url,
+      name: a.name,
+      size: a.size,
+      thumbnail: a.thumbnail,
+      duration: a.duration
+    }));
+    return this._chatRepository.sendMessage({ chatId, senderId, content, type, attachments: mappedAttachments });
   }
 }
 
@@ -245,32 +265,39 @@ export class GetChatDetailsUseCase implements IGetChatDetailsUseCase {
 
     const { chat, messages, participants, unreadCount } = raw;
 
-    const mappedParticipants = participants.map((user: RepositoryUser) => ({
-      id: toId(user._id),
+    const mappedParticipants = participants.map((user) => ({
+      id: user.id,
       firstName: user.firstName,
       lastName: user.lastName,
       email: user.email,
-      avatar: user.profilePicture || '',
+      avatar: user.avatar || '',
       isOnline: false,
     }));
 
     const dto: ChatDetailsResponseDTO = {
       chat: {
-        id: toId(chat._id),
+        id: chat.id,
         participants: mappedParticipants,
-        lastMessage: chat.lastMessage,
+        lastMessage: chat.lastMessage ? {
+          id: chat.lastMessage.id,
+          content: chat.lastMessage.content,
+          type: chat.lastMessage.type,
+          senderId: chat.lastMessage.senderId,
+          status: chat.lastMessage.status,
+          createdAt: chat.lastMessage.createdAt,
+        } : undefined,
         updatedAt: chat.updatedAt,
         type: chat.type,
         name: chat.name,
         avatar: chat.avatar,
         description: chat.description,
         admins: chat.admins,
-        settings: chat.settings as unknown as { onlyAdminsCanPost: boolean; onlyAdminsCanAddMembers: boolean; onlyAdminsCanChangeInfo: boolean; },
+        settings: chat.settings || { onlyAdminsCanPost: false, onlyAdminsCanAddMembers: false, onlyAdminsCanChangeInfo: false },
         blockedUsers: chat.blockedUsers,
         unreadCount,
       },
-      messages: messages.map((message: RepositoryMessage) => ({
-        id: toId(message._id),
+      messages: messages.map((message: Message) => ({
+        id: message.id,
         chatId: message.chatId,
         senderId: message.senderId,
         content: message.content,
@@ -291,11 +318,11 @@ export class GetChatDetailsUseCase implements IGetChatDetailsUseCase {
       participants: mappedParticipants.map((user) => ({
         id: user.id,
         name: `${user.firstName} ${user.lastName}`,
-        avatar: user.avatar,
+        avatar: user.avatar || '',
         status: 'online',
         isAdmin: (chat.admins as string[] | undefined)?.includes(user.id) || false,
       })),
-      settings: chat.settings as { onlyAdminsCanPost: boolean; onlyAdminsCanAddMembers: boolean; onlyAdminsCanChangeInfo: boolean; },
+      settings: chat.settings || { onlyAdminsCanPost: false, onlyAdminsCanAddMembers: false, onlyAdminsCanChangeInfo: false },
     };
 
     return dto;
@@ -420,4 +447,4 @@ export class ClearChatUseCase implements IClearChatUseCase {
   async execute(params: ClearChatRequestDTO): Promise<void> {
     return this._chatRepository.clearChat(params);
   }
-} 
+}

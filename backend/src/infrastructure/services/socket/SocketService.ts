@@ -79,7 +79,7 @@ export class SocketService {
       if (!token) {
         return next(new Error("Authentication error: No access_token cookie provided"));
       }
- 
+
       const jwtSecret = config.jwt.secret as jwt.Secret;
 
       try {
@@ -192,7 +192,7 @@ export class SocketService {
       const socketId = this.userSockets.get(userId);
 
       if (socketId) {
-        response.chats.forEach((chat) => {
+        response.data.forEach((chat) => {
           this.chatNamespace.sockets.get(socketId)?.join(chat.id);
         });
       }

@@ -1,5 +1,5 @@
-import { Chat } from "../entities/Chat";
-import { Message } from "../entities/Message";
+import { Chat } from "../../../domain/chat/entities/Chat";
+import { Message } from "../../../domain/chat/entities/Message";
 
 export interface GetChatsResponseDTO {
   data: ChatSummaryDTO[];

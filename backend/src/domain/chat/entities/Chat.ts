@@ -1,4 +1,3 @@
-import { MessageDTO } from "../dtos/ChatResponseDTOs";
 import { Message } from "./Message";
 
 export interface GroupSettings {
@@ -177,7 +176,7 @@ export class Chat {
     if (info.joinLink) this.props.joinLink = info.joinLink;
     this.props.updatedAt = new Date();
   }
-} 
+}
 
 
 export interface ChatFilter {
@@ -185,7 +184,7 @@ export interface ChatFilter {
   type?: ChatType;
   name?: string;
   avatar?: string;
-  lastMessage?: MessageDTO;
+  lastMessage?: Partial<Message>;
   $or?: Array<{
     name?: { $regex: string; $options: string };
     "lastMessage.content"?: { $regex: string; $options: string };
