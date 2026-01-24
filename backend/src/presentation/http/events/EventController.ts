@@ -1,5 +1,5 @@
 import { IGetEventsUseCase, IGetEventByIdUseCase, ICreateEventUseCase, IUpdateEventUseCase, IDeleteEventUseCase } from "../../../application/events/useCases/IEventUseCases";
-import { GetEventsRequestDTO, GetEventByIdRequestDTO, CreateEventRequestDTO, UpdateEventRequestDTO, DeleteEventRequestDTO } from "../../../domain/events/dtos/EventRequestDTOs";
+import { GetEventsRequestDTO, GetEventByIdRequestDTO, CreateEventRequestDTO, UpdateEventRequestDTO, DeleteEventRequestDTO } from "../../../application/events/dtos/EventRequestDTOs";
 import { IHttpRequest, IHttpResponse, HttpErrors, HttpSuccess, IEventController } from "../IHttp";
 
 export class EventController implements IEventController {
@@ -18,48 +18,42 @@ export class EventController implements IEventController {
   }
 
   async getEvents(httpRequest: IHttpRequest): Promise<IHttpResponse> {
-    const { 
-      page = "1", 
-      limit = "10", 
-      type = "all", 
-      status = "all", 
-      startDate, 
+    const {
+      page = "1",
+      limit = "10",
+      type,
+      status,
+      startDate,
       endDate,
       search,
-      organizerType = "all",
-      dateRange = "all"
+      organizerType,
+      dateRange
     } = httpRequest.query || {};
-    
+
     const getEventsRequestDTO: GetEventsRequestDTO = {
       page: Number(page),
       limit: Number(limit),
-      type: String(type),
-      status: String(status),
+      type: type ? String(type) : undefined,
+      status: status ? String(status) : undefined,
       startDate: startDate ? new Date(String(startDate)) : undefined,
       endDate: endDate ? new Date(String(endDate)) : undefined,
       search: search ? String(search) : undefined,
-      organizerType: String(organizerType),
-      dateRange: String(dateRange),
+      organizerType: organizerType ? String(organizerType) : undefined,
+      dateRange: dateRange ? String(dateRange) : undefined,
     };
-        
+
     const response = await this._getEventsUseCase.execute(getEventsRequestDTO);
     return this._httpSuccess.success_200(response);
   }
 
   async getEventById(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const { id } = httpRequest.params || {};
-    if (!id) {
-      return this._httpErrors.error_400();
-    }
     const getEventByIdRequestDTO: GetEventByIdRequestDTO = { id };
     const response = await this._getEventByIdUseCase.execute(getEventByIdRequestDTO);
     return this._httpSuccess.success_200(response);
   }
 
   async createEvent(httpRequest: IHttpRequest): Promise<IHttpResponse> {
-    if (!httpRequest.body || Object.keys(httpRequest.body).length === 0) {
-      return this._httpErrors.error_400();
-    }
     const createEventRequestDTO: CreateEventRequestDTO = httpRequest.body;
     const response = await this._createEventUseCase.execute(createEventRequestDTO);
     return this._httpSuccess.success_201(response);
@@ -67,9 +61,6 @@ export class EventController implements IEventController {
 
   async updateEvent(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const { id } = httpRequest.params || {};
-    if (!id || !httpRequest.body || Object.keys(httpRequest.body).length === 0) {
-      return this._httpErrors.error_400();
-    }
     const updateEventRequestDTO: UpdateEventRequestDTO = { id, ...httpRequest.body };
     const response = await this._updateEventUseCase.execute(updateEventRequestDTO);
     return this._httpSuccess.success_200(response);
@@ -77,9 +68,6 @@ export class EventController implements IEventController {
 
   async deleteEvent(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const { id } = httpRequest.params || {};
-    if (!id) {
-      return this._httpErrors.error_400();
-    }
     const deleteEventRequestDTO: DeleteEventRequestDTO = { id };
     const response = await this._deleteEventUseCase.execute(deleteEventRequestDTO);
     return this._httpSuccess.success_200(response);

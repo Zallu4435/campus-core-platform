@@ -59,18 +59,21 @@ export interface EventProps {
   maxParticipants?: number;
   registrationRequired?: boolean;
   participants?: number;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface EventRequestProps {
   id?: string;
-  eventId: string | { _id: string; title: string; eventType: string; date: string; organizer: string; location: string; description: string };
+  eventId: string | { _id: string; title: string; eventType: string; date: string; organizer: string; location: string; description: string; participants: number };
   userId: string | { _id: string; firstName: string; lastName: string; email: string };
-  status: EventRequestStatus;
+  status?: EventRequestStatus;
   whyJoin: string;
   additionalInfo?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
-// Interface for Mongoose model
 export interface Event {
   _id: string;
   title: string;
@@ -95,10 +98,11 @@ export interface Event {
   updatedAt: Date;
 }
 
-// Interface for Mongoose EventRequest model
-export interface EventRequest {
+export interface EventDoc extends Event { }
+
+export interface EventRequestDoc {
   _id: string;
-  eventId: string | { _id: string; title: string; eventType: string; date: string; organizer: string; location: string; description: string };
+  eventId: string | { _id: string; title: string; eventType: string; date: string; organizer: string; location: string; description: string; participants: number };
   userId: string | { _id: string; firstName: string; lastName: string; email: string };
   status: EventRequestStatus;
   whyJoin: string;
@@ -107,7 +111,4 @@ export interface EventRequest {
   updatedAt: Date;
 }
 
-export type CreateEventProps = Omit<EventProps, 'id'>;
-export type UpdateEventProps = Partial<Omit<EventProps, 'id'>> & { id: string };
-export type CreateEventRequestProps = Omit<EventRequestProps, 'id'>;
-export type UpdateEventRequestProps = Partial<Omit<EventRequestProps, 'id'>> & { id: string }; 
+export interface EventRequest extends EventRequestDoc { }

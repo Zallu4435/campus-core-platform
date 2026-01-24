@@ -1,5 +1,5 @@
 import { IGetEventRequestsUseCase, IApproveEventRequestUseCase, IRejectEventRequestUseCase, IGetEventRequestDetailsUseCase } from "../../../application/events/useCases/IEventRequestUseCases";
-import { GetEventRequestsRequestDTO, ApproveEventRequestRequestDTO, RejectEventRequestRequestDTO, GetEventRequestDetailsRequestDTO } from "../../../domain/events/dtos/EventRequestRequestDTOs";
+import { GetEventRequestsRequestDTO, ApproveEventRequestRequestDTO, RejectEventRequestRequestDTO, GetEventRequestDetailsRequestDTO } from "../../../application/events/dtos/EventRequestDTOs";
 import { IHttpRequest, IHttpResponse, HttpErrors, HttpSuccess, IEventRequestController } from "../IHttp";
 
 export class EventRequestController implements IEventRequestController {
@@ -17,46 +17,36 @@ export class EventRequestController implements IEventRequestController {
   }
 
   async getEventRequests(httpRequest: IHttpRequest): Promise<IHttpResponse> {
-    const { 
-      page = "1", 
-      limit = "10", 
-      type = "all", 
-      status = "all", 
-      startDate, 
+    const {
+      page = "1",
+      limit = "10",
+      type,
+      status,
+      startDate,
       endDate,
       search,
-      organizerType = "all",
-      dateRange = "all"
+      organizerType,
+      dateRange
     } = httpRequest.query || {};
-    
+
     const getEventRequestsRequestDTO: GetEventRequestsRequestDTO = {
       page: Number(page),
       limit: Number(limit),
-      type: String(type),
-      status: String(status),
+      type: type ? String(type) : undefined,
+      status: status ? String(status) : 'all',
       startDate: startDate ? new Date(String(startDate)) : undefined,
       endDate: endDate ? new Date(String(endDate)) : undefined,
       search: search ? String(search) : undefined,
-      organizerType: String(organizerType),
-      dateRange: String(dateRange),
+      organizerType: organizerType ? String(organizerType) : undefined,
+      dateRange: dateRange ? String(dateRange) : undefined,
     };
-    
-    console.log('Event request controller received parameters:', getEventRequestsRequestDTO);
-    
+
     const response = await this._getEventRequestsUseCase.execute(getEventRequestsRequestDTO);
-    return this._httpSuccess.success_200({
-      eventRequests: response.data,
-      totalItems: response.totalItems,
-      totalPages: response.totalPages,
-      currentPage: response.currentPage,
-    });
+    return this._httpSuccess.success_200(response);
   }
 
   async approveEventRequest(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const { id } = httpRequest.params || {};
-    if (!id) {
-      return this._httpErrors.error_400();
-    }
     const approveEventRequestRequestDTO: ApproveEventRequestRequestDTO = { id };
     const response = await this._approveEventRequestUseCase.execute(approveEventRequestRequestDTO);
     return this._httpSuccess.success_200(response);
@@ -64,9 +54,6 @@ export class EventRequestController implements IEventRequestController {
 
   async rejectEventRequest(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const { id } = httpRequest.params || {};
-    if (!id) {
-      return this._httpErrors.error_400();
-    }
     const rejectEventRequestRequestDTO: RejectEventRequestRequestDTO = { id };
     const response = await this._rejectEventRequestUseCase.execute(rejectEventRequestRequestDTO);
     return this._httpSuccess.success_200(response);
@@ -74,9 +61,6 @@ export class EventRequestController implements IEventRequestController {
 
   async getEventRequestDetails(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const { id } = httpRequest.params || {};
-    if (!id) {
-      return this._httpErrors.error_400();
-    }
     const getEventRequestDetailsRequestDTO: GetEventRequestDetailsRequestDTO = { id };
     const response = await this._getEventRequestDetailsUseCase.execute(getEventRequestDetailsRequestDTO);
     return this._httpSuccess.success_200(response);

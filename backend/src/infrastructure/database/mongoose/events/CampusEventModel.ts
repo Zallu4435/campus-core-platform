@@ -1,15 +1,15 @@
 import mongoose, { Schema } from "mongoose";
-import { 
-  OrganizerType, 
-  EventType, 
-  Timeframe, 
-  EventStatus, 
-  Event,
-  EventRequest,
+import {
+  OrganizerType,
+  EventType,
+  Timeframe,
+  EventStatus,
+  EventDoc,
+  EventRequestDoc,
   EventRequestStatus
 } from "../../../../domain/events/entities/EventTypes";
 
-const campusEventSchema = new Schema<Event>(
+const campusEventSchema = new Schema<EventDoc>(
   {
     title: { type: String, required: true, minlength: 3 },
     organizer: { type: String, required: true, minlength: 2 },
@@ -52,7 +52,7 @@ const campusEventSchema = new Schema<Event>(
   }
 );
 
-const eventRequestSchema = new Schema<EventRequest>({
+const eventRequestSchema = new Schema<EventRequestDoc>({
   eventId: { type: Schema.Types.ObjectId, ref: 'CampusEvent', required: true },
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   status: {
@@ -63,7 +63,7 @@ const eventRequestSchema = new Schema<EventRequest>({
   },
   whyJoin: { type: String, required: true, trim: true },
   additionalInfo: { type: String, trim: true, default: "" },
-  },
+},
   {
     timestamps: true,
   }
@@ -72,11 +72,11 @@ const eventRequestSchema = new Schema<EventRequest>({
 eventRequestSchema.index({ eventId: 1 });
 eventRequestSchema.index({ userId: 1 });
 
-export const CampusEventModel = mongoose.model<Event>(
-  "CampusEvent", 
+export const CampusEventModel = mongoose.model<EventDoc>(
+  "CampusEvent",
   campusEventSchema
 );
-export const EventRequestModel = mongoose.model<EventRequest>(
-  "EventRequest", 
+export const EventRequestModel = mongoose.model<EventRequestDoc>(
+  "EventRequest",
   eventRequestSchema
 );

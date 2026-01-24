@@ -1,20 +1,24 @@
-import { 
-  PaginatedResponse, 
-  EventSummary, 
-  EventDocument, 
-  EventRequestDocument,
-  CreateEventDto,
-  UpdateEventDto,
-  EventFilter,
-} from "../../../domain/events/entities/Event";
-import { IBaseRepository } from "../../repositories";
+import {
+  GetEventsRequestDTO,
+  CreateEventRequestDTO,
+  GetEventRequestsRequestDTO,
+  GetEventRequestDetailsRequestDTO,
+} from "../dtos/EventRequestDTOs";
+import {
+  GetEventsResponseDTO,
+  GetEventRequestsResponseDTO,
+  GetEventRequestDetailsResponseDTO
+} from "../dtos/EventResponseDTOs";
+import { EventDataDTO } from "../dtos/EventBaseDTOs";
+import { IBaseRepository } from "../../repositories/IBaseRepository";
+import { Event, EventRequestStatus } from "../../../domain/events/entities/EventTypes";
 
-export interface IEventsRepository extends 
-  IBaseRepository<EventDocument, CreateEventDto, UpdateEventDto, EventFilter, EventDocument> {
-  
-  getEvents(page: number, limit: number, type: string, status: string, startDate: string, endDate: string, search: string, organizerType: string, dateRange: string): Promise<PaginatedResponse<EventSummary>>;
-  getEventRequests(page: number, limit: number, status: string, startDate: string, endDate: string, type: string, search: string, organizerType: string, dateRange: string): Promise<PaginatedResponse<EventRequestDocument>>;
-  approveEventRequest(id: string): Promise<void>;
-  rejectEventRequest(id: string): Promise<void>;
-  getEventRequestDetails(id: string): Promise<EventRequestDocument | null>;
+export interface IEventsRepository extends
+  IBaseRepository<Event, CreateEventRequestDTO, Partial<EventDataDTO>, Record<string, unknown>, Event> {
+
+  getEvents(params: GetEventsRequestDTO): Promise<GetEventsResponseDTO>;
+  getEventRequests(params: GetEventRequestsRequestDTO): Promise<GetEventRequestsResponseDTO>;
+  updateEventRequestStatus(id: string, status: EventRequestStatus): Promise<void>;
+  incrementEventParticipants(eventId: string): Promise<void>;
+  getEventRequestDetails(params: GetEventRequestDetailsRequestDTO): Promise<GetEventRequestDetailsResponseDTO>;
 }

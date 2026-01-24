@@ -1,5 +1,5 @@
-import { GetEventsRequestDTO, GetEventByIdRequestDTO, CreateEventRequestDTO, UpdateEventRequestDTO, DeleteEventRequestDTO } from "../../../domain/events/dtos/EventRequestDTOs";
-import { GetEventsResponseDTO, GetEventByIdResponseDTO, CreateEventResponseDTO, UpdateEventResponseDTO, EventSummaryDTO } from "../../../domain/events/dtos/EventResponseDTOs";
+import { GetEventsRequestDTO, GetEventByIdRequestDTO, CreateEventRequestDTO, UpdateEventRequestDTO, DeleteEventRequestDTO } from "../dtos/EventRequestDTOs";
+import { GetEventsResponseDTO, GetEventByIdResponseDTO, CreateEventResponseDTO, UpdateEventResponseDTO } from "../dtos/EventResponseDTOs";
 
 export interface IGetEventsUseCase {
   execute(params: GetEventsRequestDTO): Promise<GetEventsResponseDTO>;

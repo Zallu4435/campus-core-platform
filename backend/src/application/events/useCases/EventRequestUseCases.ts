@@ -1,9 +1,15 @@
-import { GetEventRequestsRequestDTO, ApproveEventRequestRequestDTO, RejectEventRequestRequestDTO, GetEventRequestDetailsRequestDTO } from "../../../domain/events/dtos/EventRequestRequestDTOs";
-import { GetEventRequestsResponseDTO, GetEventRequestDetailsResponseDTO } from "../../../domain/events/dtos/EventRequestResponseDTOs";
+import {
+  GetEventRequestsRequestDTO,
+  ApproveEventRequestRequestDTO,
+  RejectEventRequestRequestDTO,
+  GetEventRequestDetailsRequestDTO
+} from "../dtos/EventRequestDTOs";
+import {
+  GetEventRequestsResponseDTO,
+  GetEventRequestDetailsResponseDTO
+} from "../dtos/EventResponseDTOs";
 import { IEventsRepository } from "../repositories/IEventsRepository";
-import mongoose from "mongoose";
-import { InvalidEventRequestIdError, EventRequestNotFoundError, AssociatedEventNotFoundError, InvalidEventStatusError } from "../../../domain/events/errors/EventErrors";
-import { PaginatedResponse, SimplifiedEventRequest, EventRequestDetails, EventRequestDocument } from "../../../domain/events/entities/Event";
+import { EventRequestStatus } from "../../../domain/events/entities/EventTypes";
 import {
   IGetEventRequestsUseCase,
   IApproveEventRequestUseCase,
@@ -11,6 +17,9 @@ import {
   IGetEventRequestDetailsUseCase
 } from "./IEventRequestUseCases";
 
+function isValidObjectId(id: string): boolean {
+  return typeof id === 'string' && /^[a-fA-F0-9]{24}$/.test(id);
+}
 
 export class GetEventRequestsUseCase implements IGetEventRequestsUseCase {
   constructor(private _eventsRepository: IEventsRepository) { }
@@ -19,64 +28,7 @@ export class GetEventRequestsUseCase implements IGetEventRequestsUseCase {
     if (isNaN(params.page) || params.page < 1 || isNaN(params.limit) || params.limit < 1) {
       throw new Error("Invalid page or limit parameters");
     }
-    if (params.startDate && isNaN(params.startDate.getTime())) {
-      throw new Error("Invalid startDate format");
-    }
-    if (params.endDate && isNaN(params.endDate.getTime())) {
-      throw new Error("Invalid endDate format");
-    }
-
-    const result = await this._eventsRepository.getEventRequests(
-      params.page,
-      params.limit,
-      params.status,
-      params.startDate ? params.startDate.toISOString() : "",
-      params.endDate ? params.endDate.toISOString() : "",
-      params.type,
-      params.search,
-      params.organizerType,
-      params.dateRange
-    );
-
-    const filteredRequests = result.events.filter((req) => {
-      if (typeof req.eventId === 'object' && req.eventId !== null && 'title' in req.eventId) {
-        return true;
-      }
-      return false;
-    });
-    const mappedRequests = filteredRequests.map((req) => {
-      let eventName = "Unknown Event";
-      let type = "Unknown Type";
-      let proposedDate = "N/A";
-      if (typeof req.eventId === 'object' && req.eventId !== null) {
-        eventName = req.eventId.title || eventName;
-        type = (req.eventId as { eventType?: string }).eventType || type;
-        if ('date' in req.eventId && req.eventId.date) {
-          proposedDate = new Date(req.eventId.date).toISOString();
-        }
-      }
-      let requestedBy = "Unknown User";
-      if (typeof req.userId === 'object' && req.userId !== null && 'email' in req.userId) {
-        requestedBy = req.userId.email;
-      }
-      return {
-        eventName,
-        requestedId: req._id.toString(),
-        requestedBy,
-        eventId: typeof req.eventId === 'object' && req.eventId !== null ? req.eventId._id.toString() : req.eventId,
-        type,
-        requestedDate: req.createdAt ? new Date(req.createdAt).toISOString() : "N/A",
-        status: req.status || "pending",
-        proposedDate,
-      };
-    });
-
-    return {
-      data: mappedRequests,
-      totalItems: filteredRequests.length,
-      totalPages: Math.ceil(filteredRequests.length / params.limit),
-      currentPage: result.currentPage,
-    };
+    return await this._eventsRepository.getEventRequests(params);
   }
 }
 
@@ -84,17 +36,35 @@ export class ApproveEventRequestUseCase implements IApproveEventRequestUseCase {
   constructor(private _eventsRepository: IEventsRepository) { }
 
   async execute(params: ApproveEventRequestRequestDTO): Promise<{ message: string }> {
-    if (!mongoose.isValidObjectId(params.id)) {
-      throw new InvalidEventRequestIdError(params.id);
+    if (!isValidObjectId(params.id)) {
+      throw new Error("Invalid event request ID");
     }
-    const eventRequestDetails: EventRequestDocument | null = await this._eventsRepository.getEventRequestDetails(params.id);
-    if (!eventRequestDetails) {
-      throw new EventRequestNotFoundError(params.id);
+
+    const response = await this._eventsRepository.getEventRequestDetails({ id: params.id });
+    if (!response || !response.eventRequest) {
+      throw new Error("Event request not found");
     }
-    if (eventRequestDetails.status !== "pending") {
-      throw new InvalidEventStatusError(eventRequestDetails.status);
+
+    const { eventRequest } = response;
+
+    if (eventRequest.status !== EventRequestStatus.Pending) {
+      throw new Error(`Event request is already ${eventRequest.status}`);
     }
-    await this._eventsRepository.approveEventRequest(params.id);
+
+    // Atomically update request status
+    await this._eventsRepository.updateEventRequestStatus(params.id, EventRequestStatus.Approved);
+
+    // Increment participants
+    if (eventRequest.eventId) {
+      await this._eventsRepository.incrementEventParticipants(eventRequest.eventId);
+    }
+
+    // Trigger notification
+    if (eventRequest.userId) {
+      const eventTitle = eventRequest.eventName || 'an event';
+      await this._eventsRepository.sendRequestApprovalNotification('event', params.id, eventRequest.userId, eventTitle);
+    }
+
     return { message: "Event request approved successfully" };
   }
 }
@@ -103,17 +73,30 @@ export class RejectEventRequestUseCase implements IRejectEventRequestUseCase {
   constructor(private _eventsRepository: IEventsRepository) { }
 
   async execute(params: RejectEventRequestRequestDTO): Promise<{ message: string }> {
-    if (!mongoose.isValidObjectId(params.id)) {
-      throw new InvalidEventRequestIdError(params.id);
+    if (!isValidObjectId(params.id)) {
+      throw new Error("Invalid event request ID");
     }
-    const eventRequestDetails: EventRequestDocument | null = await this._eventsRepository.getEventRequestDetails(params.id);
-    if (!eventRequestDetails) {
-      throw new EventRequestNotFoundError(params.id);
+
+    const response = await this._eventsRepository.getEventRequestDetails({ id: params.id });
+    if (!response || !response.eventRequest) {
+      throw new Error("Event request not found");
     }
-    if (eventRequestDetails.status !== "pending") {
-      throw new InvalidEventStatusError(eventRequestDetails.status);
+
+    const { eventRequest } = response;
+
+    if (eventRequest.status !== EventRequestStatus.Pending) {
+      throw new Error(`Event request is already ${eventRequest.status}`);
     }
-    await this._eventsRepository.rejectEventRequest(params.id);
+
+    // Atomically update request status
+    await this._eventsRepository.updateEventRequestStatus(params.id, EventRequestStatus.Rejected);
+
+    // Trigger notification
+    if (eventRequest.userId) {
+      const eventTitle = eventRequest.eventName || 'an event';
+      await this._eventsRepository.sendRequestRejectionNotification('event', params.id, eventRequest.userId, eventTitle);
+    }
+
     return { message: "Event request rejected successfully" };
   }
 }
@@ -122,41 +105,13 @@ export class GetEventRequestDetailsUseCase implements IGetEventRequestDetailsUse
   constructor(private _eventsRepository: IEventsRepository) { }
 
   async execute(params: GetEventRequestDetailsRequestDTO): Promise<GetEventRequestDetailsResponseDTO> {
-    if (!mongoose.isValidObjectId(params.id)) {
-      throw new InvalidEventRequestIdError(params.id);
+    if (!isValidObjectId(params.id)) {
+      throw new Error("Invalid event request ID");
     }
-    const eventRequest: EventRequestDocument | null = await this._eventsRepository.getEventRequestDetails(params.id);
-    if (!eventRequest) {
-      throw new EventRequestNotFoundError(params.id);
+    const response = await this._eventsRepository.getEventRequestDetails(params);
+    if (!response || !response.eventRequest) {
+      throw new Error("Event request not found");
     }
-    if (!eventRequest.eventId || typeof eventRequest.eventId === 'string') {
-      throw new AssociatedEventNotFoundError();
-    }
-    if (!eventRequest.userId || typeof eventRequest.userId === 'string') {
-      throw new AssociatedEventNotFoundError();
-    }
-    return {
-      eventRequest: {
-        id: eventRequest._id,
-        status: eventRequest.status,
-        createdAt: eventRequest.createdAt.toISOString(),
-        updatedAt: eventRequest.updatedAt.toISOString(),
-        whyJoin: eventRequest.whyJoin,
-        additionalInfo: eventRequest.additionalInfo || "",
-        event: {
-          id: eventRequest.eventId._id,
-          title: eventRequest.eventId.title,
-          description: eventRequest.eventId.description,
-          date: eventRequest.eventId.date,
-          location: eventRequest.eventId.location,
-          participantsCount: eventRequest.eventId.participants,
-        },
-        user: {
-          id: eventRequest.userId._id,
-          name: `${eventRequest.userId.firstName} ${eventRequest.userId.lastName}`,
-          email: eventRequest.userId.email,
-        },
-      },
-    };
+    return response;
   }
 }

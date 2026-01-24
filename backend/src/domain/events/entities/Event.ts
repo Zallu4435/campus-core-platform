@@ -1,144 +1,11 @@
 import { EventErrorType } from "../enums/EventErrorType";
-import { 
-  EventProps, 
-  OrganizerType, 
-  EventType, 
-  Timeframe, 
-  EventStatus 
+import {
+  EventProps,
+  OrganizerType,
+  EventType,
+  Timeframe,
+  EventStatus
 } from "./EventTypes";
-
-export interface CreateEventDto {
-  title: string;
-  organizer: string;
-  organizerType: OrganizerType;
-  eventType: EventType;
-  date: string;
-  time: string;
-  location: string;
-  timeframe: Timeframe;
-  status?: EventStatus;
-  icon?: string;
-  color?: string;
-  description?: string;
-  fullTime?: boolean;
-  additionalInfo?: string;
-  requirements?: string;
-  maxParticipants?: number;
-  registrationRequired?: boolean;
-  participants?: number;
-}
-
-export interface UpdateEventDto {
-  title?: string;
-  organizer?: string;
-  organizerType?: OrganizerType;
-  eventType?: EventType;
-  date?: string;
-  time?: string;
-  location?: string;
-  timeframe?: Timeframe;
-  status?: EventStatus;
-  icon?: string;
-  color?: string;
-  description?: string;
-  fullTime?: boolean;
-  additionalInfo?: string;
-  requirements?: string;
-  maxParticipants?: number;
-  registrationRequired?: boolean;
-  participants?: number;
-}
-
-export interface EventFilter {
-  eventType?: { $regex: string; $options: string } | string;
-  status?: { $regex: string; $options: string } | string;
-  organizerType?: { $regex: string; $options: string } | string;
-  date?: { $gte?: string; $lte?: string } | string;
-  eventId?: string | { $in: string[] };
-  $or?: Array<{
-    title?: { $regex: string; $options: string };
-    description?: { $regex: string; $options: string };
-    organizer?: { $regex: string; $options: string };
-    location?: { $regex: string; $options: string };
-    additionalInfo?: { $regex: string; $options: string };
-    eventType?: { $regex: string; $options: string };
-    organizerType?: { $regex: string; $options: string };
-  }>;
-}
-
-export interface CreateEventRequestDto {
-  eventId: string;
-  userId: string;
-  status: string;
-  whyJoin: string;
-  additionalInfo?: string;
-}
-
-export interface UpdateEventRequestDto {
-  status?: string;
-  whyJoin?: string;
-  additionalInfo?: string;
-}
-
-export interface EventRequestFilter {
-  status?: { $regex: string; $options: string } | string;
-  eventId?: string;
-  userId?: string;
-  createdAt?: { $gte?: Date; $lte?: Date };
-  $or?: Array<{
-    whyJoin?: { $regex: string; $options: string };
-    additionalInfo?: { $regex: string; $options: string };
-  }>;
-}
-
-export interface PaginatedResponse<T> {
-  events: T[];
-  totalItems: number;
-  totalPages: number;
-  currentPage: number;
-}
-
-export interface EventSummary {
-  _id: string;
-  title: string;
-  organizerType: string;
-  eventType: string;
-  location: string;
-  timeframe: string;
-  status: string;
-}
-
-export interface SimplifiedEventRequest {
-  eventName: string;
-  requestedId: string;
-  requestedBy: string;
-  type: string;
-  requestedDate: string;
-  status: string;
-  proposedDate: string;
-}
-
-export interface EventRequestDetails {
-  _id: string;
-  status: string;
-  createdAt: string | Date;
-  updatedAt: string | Date;
-  whyJoin: string;
-  additionalInfo: string;
-  eventId: {
-    _id: string;
-    title: string;
-    description: string;
-    date: string;
-    location: string;
-    participantsCount: number;
-  };
-  userId?: {
-    _id: string;
-    name: string;
-    email: string;
-  };
-}
 
 export interface PopulatedUser {
   _id: string;
@@ -146,69 +13,6 @@ export interface PopulatedUser {
   lastName: string;
   email: string;
 }
-
-export interface PopulatedEvent {
-  _id: string;
-  title: string;
-  eventType: string;
-  date: string;
-  organizer: string;
-  location: string;
-  description: string;
-  participants?: number;
-}
-
-export interface EventDocument {
-  _id: string;
-  title: string;
-  organizer: string;
-  organizerType: string;
-  eventType: string;
-  date: string;
-  time: string;
-  location: string;
-  timeframe: string;
-  icon: string;
-  color: string;
-  description: string;
-  fullTime: boolean;
-  additionalInfo: string;
-  requirements: string;
-  status: string;
-  maxParticipants: number;
-  registrationRequired: boolean;
-  participants: number;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-// EventRequest document type (with populated eventId and userId)
-export interface EventRequestDocument {
-  _id: string;
-  eventId: PopulatedEvent | string;
-  userId: PopulatedUser | string;
-  status: string;
-  whyJoin: string;
-  additionalInfo: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface EventsListResponse {
-  events: EventDocument[];
-  totalItems: number;
-  totalPages: number;
-  currentPage: number;
-}
-
-export interface EventRequestsListResponse {
-  rawRequests: EventRequestDocument[];
-  totalItems: number;
-  totalPages: number;
-  currentPage: number;
-}
-
-export { OrganizerType, EventType, Timeframe, EventStatus };
 
 export class Event {
   private _id?: string;
@@ -230,6 +34,8 @@ export class Event {
   private _maxParticipants: number;
   private _registrationRequired: boolean;
   private _participants: number;
+  private _createdAt?: Date;
+  private _updatedAt?: Date;
 
   constructor(props: EventProps) {
     this._id = props.id;
@@ -251,6 +57,8 @@ export class Event {
     this._maxParticipants = props.maxParticipants || 0;
     this._registrationRequired = props.registrationRequired || false;
     this._participants = props.participants || 0;
+    this._createdAt = props.createdAt;
+    this._updatedAt = props.updatedAt;
   }
 
   static create(props: EventProps): Event {
@@ -285,30 +93,6 @@ export class Event {
   get maxParticipants(): number { return this._maxParticipants; }
   get registrationRequired(): boolean { return this._registrationRequired; }
   get participants(): number { return this._participants; }
-
-  toPersistence() {
-    return {
-      title: this._title,
-      organizer: this._organizer,
-      organizerType: this._organizerType,
-      eventType: this._eventType,
-      date: this._date,
-      time: this._time,
-      location: this._location,
-      timeframe: this._timeframe,
-      status: this._status,
-      icon: this._icon,
-      color: this._color,
-      description: this._description,
-      fullTime: this._fullTime,
-      additionalInfo: this._additionalInfo,
-      requirements: this._requirements,
-      maxParticipants: this._maxParticipants,
-      registrationRequired: this._registrationRequired,
-      participants: this._participants,
-    };
-  }
+  get createdAt(): Date | undefined { return this._createdAt; }
+  get updatedAt(): Date | undefined { return this._updatedAt; }
 }
-
-
-
