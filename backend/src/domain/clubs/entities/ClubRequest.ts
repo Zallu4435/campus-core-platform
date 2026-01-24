@@ -38,39 +38,3 @@ export class ClubRequest {
   get whyJoin(): string { return this.whyJoinValue; }
   get additionalInfo(): string { return this.additionalInfoValue; }
 }
-
-export interface PopulatedClubRequest {
-  _id: string;
-  status: string;
-  createdAt: Date;
-  updatedAt: Date;
-  whyJoin: string;
-  additionalInfo?: string;
-  clubId: {
-    _id: string;
-    name: string;
-    type: string;
-    about?: string;
-    nextMeeting?: string;
-    enteredMembers?: number;
-  };
-  userId?: {
-    _id: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-  };
-}
-
-export interface PopulatedClubRequestSummary {
-  _id: string;
-  clubId?: {
-    name: string;
-    type: string;
-  };
-  userId?: {
-    email: string;
-  };
-  createdAt?: Date;
-  status?: string;
-}

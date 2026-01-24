@@ -4,15 +4,14 @@ import {
   CreateClubRequestDTO,
   UpdateClubRequestDTO,
   DeleteClubRequestDTO,
-} from "../../../domain/clubs/dtos/ClubRequestDTOs";
+} from "../dtos/ClubRequestDTOs";
 import {
   GetClubsResponseDTO,
   GetClubByIdResponseDTO,
   CreateClubResponseDTO,
   UpdateClubResponseDTO,
-  ClubSummaryDTO,
-} from "../../../domain/clubs/dtos/ClubResponseDTOs";
-import { UpdateClubRequest } from "../../../domain/clubs/entities/Club";
+} from "../dtos/ClubResponseDTOs";
+import { RepositoryClubData } from "../dtos/ClubBaseDTOs";
 import { IClubsRepository } from "../repositories/IClubsRepository";
 import {
   IGetClubsUseCase,
@@ -21,7 +20,6 @@ import {
   IUpdateClubUseCase,
   IDeleteClubUseCase
 } from "./IClubUseCases";
-
 
 function isValidObjectId(id: string): boolean {
   return typeof id === 'string' && /^[a-fA-F0-9]{24}$/.test(id);
@@ -34,30 +32,7 @@ export class GetClubsUseCase implements IGetClubsUseCase {
     if (isNaN(dto.page) || dto.page < 1 || isNaN(dto.limit) || dto.limit < 1) {
       throw new Error("Invalid page or limit parameters");
     }
-    if (dto.startDate && isNaN(dto.startDate.getTime())) {
-      throw new Error("Invalid startDate format");
-    }
-    if (dto.endDate && isNaN(dto.endDate.getTime())) {
-      throw new Error("Invalid endDate format");
-    }
-    const { clubs, totalItems, totalPages, currentPage } = await this._clubsRepository.getClubs(dto);
-    const mappedClubs: ClubSummaryDTO[] = clubs.map((club) => ({
-      id: club._id.toString(),
-      name: club.name,
-      type: club.type,
-      status: club.status,
-      memberCount: club.enteredMembers || 0,
-      icon: club.icon,
-      createdAt: club.createdAt,
-      createdBy: club.createdBy,
-      color: club.color
-    }));
-    return {
-      clubs: mappedClubs,
-      totalItems,
-      totalPages,
-      currentPage,
-    };
+    return await this._clubsRepository.getClubs(dto);
   }
 }
 
@@ -72,7 +47,14 @@ export class GetClubByIdUseCase implements IGetClubByIdUseCase {
     if (!club) {
       throw new Error("Club not found!");
     }
-    return { club };
+
+    // Convert Mongo object to RepositoryClubData
+    const clubData: RepositoryClubData = {
+      ...club,
+      _id: club._id.toString()
+    };
+
+    return { club: clubData };
   }
 }
 
@@ -81,9 +63,13 @@ export class CreateClubUseCase implements ICreateClubUseCase {
 
   async execute(dto: CreateClubRequestDTO): Promise<CreateClubResponseDTO> {
     const newClub = await this._clubsRepository.create(dto);
-    return {
-      club: newClub
+
+    const clubData: RepositoryClubData = {
+      ...newClub,
+      _id: newClub._id.toString()
     };
+
+    return { club: clubData };
   }
 }
 
@@ -95,13 +81,17 @@ export class UpdateClubUseCase implements IUpdateClubUseCase {
       throw new Error("Invalid club ID");
     }
     const { id, ...updateData } = dto;
-    const updatedClub = await this._clubsRepository.updateById(id, updateData as UpdateClubRequest);
+    const updatedClub = await this._clubsRepository.updateById(id, updateData);
     if (!updatedClub) {
       throw new Error("Club not found!");
     }
-    return {
-      club: updatedClub
+
+    const clubData: RepositoryClubData = {
+      ...updatedClub,
+      _id: updatedClub._id.toString()
     };
+
+    return { club: clubData };
   }
 }
 

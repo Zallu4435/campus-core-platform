@@ -1,15 +1,13 @@
-
 import {
     GetClubRequestsRequestDTO,
     ApproveClubRequestRequestDTO,
     RejectClubRequestRequestDTO,
     GetClubRequestDetailsRequestDTO,
-} from "../../../domain/clubs/dtos/ClubRequestRequestDTOs";
+} from "../dtos/ClubRequestDTOs";
 import {
     GetClubRequestsResponseDTO,
     GetClubRequestDetailsResponseDTO,
-} from "../../../domain/clubs/dtos/ClubRequestResponseDTOs";
-
+} from "../dtos/ClubResponseDTOs";
 
 export interface IGetClubRequestsUseCase {
     execute(params: GetClubRequestsRequestDTO): Promise<GetClubRequestsResponseDTO>;

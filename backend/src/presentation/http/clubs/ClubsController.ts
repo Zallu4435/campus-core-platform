@@ -11,9 +11,8 @@ import {
   CreateClubRequestDTO,
   UpdateClubRequestDTO,
   DeleteClubRequestDTO,
-} from "../../../domain/clubs/dtos/ClubRequestDTOs";
+} from "../../../application/clubs/dtos/ClubRequestDTOs";
 import { IHttpRequest, IHttpResponse, HttpErrors, HttpSuccess, IClubsController } from "../IHttp";
-import mongoose from "mongoose";
 
 export class ClubsController implements IClubsController {
   private _httpErrors: HttpErrors;
@@ -31,37 +30,24 @@ export class ClubsController implements IClubsController {
   }
 
   async getClubs(httpRequest: IHttpRequest): Promise<IHttpResponse> {
-    const { page = "1", limit = "10", category = "all", status = "all", dateRange, search } = httpRequest.query || {};
-    if (isNaN(Number(page)) || isNaN(Number(limit)) || Number(page) < 1 || Number(limit) < 1) {
-      return this._httpErrors.error_400();
-    }
-    let startDate, endDate;
-    if (dateRange) {
-      const [start, end] = String(dateRange).split(",");
-      startDate = new Date(start);
-      endDate = new Date(end);
-      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-        return this._httpErrors.error_400();
-      }
-    }
+    const { page, limit, category, status, startDate, endDate, search } = httpRequest.query || {};
+
     const getClubsRequestDTO: GetClubsRequestDTO = {
       page: Number(page),
       limit: Number(limit),
-      category: String(category),
-      status: String(status),
-      startDate,
-      endDate,
+      category: category ? String(category) : undefined,
+      status: status ? String(status) : undefined,
+      startDate: startDate ? new Date(String(startDate)) : undefined,
+      endDate: endDate ? new Date(String(endDate)) : undefined,
       search: search ? String(search) : undefined,
     };
+
     const response = await this._getClubsUseCase.execute(getClubsRequestDTO);
     return this._httpSuccess.success_200(response);
   }
 
   async getClubById(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const { id } = httpRequest.params || {};
-    if (!id || !mongoose.isValidObjectId(id)) {
-      return this._httpErrors.error_400();
-    }
     const getClubByIdRequestDTO: GetClubByIdRequestDTO = { id };
     const response = await this._getClubByIdUseCase.execute(getClubByIdRequestDTO);
     return this._httpSuccess.success_200(response);
@@ -77,9 +63,6 @@ export class ClubsController implements IClubsController {
   async updateClub(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const { id } = httpRequest.params || {};
     const clubData = httpRequest.body || {};
-    if (!id || !mongoose.isValidObjectId(id)) {
-      return this._httpErrors.error_400();
-    }
     const updateClubRequestDTO: UpdateClubRequestDTO = { id, ...clubData };
     const response = await this._updateClubUseCase.execute(updateClubRequestDTO);
     return this._httpSuccess.success_200(response);
@@ -87,11 +70,8 @@ export class ClubsController implements IClubsController {
 
   async deleteClub(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const { id } = httpRequest.params || {};
-    if (!id || !mongoose.isValidObjectId(id)) {
-      return this._httpErrors.error_400();
-    }
     const deleteClubRequestDTO: DeleteClubRequestDTO = { id };
     const response = await this._deleteClubUseCase.execute(deleteClubRequestDTO);
     return this._httpSuccess.success_200(response);
   }
-} 
+}

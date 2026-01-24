@@ -4,14 +4,13 @@ import {
   CreateClubRequestDTO,
   UpdateClubRequestDTO,
   DeleteClubRequestDTO,
-} from "../../../domain/clubs/dtos/ClubRequestDTOs";
+} from "../dtos/ClubRequestDTOs";
 import {
   GetClubsResponseDTO,
   GetClubByIdResponseDTO,
   CreateClubResponseDTO,
   UpdateClubResponseDTO,
-  ClubSummaryDTO,
-} from "../../../domain/clubs/dtos/ClubResponseDTOs";
+} from "../dtos/ClubResponseDTOs";
 
 export interface IGetClubsUseCase {
   execute(dto: GetClubsRequestDTO): Promise<GetClubsResponseDTO>;

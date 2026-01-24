@@ -69,8 +69,3 @@ export interface ClubRequest {
   createdAt: Date;
   updatedAt: Date;
 }
-
-export type CreateClubProps = Omit<ClubProps, 'id' | 'createdAt' | 'updatedAt'>;
-export type UpdateClubProps = Partial<Omit<ClubProps, 'createdAt' | 'updatedAt'>> & { id: string };
-export type CreateClubRequestProps = Omit<ClubRequestProps, 'id' | 'createdAt' | 'updatedAt'>;
-export type UpdateClubRequestProps = Partial<Omit<ClubRequestProps, 'createdAt' | 'updatedAt'>> & { id: string }; 

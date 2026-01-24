@@ -1,27 +1,33 @@
+import { FilterQuery } from "mongoose";
 import {
-  GetClubsRequest,
-  CreateClubRequest,
-  UpdateClubRequest,
-  GetClubRequestsRequest,
-  ApproveClubRequestRequest,
-  RejectClubRequestRequest,
-  GetClubRequestDetailsRequest,
-  ClubFilter,
-} from "../../../domain/clubs/entities/Club";
+  GetClubsRequestDTO,
+  CreateClubRequestDTO,
+  GetClubRequestsRequestDTO,
+  GetClubRequestDetailsRequestDTO
+} from "../../../application/clubs/dtos/ClubRequestDTOs";
+import {
+  GetClubsResponseDTO,
+  GetClubRequestsResponseDTO,
+  GetClubRequestDetailsResponseDTO
+} from "../../../application/clubs/dtos/ClubResponseDTOs";
+import { ClubDataDTO } from "../../../application/clubs/dtos/ClubBaseDTOs";
 import { IClubsRepository } from "../../../application/clubs/repositories/IClubsRepository";
 import { ClubModel, ClubRequestModel } from "../../database/mongoose/clubs/ClubModel";
 import { BaseRepository } from "../../../application/repositories/BaseRepository";
-import { Club } from "../../../domain/clubs/entities/ClubTypes";
+import { Club as ClubType, ClubRequest as ClubRequestDoc, ClubRequestStatus } from "../../../domain/clubs/entities/ClubTypes";
+import { ClubMapper } from "./mappers/ClubMapper";
+import { ClubRequestMapper } from "./mappers/ClubRequestMapper";
 import mongoose from "mongoose";
 
-export class ClubsRepository extends BaseRepository<Club, CreateClubRequest, UpdateClubRequest, Record<string, unknown>, Club> implements IClubsRepository {
+export class ClubsRepository extends BaseRepository<ClubType, CreateClubRequestDTO, Partial<ClubDataDTO>, Record<string, unknown>, ClubType> implements IClubsRepository {
   constructor() {
     super(ClubModel);
   }
 
-  async getClubs(params: GetClubsRequest) {
+  async getClubs(params: GetClubsRequestDTO): Promise<GetClubsResponseDTO> {
     const { page, limit, category, status, startDate, endDate, search } = params;
-    const query: ClubFilter = {};
+    const query: FilterQuery<ClubType> = {};
+
     if (category && category.toLowerCase() !== "all") {
       query.type = { $regex: `^${category}$`, $options: "i" };
     }
@@ -40,122 +46,121 @@ export class ClubsRepository extends BaseRepository<Club, CreateClubRequest, Upd
         { type: { $regex: search, $options: "i" } },
       ];
     }
+
     const skip = (page - 1) * limit;
-    const clubs = await ClubModel.find(query)
-      .select("name type createdBy status createdAt color icon enteredMembers")
-      .sort({ updatedAt: -1, createdAt: -1 }) 
+    const clubsDocs = await ClubModel.find(query)
+      .sort({ updatedAt: -1, createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .lean();
+      .lean() as ClubType[];
+
     const totalItems = await ClubModel.countDocuments(query);
     const totalPages = Math.ceil(totalItems / limit);
-    return { clubs, totalItems, totalPages, currentPage: page };
+
+    return {
+      clubs: ClubMapper.toSummaryDTOList(clubsDocs),
+      totalItems,
+      totalPages,
+      currentPage: page,
+    };
   }
 
-  async getClubRequests(params: GetClubRequestsRequest) {
+  async getClubRequests(params: GetClubRequestsRequestDTO): Promise<GetClubRequestsResponseDTO> {
     const { page, limit, status, type, startDate, endDate, search } = params;
-    const query: ClubFilter = {};
+    const query: FilterQuery<ClubRequestDoc> = {};
+
     if (status && status.toLowerCase() !== "all") {
       query.status = status;
     }
-    const clubQuery: ClubFilter = {};
+
+    const clubQuery: FilterQuery<ClubType> = {};
     if (type && type.toLowerCase() !== "all") {
       clubQuery.type = { $regex: `^${type}$`, $options: "i" };
     }
-    let matchingClubs = [];
-    let userIds = [];
+
     if (search && search.trim() !== "") {
       clubQuery.$or = [
         { name: { $regex: search, $options: "i" } },
         { type: { $regex: search, $options: "i" } },
       ];
     }
-    matchingClubs = await ClubModel.find(clubQuery).select("_id name type").lean();
+
+    const matchingClubs = await ClubModel.find(clubQuery).select("_id").lean();
     const clubIds = matchingClubs.map((club) => club._id);
+
     if (search && search.trim() !== "") {
       const userMatches = await mongoose.model('User').find({ email: { $regex: search, $options: "i" } }).select("_id").lean();
-      userIds = userMatches.map((u) => u._id);
+      const userIds = userMatches.map((u) => u._id);
+
       if (clubIds.length === 0 && userIds.length === 0) {
-        return { rawRequests: [], totalItems: 0, totalPages: 0, currentPage: page };
+        return { data: [], totalItems: 0, totalPages: 0, currentPage: page };
       }
+
       query.$or = [];
-      if (clubIds.length > 0) query.$or.push({ clubId: { $in: clubIds } });
-      if (userIds.length > 0) query.$or.push({ userId: { $in: userIds } });
-    } else {
-      if (clubIds.length > 0) {
-        query.clubId = { $in: clubIds };
-      }
+      if (clubIds.length > 0) query.$or.push({ clubId: { $in: clubIds } } as any);
+      if (userIds.length > 0) query.$or.push({ userId: { $in: userIds } } as any);
+    } else if (clubIds.length > 0) {
+      query.clubId = { $in: clubIds } as any;
     }
+
     if (startDate && endDate) {
       query.createdAt = {
         $gte: new Date(startDate),
         $lte: new Date(endDate),
-      };
+      } as any;
     }
+
     const totalItems = await ClubRequestModel.countDocuments(query);
     const totalPages = Math.ceil(totalItems / limit);
     const skip = (page - 1) * limit;
-    const rawRequests = await ClubRequestModel.find(query)
-      .populate("clubId", "name type")
-      .populate("userId", "email")
+
+    const requestDocs = await ClubRequestModel.find(query)
+      .populate("clubId", "name type description")
+      .populate("userId", "firstName lastName email")
       .sort({ updatedAt: -1, createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .lean();
-    return { rawRequests, totalItems, totalPages, currentPage: page };
+      .lean() as unknown as ClubRequestDoc[];
+
+    return {
+      data: ClubRequestMapper.toDTOList(requestDocs),
+      totalItems,
+      totalPages,
+      currentPage: page,
+    };
   }
 
-  async approveClubRequest(params: ApproveClubRequestRequest) {
+  async updateClubRequestStatus(id: string, status: ClubRequestStatus): Promise<void> {
     await ClubRequestModel.findByIdAndUpdate(
-      params.id,
-      { status: "approved", updatedAt: new Date() },
+      id,
+      { status, updatedAt: new Date() },
       { runValidators: true }
     );
-    const clubRequest = await ClubRequestModel.findById(params.id);
-    if (clubRequest && clubRequest.clubId) {
-      await ClubModel.findByIdAndUpdate(
-        clubRequest.clubId,
-        { $inc: { enteredMembers: 1 }, updatedAt: new Date() },
-        { new: true }
-      );
-    }
-
-    if (clubRequest && clubRequest.userId) {
-      const userId = typeof clubRequest.userId === 'string' ? clubRequest.userId : clubRequest.userId._id.toString();
-      const clubTitle = typeof clubRequest.clubId === 'string' ? 'a club' : clubRequest.clubId.name || 'a club';
-      
-      await this.sendRequestApprovalNotification('club', params.id, userId, clubTitle);
-    }
   }
 
-  async rejectClubRequest(params: RejectClubRequestRequest) {
-    await ClubRequestModel.findByIdAndUpdate(
-      params.id,
-      { status: "rejected", updatedAt: new Date() },
-      { runValidators: true }
+  async incrementClubMembers(clubId: string): Promise<void> {
+    await ClubModel.findByIdAndUpdate(
+      clubId,
+      { $inc: { enteredMembers: 1 }, updatedAt: new Date() }
     );
-
-    const clubRequest = await ClubRequestModel.findById(params.id);
-    if (clubRequest && clubRequest.userId) {
-      const userId = typeof clubRequest.userId === 'string' ? clubRequest.userId : clubRequest.userId._id.toString();
-      const clubTitle = typeof clubRequest.clubId === 'string' ? 'a club' : clubRequest.clubId.name || 'a club';
-      
-      await this.sendRequestRejectionNotification('club', params.id, userId, clubTitle);
-    }
   }
 
-  async getClubRequestDetails(params: GetClubRequestDetailsRequest) {
-    const clubRequest = await ClubRequestModel.findById(params.id)
+  async getClubRequestDetails(params: GetClubRequestDetailsRequestDTO): Promise<GetClubRequestDetailsResponseDTO> {
+    const doc = await ClubRequestModel.findById(params.id)
       .populate({
         path: "clubId",
-        select: "name type about nextMeeting enteredMembers",
+        select: "name type about nextMeeting enteredMembers description",
       })
       .populate({
         path: "userId",
         select: "firstName lastName email",
       })
-      .lean();
-    return { clubRequest };
+      .lean() as unknown as ClubRequestDoc;
+
+    if (!doc) throw new Error("Club request not found");
+
+    return {
+      request: ClubRequestMapper.toDTO(doc)
+    };
   }
 }
-  

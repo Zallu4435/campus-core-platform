@@ -1,21 +1,25 @@
 import {
-  GetClubsRequest,
-  CreateClubRequest,
-  UpdateClubRequest,
-  GetClubRequestsRequest,
-  ApproveClubRequestRequest,
-  RejectClubRequestRequest,
-  GetClubRequestDetailsRequest,
-} from "../../../domain/clubs/entities/Club";
-import { IBaseRepository } from "../../repositories";
-import { Club, ClubRequest } from "../../../domain/clubs/entities/ClubTypes";
+  GetClubsRequestDTO,
+  CreateClubRequestDTO,
+  UpdateClubRequestDTO,
+  GetClubRequestsRequestDTO,
+  GetClubRequestDetailsRequestDTO,
+} from "../dtos/ClubRequestDTOs";
+import {
+  GetClubsResponseDTO,
+  GetClubRequestsResponseDTO,
+  GetClubRequestDetailsResponseDTO
+} from "../dtos/ClubResponseDTOs";
+import { ClubDataDTO } from "../dtos/ClubBaseDTOs";
+import { IBaseRepository } from "../../repositories/IBaseRepository";
+import { Club, ClubRequestStatus } from "../../../domain/clubs/entities/ClubTypes";
 
-export interface IClubsRepository extends 
-  IBaseRepository<Club, CreateClubRequest, UpdateClubRequest, Record<string, unknown>, Club> {
-  
-  getClubs(params: GetClubsRequest): Promise<{ clubs: Club[]; totalItems: number; totalPages: number; currentPage: number }>;
-  getClubRequests(params: GetClubRequestsRequest): Promise<{ rawRequests: ClubRequest[]; totalItems: number; totalPages: number; currentPage: number }>;
-  approveClubRequest(params: ApproveClubRequestRequest): Promise<void>;
-  rejectClubRequest(params: RejectClubRequestRequest): Promise<void>;
-  getClubRequestDetails(params: GetClubRequestDetailsRequest): Promise<{ clubRequest: ClubRequest } | null>;
+export interface IClubsRepository extends
+  IBaseRepository<Club, CreateClubRequestDTO, Partial<ClubDataDTO>, Record<string, unknown>, Club> {
+
+  getClubs(params: GetClubsRequestDTO): Promise<GetClubsResponseDTO>;
+  getClubRequests(params: GetClubRequestsRequestDTO): Promise<GetClubRequestsResponseDTO>;
+  updateClubRequestStatus(id: string, status: ClubRequestStatus): Promise<void>;
+  incrementClubMembers(clubId: string): Promise<void>;
+  getClubRequestDetails(params: GetClubRequestDetailsRequestDTO): Promise<GetClubRequestDetailsResponseDTO>;
 }

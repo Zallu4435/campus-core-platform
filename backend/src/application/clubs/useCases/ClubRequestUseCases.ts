@@ -3,22 +3,19 @@ import {
   ApproveClubRequestRequestDTO,
   RejectClubRequestRequestDTO,
   GetClubRequestDetailsRequestDTO,
-} from "../../../domain/clubs/dtos/ClubRequestRequestDTOs";
+} from "../dtos/ClubRequestDTOs";
 import {
   GetClubRequestsResponseDTO,
   GetClubRequestDetailsResponseDTO,
-  SimplifiedClubRequestDTO,
-} from "../../../domain/clubs/dtos/ClubRequestResponseDTOs";
+} from "../dtos/ClubResponseDTOs";
 import { IClubsRepository } from "../repositories/IClubsRepository";
-import { GetClubRequestsRequest } from "../../../domain/clubs/entities/Club";
-import { PopulatedClubRequest, PopulatedClubRequestSummary } from "../../../domain/clubs/entities/ClubRequest";
 import {
   IGetClubRequestsUseCase,
   IApproveClubRequestUseCase,
   IGetClubRequestDetailsUseCase,
   IRejectClubRequestUseCase
 } from "./IClubRequestUseCases";
-
+import { ClubRequestStatus } from "../../../domain/clubs/entities/ClubTypes";
 
 export class GetClubRequestsUseCase implements IGetClubRequestsUseCase {
   constructor(private _clubsRepository: IClubsRepository) { }
@@ -27,32 +24,7 @@ export class GetClubRequestsUseCase implements IGetClubRequestsUseCase {
     if (isNaN(params.page) || params.page < 1 || isNaN(params.limit) || params.limit < 1) {
       throw new Error("Invalid page or limit parameters");
     }
-
-    const repositoryRequest = new GetClubRequestsRequest(
-      params.page,
-      params.limit,
-      params.status || "all",
-      params.type || "all",
-      params.startDate?.toISOString(),
-      params.endDate?.toISOString(),
-      params.search
-    );
-
-    const { rawRequests, totalItems, totalPages, currentPage } = await this._clubsRepository.getClubRequests(repositoryRequest);
-    const mappedRequests: SimplifiedClubRequestDTO[] = (rawRequests as unknown as PopulatedClubRequestSummary[]).map((req: PopulatedClubRequestSummary) => ({
-      clubName: req.clubId?.name || "Unknown Club",
-      requestedId: req._id.toString(),
-      requestedBy: req.userId?.email || "Unknown User",
-      type: req.clubId?.type || "Unknown Type",
-      requestedAt: req.createdAt ? new Date(req.createdAt).toISOString() : "N/A",
-      status: req.status || "pending",
-    }));
-    return {
-      clubRequests: mappedRequests,
-      totalItems,
-      totalPages,
-      currentPage,
-    };
+    return await this._clubsRepository.getClubRequests(params);
   }
 }
 
@@ -63,15 +35,34 @@ export class ApproveClubRequestUseCase implements IApproveClubRequestUseCase {
     if (!params.id || params.id.trim() === "") {
       throw new Error("Invalid club request ID");
     }
-    const response: { clubRequest: PopulatedClubRequest } | null = await this._clubsRepository.getClubRequestDetails({ id: params.id }) as unknown as { clubRequest: PopulatedClubRequest } | null;
-    if (!response || !response.clubRequest) {
+
+    // 1. Get detailed request information
+    const response = await this._clubsRepository.getClubRequestDetails({ id: params.id });
+    if (!response || !response.request) {
       throw new Error("Club request not found");
     }
-    const clubRequest = response.clubRequest;
-    if (clubRequest.status !== "pending") {
-      throw new Error("Club request is not in pending status");
+
+    const { request } = response;
+
+    // 2. Validate current status
+    if (request.status !== ClubRequestStatus.Pending) {
+      throw new Error(`Club request is already ${request.status}`);
     }
-    await this._clubsRepository.approveClubRequest(params);
+
+    // 3. Atomically update request status
+    await this._clubsRepository.updateClubRequestStatus(params.id, ClubRequestStatus.Approved);
+
+    // 4. Increment club members
+    if (request.clubId) {
+      await this._clubsRepository.incrementClubMembers(request.clubId);
+    }
+
+    // 5. Trigger notification (Side effect orchestrated by Use Case)
+    if (request.userId) {
+      const clubTitle = request.clubName || 'a club';
+      await this._clubsRepository.sendRequestApprovalNotification('club', params.id, request.userId, clubTitle);
+    }
+
     return { message: "Club request approved successfully" };
   }
 }
@@ -83,15 +74,29 @@ export class RejectClubRequestUseCase implements IRejectClubRequestUseCase {
     if (!params.id || params.id.trim() === "") {
       throw new Error("Invalid club request ID");
     }
-    const response: { clubRequest: PopulatedClubRequest } | null = await this._clubsRepository.getClubRequestDetails({ id: params.id }) as unknown as { clubRequest: PopulatedClubRequest } | null;
-    if (!response || !response.clubRequest) {
+
+    // 1. Get detailed request information
+    const response = await this._clubsRepository.getClubRequestDetails({ id: params.id });
+    if (!response || !response.request) {
       throw new Error("Club request not found");
     }
-    const clubRequest = response.clubRequest;
-    if (clubRequest.status !== "pending") {
-      throw new Error("Club request is not in pending status");
+
+    const { request } = response;
+
+    // 2. Validate current status
+    if (request.status !== ClubRequestStatus.Pending) {
+      throw new Error(`Club request is already ${request.status}`);
     }
-    await this._clubsRepository.rejectClubRequest(params);
+
+    // 3. Atomically update request status
+    await this._clubsRepository.updateClubRequestStatus(params.id, ClubRequestStatus.Rejected);
+
+    // 4. Trigger notification (Side effect orchestrated by Use Case)
+    if (request.userId) {
+      const clubTitle = request.clubName || 'a club';
+      await this._clubsRepository.sendRequestRejectionNotification('club', params.id, request.userId, clubTitle);
+    }
+
     return { message: "Club request rejected successfully" };
   }
 }
@@ -103,38 +108,10 @@ export class GetClubRequestDetailsUseCase implements IGetClubRequestDetailsUseCa
     if (!params.id || params.id.trim() === "") {
       throw new Error("Invalid club request ID");
     }
-    const response: { clubRequest: PopulatedClubRequest } | null = await this._clubsRepository.getClubRequestDetails(params) as unknown as { clubRequest: PopulatedClubRequest } | null;
-    if (!response || !response.clubRequest) {
+    const response = await this._clubsRepository.getClubRequestDetails(params);
+    if (!response || !response.request) {
       throw new Error("Club request not found");
     }
-    const clubRequest = response.clubRequest;
-    if (!clubRequest.clubId) {
-      throw new Error("Associated club not found");
-    }
-    return {
-      clubRequest: {
-        id: clubRequest._id.toString(),
-        status: clubRequest.status,
-        createdAt: clubRequest.createdAt.toISOString(),
-        updatedAt: clubRequest.updatedAt.toISOString(),
-        whyJoin: clubRequest.whyJoin,
-        additionalInfo: clubRequest.additionalInfo || "",
-        club: {
-          id: clubRequest.clubId._id.toString(),
-          name: clubRequest.clubId.name,
-          type: clubRequest.clubId.type,
-          about: clubRequest.clubId.about || "",
-          nextMeeting: clubRequest.clubId.nextMeeting || "",
-          enteredMembers: clubRequest.clubId.enteredMembers || 0,
-        },
-        user: clubRequest.userId
-          ? {
-            id: clubRequest.userId._id.toString(),
-            name: `${clubRequest.userId.firstName} ${clubRequest.userId.lastName}`.trim(),
-            email: clubRequest.userId.email,
-          }
-          : undefined,
-      },
-    };
+    return response;
   }
-} 
+}
