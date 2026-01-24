@@ -1,22 +1,23 @@
-import {
-    ApproveFacultyResponseDTO,
-    RejectFacultyResponseDTO,
-    DeleteFacultyResponseDTO,
-    ConfirmFacultyOfferResponseDTO,
-    DownloadCertificateResponseDTO,
-} from "../../../domain/faculty/dtos/FacultyResponseDTOs";
-import { FacultyStatus } from "../../../domain/faculty/FacultyTypes";
+import { Faculty } from "../../../domain/faculty/entities/Faculty";
+import { FacultyStatus } from "../../../domain/faculty/enums/FacultyEnums";
+
+export interface IFacultyFilters {
+    status?: FacultyStatus;
+    department?: string;
+    createdAt?: {
+        start?: Date;
+        end?: Date;
+    };
+    search?: string;
+}
 
 export interface IFacultyRepository {
-    findFaculty(query, options: { skip?: number; limit?: number; select?: string });
-    countFaculty(query);
-    getFacultyById(id: string);
-    getFacultyByToken(token: string);
-    approveFaculty(params: { id: string, additionalInfo: { status: FacultyStatus, confirmationToken: string, tokenExpiry: Date, department: string } }): Promise<ApproveFacultyResponseDTO>;
-    rejectFaculty(id: string): Promise<RejectFacultyResponseDTO>;
-    deleteFaculty(id: string): Promise<DeleteFacultyResponseDTO>;
-    confirmFacultyOffer(params: { id: string, action: "accept" | "reject" }): Promise<ConfirmFacultyOfferResponseDTO>;
-    downloadCertificate(id: string): Promise<DownloadCertificateResponseDTO>;
-    blockFaculty(id: string): Promise<{ message: string }>;
-    saveFaculty(faculty);
-} 
+    findFaculty(filters: IFacultyFilters, options: { skip?: number; limit?: number; select?: string }): Promise<Faculty[]>;
+    countFaculty(filters: IFacultyFilters): Promise<number>;
+    getFacultyById(id: string): Promise<Faculty | null>;
+    getFacultyByToken(token: string): Promise<Faculty | null>;
+    updateFaculty(faculty: Faculty): Promise<Faculty>;
+    deleteFaculty(id: string): Promise<boolean>;
+    saveFaculty(faculty: Faculty): Promise<Faculty>;
+    blockFaculty(id: string): Promise<boolean>;
+}

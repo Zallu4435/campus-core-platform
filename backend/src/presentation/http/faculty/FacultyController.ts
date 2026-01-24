@@ -1,5 +1,4 @@
 import { IHttpRequest, IHttpResponse, HttpErrors, HttpSuccess, IFacultyController } from "../IHttp";
-import { v2 as cloudinary } from 'cloudinary';
 import {
   IGetFacultyUseCase,
   IGetFacultyByIdUseCase,
@@ -10,8 +9,10 @@ import {
   IConfirmFacultyOfferUseCase,
   IDownloadCertificateUseCase,
   IBlockFacultyUseCase,
+  IServeDocumentUseCase,
 } from "../../../application/faculty/useCases/IFacultyUseCases";
-import { FacultyStatus } from "../../../domain/faculty/FacultyTypes";
+import { FacultyStatus } from "../../../domain/faculty/enums/FacultyEnums";
+import { FacultyConstants } from "../../../application/faculty/constants/FacultyConstants";
 
 export class FacultyController implements IFacultyController {
   private _httpErrors: HttpErrors;
@@ -26,20 +27,26 @@ export class FacultyController implements IFacultyController {
     private _deleteFacultyUseCase: IDeleteFacultyUseCase,
     private _confirmFacultyOfferUseCase: IConfirmFacultyOfferUseCase,
     private _downloadCertificateUseCase: IDownloadCertificateUseCase,
-    private _blockFacultyUseCase: IBlockFacultyUseCase
+    private _blockFacultyUseCase: IBlockFacultyUseCase,
+    private _serveDocumentUseCase: IServeDocumentUseCase
   ) {
     this._httpErrors = new HttpErrors();
     this._httpSuccess = new HttpSuccess();
   }
 
   async getFaculty(httpRequest: IHttpRequest): Promise<IHttpResponse> {
-    const { page = "1", limit = "5", status = "all", department = "all_departments", dateRange = "all", search, startDate, endDate } = httpRequest.query || {};
-    if (isNaN(Number(page)) || isNaN(Number(limit)) || Number(page) < 1 || Number(limit) < 1) {
+    const { page = FacultyConstants.DEFAULTS.PAGE, limit = FacultyConstants.DEFAULTS.LIMIT, status = FacultyConstants.DEFAULTS.STATUS, department = FacultyConstants.DEFAULTS.DEPARTMENT, dateRange = FacultyConstants.DEFAULTS.DATE_RANGE, search, startDate, endDate } = httpRequest.query || {};
+
+    // Type conversion and validation
+    const pageNum = Number(page);
+    const limitNum = Number(limit);
+
+    if (isNaN(pageNum) || isNaN(limitNum) || pageNum < 1 || limitNum < 1) {
       return this._httpErrors.error_400();
     }
     const response = await this._getFacultyUseCase.execute({
-      page: Number(page),
-      limit: Number(limit),
+      page: pageNum,
+      limit: limitNum,
       status: status as FacultyStatus,
       department: String(department),
       dateRange: String(dateRange),
@@ -60,7 +67,7 @@ export class FacultyController implements IFacultyController {
     }
     const response = await this._getFacultyByIdUseCase.execute({ id });
     if (!response.success) {
-      return this._httpErrors.error_404();
+      return this._httpErrors.error_404(); // Mapped to 404 in case of error, though logic relies on success flag
     }
     return this._httpSuccess.success_200(response.data);
   }
@@ -127,7 +134,7 @@ export class FacultyController implements IFacultyController {
     if (!id || !action || !token || typeof token !== "string") {
       return this._httpErrors.error_400();
     }
-    if (action !== "accept" && action !== "reject") {
+    if (action !== FacultyConstants.ACTIONS.ACCEPT && action !== FacultyConstants.ACTIONS.REJECT) {
       return this._httpErrors.error_400();
     }
     const response = await this._confirmFacultyOfferUseCase.execute({
@@ -185,36 +192,35 @@ export class FacultyController implements IFacultyController {
         return this._httpErrors.error_400();
       }
 
-      const urlParts = (documentUrl as string).split('/');
-      const publicId = urlParts.slice(-2).join('/').replace(/\.[^/.]+$/, '');
-
-      const signedUrl = cloudinary.url(publicId, {
-        resource_type: 'raw',
-        type: 'upload',
-        sign_url: true,
-        secure: true
+      const response = await this._serveDocumentUseCase.execute({
+        facultyId: facultyId as string,
+        documentUrl: documentUrl as string,
+        type: type as string,
+        requestingUserId: httpRequest.user.id
       });
 
-      const response = await fetch(signedUrl);
-
-      if (!response.ok) {
-        return this._httpErrors.error_404();
+      if (!response.success) {
+        const errorData = response.data as { error: string };
+        return this._httpErrors.error_400(errorData.error);
       }
 
-      const pdfBuffer = await response.arrayBuffer();
+      const { pdfData, fileName, contentType } = response.data as { pdfData: string, fileName: string, contentType: string };
 
-      const result_response = {
+      // Structure return for express adapter which might handle body
+      return {
         statusCode: 200,
         body: {
           data: {
-            pdfData: Buffer.from(pdfBuffer).toString('base64'),
-            fileName: `${type}_${facultyId}.pdf`,
-            contentType: 'application/pdf'
+            pdfData,
+            fileName,
+            contentType
           }
         }
       };
-      return result_response;
     } catch (error) {
+      // Ideally error is handled by usecase and returned as !success, but serveDocument in original controller had try/catch
+      // and specific return structure. 
+      // We should return standard error response.
       return this._httpErrors.error_500();
     }
   }

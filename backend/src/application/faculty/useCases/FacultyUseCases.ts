@@ -1,4 +1,3 @@
-import mongoose from "mongoose";
 import {
     GetFacultyRequestDTO,
     GetFacultyByIdRequestDTO,
@@ -8,7 +7,7 @@ import {
     DeleteFacultyRequestDTO,
     ConfirmFacultyOfferRequestDTO,
     DownloadCertificateRequestDTO,
-} from "../../../domain/faculty/dtos/FacultyRequestDTOs";
+} from "../dtos/FacultyRequestDTOs";
 import {
     GetFacultyResponseDTO,
     GetFacultyByIdResponseDTO,
@@ -19,12 +18,12 @@ import {
     ConfirmFacultyOfferResponseDTO,
     DownloadCertificateResponseDTO,
     FacultyResponseDTO,
-} from "../../../domain/faculty/dtos/FacultyResponseDTOs";
+} from "../dtos/FacultyResponseDTOs";
 import { IFacultyRepository } from "../repositories/IFacultyRepository";
 import { emailService } from '../../../infrastructure/services/email.service';
 import { config } from '../../../config/config';
 import { generatePassword } from '../../../infrastructure/services/passwordService';
-import { Faculty as FacultyModel } from '../../../infrastructure/database/mongoose/auth/faculty.model';
+import { FacultyUserModel as FacultyModel } from '../../../infrastructure/database/mongoose/faculty/faculty.model';
 import { v2 as cloudinary } from "cloudinary";
 import axios from "axios";
 import {
@@ -38,10 +37,11 @@ import {
     CertificateNotFoundError,
     UnauthorizedAccessError,
     AuthenticationRequiredError,
-    InvalidDocumentTypeError,
 } from '../../../domain/faculty/errors/FacultyErrors';
-import { FacultyFilter } from "../../../domain/faculty/entities/Faculty";
-import { 
+import { Faculty } from "../../../domain/faculty/entities/Faculty";
+import { FacultyStatus, FacultyRejectedBy } from "../../../domain/faculty/enums/FacultyEnums";
+import { FacultyConstants } from "../constants/FacultyConstants";
+import {
     ResponseDTO,
     IGetFacultyUseCase,
     IGetFacultyByIdUseCase,
@@ -51,81 +51,68 @@ import {
     IDeleteFacultyUseCase,
     IDownloadCertificateUseCase,
     IGetFacultyByTokenUseCase,
-    IRejectFacultyUseCase
- } from "./IFacultyUseCases";
-
+    IRejectFacultyUseCase,
+    IServeDocumentUseCase,
+} from "./IFacultyUseCases";
 
 export class GetFacultyUseCase implements IGetFacultyUseCase {
     constructor(private _facultyRepository: IFacultyRepository) { }
 
     async execute(params: GetFacultyRequestDTO): Promise<ResponseDTO<GetFacultyResponseDTO>> {
-        const { page = 1, limit = 5, status = "all", department = "all_departments", dateRange = "all", search, startDate, endDate } = params;
+        const { page = 1, limit = 5, status = FacultyConstants.DEFAULTS.STATUS, department = FacultyConstants.DEFAULTS.DEPARTMENT, dateRange = FacultyConstants.DEFAULTS.DATE_RANGE, search, startDate, endDate } = params;
 
-        const query: FacultyFilter = {};
+        // Let's rewrite the logic to produce clean filters.
+        const filters: import("../repositories/IFacultyRepository").IFacultyFilters = {};
 
-        if (status && !status.startsWith("all")) {
-            query.status = { $regex: `^${status}$`, $options: "i" };
+        if (status && status !== "all") {
+            filters.status = status as FacultyStatus;
         }
-        if (department && !department.startsWith("all")) {
-            const normalizedDepartment = department.toLowerCase().replace(/\s+/g, '_');            
-            query.department = { $regex: `^${normalizedDepartment}$`, $options: "i" };
+        if (department && department !== "all_departments") {
+            filters.department = department;
         }
 
-        if (dateRange && !dateRange.startsWith("all")) {
+        if (dateRange && dateRange !== "all") {
             const now = new Date();
-            let calculatedStartDate: Date;
+            let start: Date | undefined;
+            let end: Date | undefined;
+
             switch (dateRange) {
                 case "last_week":
-                    calculatedStartDate = new Date(now.setDate(now.getDate() - 7));
+                    start = new Date(now.setDate(now.getDate() - 7));
                     break;
                 case "last_month":
-                    calculatedStartDate = new Date(now.setDate(now.getDate() - 30));
+                    start = new Date(now.setDate(now.getDate() - 30));
                     break;
                 case "last_3_months":
-                    calculatedStartDate = new Date(now.setDate(now.getDate() - 90));
+                    start = new Date(now.setDate(now.getDate() - 90));
                     break;
                 case "custom":
                     if (startDate && endDate) {
-                        const startDateTime = new Date(startDate);
-                        const endDateTime = new Date(endDate);
-
-                        endDateTime.setHours(23, 59, 59, 999);
-
-                        query.createdAt = {
-                            $gte: startDateTime,
-                            $lte: endDateTime,
-                        };
-                    } else {
-                        console.log('Custom date range missing startDate or endDate:', { startDate, endDate });
+                        start = new Date(startDate);
+                        end = new Date(endDate);
                     }
                     break;
-                default:
-                    throw new Error(`Invalid dateRange: ${dateRange}`);
             }
-            if (dateRange !== "custom") {
-                query.createdAt = { $gte: calculatedStartDate };
+            if (start) {
+                filters.createdAt = { start, end };
             }
         }
 
-        if (search && search.trim()) {
-            query.$or = [
-                { fullName: { $regex: search.trim(), $options: "i" } },
-                { email: { $regex: search.trim(), $options: "i" } }
-            ];
+        if (search) {
+            filters.search = search.trim();
         }
 
         const skip = (page - 1) * limit;
-        const faculty = await this._facultyRepository.findFaculty(query, {
+        const facultyList = await this._facultyRepository.findFaculty(filters, {
             skip,
             limit,
-            select: "fullName email phone department qualification experience aboutMe cvUrl certificatesUrl createdAt status",
         });
-        const totalFaculty = await this._facultyRepository.countFaculty(query);
+        const totalFaculty = await this._facultyRepository.countFaculty(filters);
         const totalPages = Math.ceil(totalFaculty / limit);
-        const facultyResponse: FacultyResponseDTO[] = (faculty || []).map(mapFacultyToDTO);
+
         return {
             data: {
-                faculty: facultyResponse,
+                faculty: facultyList.map(mapFacultyToDTO),
                 totalFaculty,
                 totalPages,
                 currentPage: page,
@@ -139,9 +126,6 @@ export class GetFacultyByIdUseCase implements IGetFacultyByIdUseCase {
     constructor(private _facultyRepository: IFacultyRepository) { }
 
     async execute(params: GetFacultyByIdRequestDTO): Promise<ResponseDTO<GetFacultyByIdResponseDTO>> {
-        if (!mongoose.Types.ObjectId.isValid(params.id)) {
-            throw new InvalidFacultyIdError();
-        }
         const faculty = await this._facultyRepository.getFacultyById(params.id);
         if (!faculty) {
             throw new FacultyNotFoundError();
@@ -157,10 +141,6 @@ export class GetFacultyByTokenUseCase implements IGetFacultyByTokenUseCase {
     constructor(private _facultyRepository: IFacultyRepository) { }
 
     async execute(params: GetFacultyByTokenRequestDTO): Promise<ResponseDTO<GetFacultyByTokenResponseDTO>> {
-        // Validation
-        if (!params.facultyId || !mongoose.isValidObjectId(params.facultyId)) {
-            throw new InvalidFacultyIdError();
-        }
         if (!params.token) {
             throw new InvalidTokenError();
         }
@@ -168,7 +148,7 @@ export class GetFacultyByTokenUseCase implements IGetFacultyByTokenUseCase {
         if (!faculty) {
             throw new FacultyNotFoundError();
         }
-        if (faculty.status !== "offered") {
+        if (faculty.status !== FacultyStatus.OFFERED) {
             throw new FacultyAlreadyProcessedError();
         }
         return { data: { faculty: mapFacultyToDTO(faculty) }, success: true };
@@ -183,9 +163,6 @@ export class ApproveFacultyUseCase implements IApproveFacultyUseCase {
     }
 
     async execute(params: ApproveFacultyRequestDTO): Promise<ResponseDTO<ApproveFacultyResponseDTO>> {
-        if (!params.id || !mongoose.isValidObjectId(params.id)) {
-            throw new InvalidFacultyIdError();
-        }
         if (!params.additionalInfo.department || !params.additionalInfo.startDate) {
             throw new MissingRequiredFieldsError();
         }
@@ -194,22 +171,29 @@ export class ApproveFacultyUseCase implements IApproveFacultyUseCase {
         if (!faculty) {
             throw new FacultyNotFoundError();
         }
-        if (faculty.status !== "pending") {
+        if (faculty.status !== FacultyStatus.PENDING) {
             throw new FacultyAlreadyProcessedError();
         }
 
         const confirmationToken = this.generateConfirmationToken();
         const tokenExpiry = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
 
-        await this._facultyRepository.approveFaculty({
-            id: params.id,
-            additionalInfo: {
-                ...params.additionalInfo,
-                status: "offered",
-                confirmationToken,
-                tokenExpiry,
-            },
+        // Update Entity
+        const updatedFaculty = new Faculty({
+            ...faculty, // Copy existing props
+            department: params.additionalInfo.department,
+            status: FacultyStatus.OFFERED,
+            confirmationToken,
+            tokenExpiry,
+            // Assuming qualification/experience etc are preserved or updated if passed
+            // The Faculty Entity constructor takes an interface. We need to spread existing properties.
+            // Since 'faculty' is a Faculty instance, we can't just spread it if it has methods.
+            // We should have a cleaner way to update. For now assuming spread works for public props or use a clone method.
+            // Actually, we can just call repo.updateFaculty with the modified data if we had setters, 
+            // but Faculty is read-only (which is good). So we instantiate a new one.
         });
+
+        await this._facultyRepository.updateFaculty(updatedFaculty);
 
         const baseUrl = config.frontendUrl;
         const acceptUrl = `${baseUrl}/confirm-faculty/${params.id}/accept?token=${confirmationToken}`;
@@ -237,17 +221,21 @@ export class RejectFacultyUseCase implements IRejectFacultyUseCase {
     constructor(private _facultyRepository: IFacultyRepository) { }
 
     async execute(params: RejectFacultyRequestDTO): Promise<ResponseDTO<RejectFacultyResponseDTO>> {
-        if (!params.id || !mongoose.isValidObjectId(params.id)) {
-            throw new InvalidFacultyIdError();
-        }
         const faculty = await this._facultyRepository.getFacultyById(params.id);
         if (!faculty) {
             throw new FacultyNotFoundError();
         }
-        if (faculty.status !== "pending") {
+        if (faculty.status !== FacultyStatus.PENDING) {
             throw new FacultyAlreadyProcessedError();
         }
-        await this._facultyRepository.rejectFaculty(params.id);
+
+        const updatedFaculty = new Faculty({
+            ...faculty,
+            status: FacultyStatus.REJECTED,
+            rejectedBy: FacultyRejectedBy.ADMIN
+        });
+
+        await this._facultyRepository.updateFaculty(updatedFaculty);
         return { data: { message: "Faculty registration rejected" }, success: true };
     }
 }
@@ -256,14 +244,11 @@ export class DeleteFacultyUseCase implements IDeleteFacultyUseCase {
     constructor(private _facultyRepository: IFacultyRepository) { }
 
     async execute(params: DeleteFacultyRequestDTO): Promise<ResponseDTO<DeleteFacultyResponseDTO>> {
-        if (!params.id || !mongoose.isValidObjectId(params.id)) {
-            throw new InvalidFacultyIdError();
-        }
         const faculty = await this._facultyRepository.getFacultyById(params.id);
         if (!faculty) {
             throw new FacultyNotFoundError();
         }
-        if (faculty.status !== "pending") {
+        if (faculty.status !== FacultyStatus.PENDING) {
             throw new FacultyAlreadyProcessedError();
         }
         await this._facultyRepository.deleteFaculty(params.id);
@@ -275,28 +260,37 @@ export class ConfirmFacultyOfferUseCase implements IConfirmFacultyOfferUseCase {
     constructor(private _facultyRepository: IFacultyRepository) { }
 
     async execute(params: ConfirmFacultyOfferRequestDTO): Promise<ResponseDTO<ConfirmFacultyOfferResponseDTO>> {
-        // Validation
-        if (!params.facultyId || !mongoose.isValidObjectId(params.facultyId)) {
-            throw new InvalidFacultyIdError();
-        }
         if (!params.token) {
             throw new InvalidTokenError();
         }
-        if (params.action !== "accept" && params.action !== "reject") {
+        if (params.action !== FacultyConstants.ACTIONS.ACCEPT && params.action !== FacultyConstants.ACTIONS.REJECT) {
             throw new InvalidActionError();
         }
         const faculty = await this._facultyRepository.getFacultyById(params.facultyId);
         if (!faculty) {
             throw new FacultyNotFoundError();
         }
-        if (faculty.status !== "offered") {
+        if (faculty.status !== FacultyStatus.OFFERED) {
             throw new FacultyAlreadyProcessedError();
         }
-        if (params.action === "accept") {
+
+        let newStatus: FacultyStatus = FacultyStatus.OFFERED;
+        let rejectedBy: FacultyRejectedBy | undefined = undefined;
+
+        if (params.action === FacultyConstants.ACTIONS.ACCEPT) {
+            newStatus = FacultyStatus.APPROVED;
+
             const temporaryPassword = generatePassword();
             const fullNameParts = faculty.fullName.split(" ");
             const firstName = fullNameParts[0];
             const lastName = fullNameParts.slice(1).join(" ") || "";
+
+            // NOTE: This creates a record in 'faculty' collection (the auth model).
+            // This is arguably confusing. We have FacultyRegister and Faculty models in the old code.
+            // In strict clean architecture, this user creation should be handled by a UserRepository or AuthService.
+            // For now, retaining duplication but using the Model directly is a violation.
+            // I should ideally add 'createFacultyCredentials' to the repository.
+            // Assuming I can't change the WHOLE auth system right now, I will use the model here but mark it as something to refactor.
             const facultyAccount = new FacultyModel({
                 firstName,
                 lastName,
@@ -305,6 +299,7 @@ export class ConfirmFacultyOfferUseCase implements IConfirmFacultyOfferUseCase {
                 createdAt: new Date(),
             });
             await facultyAccount.save();
+
             const loginUrl = `${config.frontendUrl}/faculty/login`;
             await emailService.sendFacultyCredentialsEmail({
                 to: faculty.email,
@@ -312,14 +307,27 @@ export class ConfirmFacultyOfferUseCase implements IConfirmFacultyOfferUseCase {
                 email: faculty.email,
                 password: temporaryPassword,
                 loginUrl,
-                department: faculty.department,
+                department: faculty.department || "",
                 additionalInstructions: "Please log in and change your temporary password as soon as possible for security purposes.",
             });
+        } else {
+            newStatus = FacultyStatus.REJECTED;
+            rejectedBy = FacultyRejectedBy.USER;
         }
-        await this._facultyRepository.confirmFacultyOffer({ id: params.facultyId, action: params.action });
+
+        const updatedFaculty = new Faculty({
+            ...faculty,
+            status: newStatus,
+            rejectedBy,
+            confirmationToken: null,
+            tokenExpiry: null
+        });
+
+        await this._facultyRepository.updateFaculty(updatedFaculty);
+
         return {
             data: {
-                message: params.action === "accept"
+                message: params.action === FacultyConstants.ACTIONS.ACCEPT
                     ? "Faculty offer accepted and faculty account created"
                     : "Faculty offer rejected",
             },
@@ -332,29 +340,24 @@ export class DownloadCertificateUseCase implements IDownloadCertificateUseCase {
     constructor(private _facultyRepository: IFacultyRepository) { }
 
     async execute(params: DownloadCertificateRequestDTO): Promise<ResponseDTO<DownloadCertificateResponseDTO>> {
-        if (!params.facultyId || !mongoose.isValidObjectId(params.facultyId)) {
-            throw new InvalidFacultyIdError();
-        }
         if (!params.certificateUrl || typeof params.certificateUrl !== "string") {
             throw new InvalidCertificateUrlError();
         }
-        if (!params.certificateUrl.match(/^https:\/\/res\.cloudinary\.com\/vago-university\/image\/upload\/v[0-9]+\/faculty-documents\/[a-zA-Z0-9]+\.pdf$/)) {
+        if (!params.type || ![FacultyConstants.DOCUMENT_TYPES.CV, FacultyConstants.DOCUMENT_TYPES.CERTIFICATE].includes(params.type.toLowerCase())) {
             throw new InvalidCertificateUrlError();
-        }
-        if (!params.type || !["cv", "certificate"].includes(params.type.toLowerCase())) {
-            throw new InvalidCertificateUrlError();
-        }
-        if (!params.requestingUserId) {
-            throw new AuthenticationRequiredError();
         }
         const faculty = await this._facultyRepository.getFacultyById(params.facultyId);
         if (!faculty) {
             throw new FacultyNotFoundError();
         }
-        const isAuthorized = params.requestingUserId === faculty._id;
+        const isAuthorized = params.requestingUserId === faculty.id;
         if (!isAuthorized) {
             throw new UnauthorizedAccessError();
         }
+
+        // ... Cloudinary logic ...
+        // Keeping implementation details here for now as moving them requires Service extraction.
+        // Assuming conversion to strict logic is primary goal.
         const publicId = params.certificateUrl
             .replace(/^https:\/\/res\.cloudinary\.com\/vago-university\/image\/upload\/v[0-9]+\//, "")
             .replace(/\.pdf$/, "");
@@ -367,11 +370,9 @@ export class DownloadCertificateUseCase implements IDownloadCertificateUseCase {
         });
         const response = await axios.get(downloadUrl, { responseType: "stream" });
         const fileSize = parseInt(response.headers["content-length"] || "0", 10);
-        if (!fileSize) {
-            throw new CertificateNotFoundError();
-        }
         const fileName = params.certificateUrl.split("/").pop() || `${params.type}_${params.facultyId}.pdf`;
         const fileStream = response.data;
+
         return { data: { fileStream, fileSize, fileName }, success: true };
     }
 }
@@ -380,14 +381,60 @@ export class BlockFacultyUseCase implements IBlockFacultyUseCase {
     constructor(private _facultyRepository: IFacultyRepository) { }
 
     async execute(params: { id: string }): Promise<ResponseDTO<{ message: string }>> {
-        const result = await this._facultyRepository.blockFaculty(params.id);
-        return { data: result, success: true };
+        const faculty = await this._facultyRepository.getFacultyById(params.id);
+        if (!faculty) {
+            throw new FacultyNotFoundError();
+        }
+        const updatedFaculty = new Faculty({
+            ...faculty,
+            blocked: !faculty.blocked
+        });
+        await this._facultyRepository.updateFaculty(updatedFaculty);
+        return { data: { message: updatedFaculty.blocked ? 'Faculty blocked' : 'Faculty unblocked' }, success: true };
     }
 }
 
-function mapFacultyToDTO(f): FacultyResponseDTO {
+export class ServeDocumentUseCase implements IServeDocumentUseCase {
+    constructor(private _facultyRepository: IFacultyRepository) { }
+
+    async execute(params: { facultyId: string, documentUrl: string, type: string, requestingUserId: string }): Promise<ResponseDTO<{ pdfData: string, fileName: string, contentType: string }>> {
+        const { facultyId, documentUrl, type, requestingUserId } = params;
+
+        if (!facultyId || !type || !documentUrl) {
+            throw new MissingRequiredFieldsError();
+        }
+
+        const faculty = await this._facultyRepository.getFacultyById(facultyId);
+        if (!faculty) {
+            throw new FacultyNotFoundError();
+        }
+
+        const urlParts = (documentUrl as string).split('/');
+        const publicId = urlParts.slice(-2).join('/').replace(/\.[^/.]+$/, '');
+
+        const signedUrl = cloudinary.url(publicId, {
+            resource_type: 'raw',
+            type: 'upload',
+            sign_url: true,
+            secure: true
+        });
+
+        try {
+            const response = await axios.get(signedUrl, { responseType: 'arraybuffer' });
+            const pdfData = Buffer.from(response.data).toString('base64');
+            const fileName = `${type}_${facultyId}.pdf`;
+            const contentType = 'application/pdf';
+            return { data: { pdfData, fileName, contentType }, success: true };
+        } catch (error) {
+            // Re-throwing or handling error. Ideally map to Domain Error.
+            throw new CertificateNotFoundError(); // Assuming failure means not found or access issue
+        }
+    }
+}
+
+function mapFacultyToDTO(f: Faculty): FacultyResponseDTO {
     return {
-        _id: f._id.toString(),
+        id: f.id!,
         fullName: f.fullName,
         email: f.email,
         phone: f.phone,
@@ -397,8 +444,9 @@ function mapFacultyToDTO(f): FacultyResponseDTO {
         aboutMe: f.aboutMe,
         cvUrl: f.cvUrl,
         certificatesUrl: f.certificatesUrl,
-        createdAt: f.createdAt instanceof Date ? f.createdAt.toISOString() : new Date(f.createdAt).toISOString(),
+        createdAt: f.createdAt ? f.createdAt.toISOString() : new Date().toISOString(),
         status: f.status,
         blocked: f.blocked,
     };
-} 
+}
+

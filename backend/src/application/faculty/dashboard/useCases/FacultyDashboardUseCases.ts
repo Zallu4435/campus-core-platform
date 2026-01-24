@@ -5,7 +5,7 @@ import {
   GetFacultyCoursePerformanceRequestDTO,
   GetFacultySessionDistributionRequestDTO,
   GetFacultyRecentActivitiesRequestDTO,
-} from "../../../../domain/faculty/dashboard/dtos/FacultyDashboardRequestDTOs";
+} from "../dtos/FacultyDashboardRequestDTOs";
 import {
   GetFacultyDashboardStatsResponseDTO,
   GetFacultyDashboardDataResponseDTO,
@@ -14,7 +14,7 @@ import {
   GetFacultySessionDistributionResponseDTO,
   GetFacultyRecentActivitiesResponseDTO,
   ResponseDTO
-} from "../../../../domain/faculty/dashboard/dtos/FacultyDashboardResponseDTOs";
+} from "../dtos/FacultyDashboardResponseDTOs";
 import { IFacultyDashboardRepository } from "../repositories/IFacultyDashboardRepository";
 
 
@@ -45,57 +45,56 @@ export interface IGetFacultyRecentActivitiesUseCase {
 
 
 export class GetFacultyDashboardStatsUseCase implements IGetFacultyDashboardStatsUseCase {
-  constructor(private _facultyDashboardRepository: IFacultyDashboardRepository) {}
+  constructor(private _facultyDashboardRepository: IFacultyDashboardRepository) { }
 
   async execute(params: GetFacultyDashboardStatsRequestDTO): Promise<ResponseDTO<GetFacultyDashboardStatsResponseDTO>> {
-    const result = await this._facultyDashboardRepository.getDashboardStats(params.facultyId);
-    return { data: result, success: true };
+    const stats = await this._facultyDashboardRepository.getDashboardStats(params.facultyId);
+    return { data: { stats }, success: true };
   }
 }
 
 export class GetFacultyDashboardDataUseCase implements IGetFacultyDashboardDataUseCase {
-  constructor(private _facultyDashboardRepository: IFacultyDashboardRepository) {}
+  constructor(private _facultyDashboardRepository: IFacultyDashboardRepository) { }
 
   async execute(params: GetFacultyDashboardDataRequestDTO): Promise<ResponseDTO<GetFacultyDashboardDataResponseDTO>> {
-    const result = await this._facultyDashboardRepository.getDashboardData(params.facultyId);
-    return { data: result, success: true };
+    const dashboardData = await this._facultyDashboardRepository.getDashboardData(params.facultyId);
+    return { data: { dashboardData }, success: true };
   }
 }
 
 export class GetFacultyWeeklyAttendanceUseCase implements IGetFacultyWeeklyAttendanceUseCase {
-  constructor(private _facultyDashboardRepository: IFacultyDashboardRepository) {}
+  constructor(private _facultyDashboardRepository: IFacultyDashboardRepository) { }
 
-  async execute(params: GetFacultyWeeklyAttendanceRequestDTO): Promise<ResponseDTO<GetFacultyWeeklyAttendanceResponseDTO>> {    
-    const result = await this._facultyDashboardRepository.getWeeklyAttendance(params.facultyId);
-    return { data: result, success: true };
+  async execute(params: GetFacultyWeeklyAttendanceRequestDTO): Promise<ResponseDTO<GetFacultyWeeklyAttendanceResponseDTO>> {
+    const weeklyAttendance = await this._facultyDashboardRepository.getWeeklyAttendance(params.facultyId);
+    return { data: { weeklyAttendance }, success: true };
   }
 }
 
 export class GetFacultyCoursePerformanceUseCase implements IGetFacultyCoursePerformanceUseCase {
-  constructor(private _facultyDashboardRepository: IFacultyDashboardRepository) {}
+  constructor(private _facultyDashboardRepository: IFacultyDashboardRepository) { }
 
   async execute(params: GetFacultyCoursePerformanceRequestDTO): Promise<ResponseDTO<GetFacultyCoursePerformanceResponseDTO>> {
-    const result = await this._facultyDashboardRepository.getAssignmentPerformance(params.facultyId);
-    return { data: result, success: true };
+    const assignmentPerformance = await this._facultyDashboardRepository.getAssignmentPerformance(params.facultyId);
+    return { data: { assignmentPerformance }, success: true };
   }
 }
 
 export class GetFacultySessionDistributionUseCase implements IGetFacultySessionDistributionUseCase {
-  constructor(private _facultyDashboardRepository: IFacultyDashboardRepository) {}
+  constructor(private _facultyDashboardRepository: IFacultyDashboardRepository) { }
 
   async execute(params: GetFacultySessionDistributionRequestDTO): Promise<ResponseDTO<GetFacultySessionDistributionResponseDTO>> {
-    const result = await this._facultyDashboardRepository.getSessionDistribution(params.facultyId);
-    return { data: result, success: true };
+    const sessionDistribution = await this._facultyDashboardRepository.getSessionDistribution(params.facultyId);
+    return { data: { sessionDistribution }, success: true };
   }
 }
 
 export class GetFacultyRecentActivitiesUseCase implements IGetFacultyRecentActivitiesUseCase {
-  constructor(private _facultyDashboardRepository: IFacultyDashboardRepository) {}
+  constructor(private _facultyDashboardRepository: IFacultyDashboardRepository) { }
 
   async execute(params: GetFacultyRecentActivitiesRequestDTO): Promise<ResponseDTO<GetFacultyRecentActivitiesResponseDTO>> {
-    const result = await this._facultyDashboardRepository.getRecentActivities(params.facultyId);
-    return { data: result, success: true };
+    const recentActivities = await this._facultyDashboardRepository.getRecentActivities(params.facultyId);
+    return { data: { recentActivities }, success: true };
   }
 }
- 
- 
+

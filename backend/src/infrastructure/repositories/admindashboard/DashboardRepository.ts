@@ -2,7 +2,7 @@ import { IDashboardRepository } from '../../../application/admindashboard/reposi
 import { User } from '../../database/mongoose/auth/user.model';
 import { CourseModel } from '../../database/mongoose/courses/CourseModel';
 import { Admission } from '../../database/mongoose/admission/AdmissionModel';
-import { Faculty } from '../../database/mongoose/auth/faculty.model';
+import { FacultyUserModel as Faculty } from '../../database/mongoose/faculty/faculty.model';
 import { PaymentModel } from '../../database/mongoose/financial/financial.model';
 import { StudentFinancialInfoModel } from '../../database/mongoose/financial/financial.model';
 import { Enquiry } from '../../database/mongoose/enquiry/enquiry.model';
@@ -83,7 +83,7 @@ export class DashboardRepository implements IDashboardRepository {
       });
     }
     return userGrowthRaw;
-  } 
+  }
 
   async getRevenueData() {
     const end = new Date();
@@ -196,6 +196,6 @@ export class DashboardRepository implements IDashboardRepository {
   async refreshDashboard() {
     return await this.getDashboardData();
   }
- 
+
 
 } 

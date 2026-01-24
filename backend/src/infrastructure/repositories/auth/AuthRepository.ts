@@ -15,8 +15,8 @@ import { RegisterRequestDTO, RegisterFacultyRequestDTO } from "../../../applicat
 import { Register } from "../../database/mongoose/auth/register.model";
 import { Admin } from "../../database/mongoose/auth/admin.model";
 import { User as UserModel } from "../../database/mongoose/auth/user.model";
-import { Faculty as FacultyModel } from "../../database/mongoose/auth/faculty.model";
-import { FacultyRegister } from "../../database/mongoose/auth/facultyRegister.model";
+import { FacultyUserModel as FacultyModel } from "../../database/mongoose/faculty/faculty.model";
+import { FacultyRegisterModel as FacultyRegister } from "../../database/mongoose/faculty/facultyRegister.model";
 import { Admission } from "../../database/mongoose/admission/AdmissionModel";
 import { UserMapper } from "./mappers/UserMapper";
 import { FacultyMapper } from "./mappers/FacultyMapper";

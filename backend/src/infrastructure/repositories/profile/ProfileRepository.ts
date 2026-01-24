@@ -1,6 +1,6 @@
 // ProfileRepository.ts
 import { User } from "../../database/mongoose/auth/user.model";
-import { Faculty } from "../../database/mongoose/auth/faculty.model";
+import { FacultyUserModel as Faculty } from "../../database/mongoose/faculty/faculty.model";
 import { IProfileRepository } from "../../../application/profile/repositories/IProfileRepository";
 import { IProfileMapper } from "../../../application/profile/interfaces/IProfileMapper";
 import { Profile } from "../../../domain/profile/entities/Profile";

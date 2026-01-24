@@ -3,9 +3,18 @@ import { IFacultyDashboardRepository } from "../../../application/faculty/dashbo
 import { VideoSessionModel } from "../../database/mongoose/session/session.model";
 import { CourseModel } from "../../database/mongoose/courses/CourseModel";
 import { AssignmentModel } from "../../database/mongoose/assignment/AssignmentModel";
+import { FacultyDashboardMapper } from "./FacultyDashboardMapper";
+import {
+  DashboardStats,
+  FacultyDashboardData,
+  WeeklyAttendance,
+  AssignmentPerformance,
+  SessionDistribution,
+  RecentActivity
+} from "../../../domain/faculty/dashboard/entities/FacultyDashboardEntities";
 
 export class FacultyDashboardRepository implements IFacultyDashboardRepository {
-  async getDashboardStats(facultyId: string) {
+  async getDashboardStats(facultyId: string): Promise<DashboardStats> {
     if (!mongoose.isValidObjectId(facultyId)) {
       throw new Error("Invalid faculty ID");
     }
@@ -33,16 +42,16 @@ export class FacultyDashboardRepository implements IFacultyDashboardRepository {
       }
     ]);
 
-    return {
-      stats: {
-        totalSessions,
-        totalAssignments,
-        totalAttendance: totalAttendance[0]?.count || 0
-      }
+    const statsRaw = {
+      totalSessions,
+      totalAssignments,
+      totalAttendance: totalAttendance[0]?.count || 0
     };
+
+    return FacultyDashboardMapper.toStatsDomain(statsRaw);
   }
 
-  async getDashboardData(facultyId: string) {
+  async getDashboardData(facultyId: string): Promise<FacultyDashboardData> {
     const [stats, weeklyAttendance, assignmentPerformance, sessionDistribution, recentActivities] = await Promise.all([
       this.getDashboardStats(facultyId),
       this.getWeeklyAttendance(facultyId),
@@ -52,17 +61,15 @@ export class FacultyDashboardRepository implements IFacultyDashboardRepository {
     ]);
 
     return {
-      dashboardData: {
-        stats: stats.stats,
-        weeklyAttendance: weeklyAttendance.weeklyAttendance,
-        assignmentPerformance: assignmentPerformance.assignmentPerformance,
-        sessionDistribution: sessionDistribution.sessionDistribution,
-        recentActivities: recentActivities.recentActivities
-      }
+      stats,
+      weeklyAttendance,
+      assignmentPerformance,
+      sessionDistribution,
+      recentActivities
     };
   }
 
-  async getWeeklyAttendance(facultyId: string) {
+  async getWeeklyAttendance(facultyId: string): Promise<WeeklyAttendance[]> {
     if (!mongoose.isValidObjectId(facultyId)) {
       throw new Error("Invalid faculty ID");
     }
@@ -108,10 +115,10 @@ export class FacultyDashboardRepository implements IFacultyDashboardRepository {
       });
     }
 
-    return { weeklyAttendance: weeklyData };
+    return FacultyDashboardMapper.toWeeklyAttendanceDomain(weeklyData);
   }
 
-  async getAssignmentPerformance(facultyId: string) {
+  async getAssignmentPerformance(facultyId: string): Promise<AssignmentPerformance[]> {
     if (!mongoose.isValidObjectId(facultyId)) {
       throw new Error("Invalid faculty ID");
     }
@@ -158,6 +165,8 @@ export class FacultyDashboardRepository implements IFacultyDashboardRepository {
       }
     ]);
 
+    let dataToMap = assignmentPerformance;
+
     if (assignmentPerformance.length === 0) {
       const allAssignmentData = await AssignmentModel.aggregate([
         {
@@ -195,26 +204,24 @@ export class FacultyDashboardRepository implements IFacultyDashboardRepository {
           $limit: 5
         }
       ]);
-      
-      return {
-        assignmentPerformance: allAssignmentData.map(item => ({
-          assignment: `${item.assignment} (${item.status})`,
-          score: item.score,
-          submissions: item.submissions
-        }))
-      };
-    }
 
-    return {
-      assignmentPerformance: assignmentPerformance.map(item => ({
+      dataToMap = allAssignmentData.map(item => ({
+        assignment: `${item.assignment} (${item.status})`,
+        score: item.score,
+        submissions: item.submissions
+      }));
+    } else {
+      dataToMap = assignmentPerformance.map(item => ({
         assignment: item.assignment,
         score: item.score,
         submissions: item.submissions
-      }))
-    };
+      }));
+    }
+
+    return FacultyDashboardMapper.toAssignmentPerformanceDomain(dataToMap);
   }
 
-  async getSessionDistribution(facultyId: string) {
+  async getSessionDistribution(facultyId: string): Promise<SessionDistribution[]> {
     if (!mongoose.isValidObjectId(facultyId)) {
       throw new Error("Invalid faculty ID");
     }
@@ -241,15 +248,15 @@ export class FacultyDashboardRepository implements IFacultyDashboardRepository {
       color: colors[index % colors.length]
     }));
 
-    return { sessionDistribution };
+    return FacultyDashboardMapper.toSessionDistributionDomain(sessionDistribution);
   }
 
-  async getRecentActivities(facultyId: string) {
+  async getRecentActivities(facultyId: string): Promise<RecentActivity[]> {
     if (!mongoose.isValidObjectId(facultyId)) {
       throw new Error("Invalid faculty ID");
     }
 
-    const recentActivities = [];
+    const recentActivitiesRaw: any[] = [];
 
     const recentSessions = await VideoSessionModel.find({ hostId: facultyId })
       .sort({ createdAt: -1 })
@@ -258,7 +265,7 @@ export class FacultyDashboardRepository implements IFacultyDashboardRepository {
 
     recentSessions.forEach(session => {
       let message = '';
-      let type: 'attendance' | 'assignment' | 'announcement' | 'system' = 'attendance';
+      let type = 'attendance';
 
       if (session.status === 'Ended') {
         message = `Session "${session.title}" ended with ${session.attendance?.length || 0} attendees`;
@@ -266,11 +273,12 @@ export class FacultyDashboardRepository implements IFacultyDashboardRepository {
         message = `Session "${session.title}" is currently active`;
       } else if (session.status === 'Scheduled') {
         message = `Session "${session.title}" scheduled for ${new Date(session.startTime).toLocaleDateString()}`;
+        type = 'system';
       } else {
         message = `Session "${session.title}" ${session.status}`;
       }
 
-      recentActivities.push({
+      recentActivitiesRaw.push({
         id: session._id.toString(),
         type,
         message,
@@ -284,19 +292,17 @@ export class FacultyDashboardRepository implements IFacultyDashboardRepository {
       .lean();
 
     recentCourses.forEach(course => {
-      recentActivities.push({
+      recentActivitiesRaw.push({
         id: course._id.toString(),
-        type: 'announcement' as const,
+        type: 'announcement',
         message: `Course "${course.title}" was updated`,
         time: course.updatedAt.toISOString()
       });
     });
 
-    recentActivities.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
-    recentActivities.splice(10);
+    recentActivitiesRaw.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+    recentActivitiesRaw.splice(10);
 
-    return { recentActivities };
+    return FacultyDashboardMapper.toRecentActivityDomain(recentActivitiesRaw);
   }
-
-
-} 
+}

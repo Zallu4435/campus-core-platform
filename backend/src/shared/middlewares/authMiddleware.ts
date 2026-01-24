@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { Admin } from "../../infrastructure/database/mongoose/auth/admin.model";
 import { User } from "../../infrastructure/database/mongoose/auth/user.model";
-import { Faculty } from "../../infrastructure/database/mongoose/auth/faculty.model";
+import { FacultyUserModel as Faculty } from "../../infrastructure/database/mongoose/faculty/faculty.model";
 import { Register } from "../../infrastructure/database/mongoose/auth/register.model";
 import { Admission } from "../../infrastructure/database/mongoose/admission/AdmissionModel";
 import { config } from "../../config/config";
@@ -28,7 +28,7 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
   try {
     const accessToken = req.cookies?.access_token;
     if (!accessToken) {
-      res.status(401).json({ 
+      res.status(401).json({
         error: 'Access token missing',
         message: 'Please log in again to continue.',
         code: 'TOKEN_MISSING'
@@ -42,7 +42,7 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
     } catch (error) {
       if (error instanceof jwt.TokenExpiredError) {
         console.error('authMiddleware: Access token expired');
-        res.status(401).json({ 
+        res.status(401).json({
           error: 'Token expired',
           message: 'Your session has expired. Please refresh the page.',
           code: 'TOKEN_EXPIRED'
@@ -51,7 +51,7 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
       }
       if (error instanceof jwt.JsonWebTokenError) {
         console.error('authMiddleware: Invalid access token');
-        res.status(401).json({ 
+        res.status(401).json({
           error: 'Invalid token',
           message: 'Your session is invalid. Please log in again.',
           code: 'TOKEN_INVALID'
@@ -78,7 +78,7 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
           const admission = await Admission.findOne({ registerId: user._id });
           if (admission) {
             console.error('authMiddleware: User has an admission and cannot access:', decoded.userId);
-            res.status(403).json({ 
+            res.status(403).json({
               error: 'User has already made an admission',
               message: 'You have already submitted an admission application.',
               code: 'ADMISSION_EXISTS'
@@ -89,7 +89,7 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
         break;
       default:
         console.error('authMiddleware: Invalid collection:', decoded.collection);
-        res.status(403).json({ 
+        res.status(403).json({
           error: 'Invalid user collection',
           message: 'Your user type is not recognized. Please contact support.',
           code: 'INVALID_COLLECTION'
@@ -99,7 +99,7 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
 
     if (!user) {
       console.error('authMiddleware: User not found:', decoded.userId);
-      res.status(401).json({ 
+      res.status(401).json({
         error: 'User not found',
         message: 'Your user account was not found. Please log in again.',
         code: 'USER_NOT_FOUND'
@@ -119,7 +119,7 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
     next();
   } catch (error) {
     console.error('authMiddleware: Unexpected error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Internal server error',
       message: 'An unexpected error occurred. Please try again later.',
       code: 'INTERNAL_ERROR'

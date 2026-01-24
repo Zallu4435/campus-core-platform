@@ -9,6 +9,7 @@ import {
   ConfirmFacultyOfferUseCase,
   DownloadCertificateUseCase,
   BlockFacultyUseCase,
+  ServeDocumentUseCase,
 } from '../../../application/faculty/useCases/FacultyUseCases';
 import {
   IGetFacultyUseCase,
@@ -20,6 +21,7 @@ import {
   IConfirmFacultyOfferUseCase,
   IDownloadCertificateUseCase,
   IBlockFacultyUseCase,
+  IServeDocumentUseCase,
 } from '../../../application/faculty/useCases/IFacultyUseCases';
 import { FacultyRepository } from '../../repositories/faculty/FacultyRepository';
 import { FacultyController } from '../../../presentation/http/faculty/FacultyController';
@@ -36,6 +38,7 @@ export function getFacultyComposer(): IFacultyController {
   const confirmFacultyOfferUseCase: IConfirmFacultyOfferUseCase = new ConfirmFacultyOfferUseCase(repository);
   const downloadCertificateUseCase: IDownloadCertificateUseCase = new DownloadCertificateUseCase(repository);
   const blockFacultyUseCase: IBlockFacultyUseCase = new BlockFacultyUseCase(repository);
+  const serveDocumentUseCase: IServeDocumentUseCase = new ServeDocumentUseCase(repository);
   return new FacultyController(
     getFacultyUseCase,
     getFacultyByIdUseCase,
@@ -45,6 +48,7 @@ export function getFacultyComposer(): IFacultyController {
     deleteFacultyUseCase,
     confirmFacultyOfferUseCase,
     downloadCertificateUseCase,
-    blockFacultyUseCase
+    blockFacultyUseCase,
+    serveDocumentUseCase
   );
 }

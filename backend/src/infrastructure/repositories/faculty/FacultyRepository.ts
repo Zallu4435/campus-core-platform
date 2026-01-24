@@ -1,135 +1,96 @@
-import mongoose from "mongoose";
-import { FacultyErrorType } from "../../../domain/faculty/enums/FacultyErrorType";
-import { IFacultyRepository } from "../../../application/faculty/repositories/IFacultyRepository";
-import { Faculty as FacultyModel } from "../../database/mongoose/auth/faculty.model";
-import { FacultyRegister } from "../../database/mongoose/auth/facultyRegister.model";
-import { FacultyStatus } from "../../../domain/faculty/FacultyTypes";
+import { IFacultyRepository, IFacultyFilters } from "../../../application/faculty/repositories/IFacultyRepository";
+import { Faculty } from "../../../domain/faculty/entities/Faculty";
+import { FacultyRegisterModel, FacultyRegisterDocument } from "../../database/mongoose/faculty/facultyRegister.model";
+import { FacultyUserModel } from "../../database/mongoose/faculty/faculty.model";
+import { FacultyMapper } from "./FacultyMapper";
+import { FacultyStatus } from "../../../domain/faculty/enums/FacultyEnums";
+import mongoose, { FilterQuery } from "mongoose";
 
- 
 export class FacultyRepository implements IFacultyRepository {
-    async findFaculty(query, options: { skip?: number; limit?: number; select?: string }) {
-        return FacultyRegister.find(query)
-            .select((options.select ? options.select + ' blocked' : 'blocked'))
-            .sort({ updatedAt: -1, createdAt: -1 }) 
+    private _buildQuery(filters: IFacultyFilters): FilterQuery<FacultyRegisterDocument> {
+        const query: FilterQuery<FacultyRegisterDocument> = {};
+
+        if (filters.status) {
+            query.status = filters.status;
+        }
+        if (filters.department) {
+            query.department = filters.department;
+        }
+        if (filters.createdAt) {
+            query.createdAt = {};
+            if (filters.createdAt.start) query.createdAt.$gte = filters.createdAt.start;
+            if (filters.createdAt.end) query.createdAt.$lte = filters.createdAt.end;
+        }
+        if (filters.search) {
+            query.$or = [
+                { fullName: { $regex: filters.search, $options: "i" } },
+                { email: { $regex: filters.search, $options: "i" } }
+            ];
+        }
+        return query;
+    }
+
+    async findFaculty(filters: IFacultyFilters, options: { skip?: number; limit?: number; select?: string }): Promise<Faculty[]> {
+        const query = this._buildQuery(filters);
+        const docs = await FacultyRegisterModel.find(query)
+            .sort({ updatedAt: -1, createdAt: -1 })
             .skip(options.skip || 0)
             .limit(options.limit || 0)
-            .lean();
+            .lean()
+            .exec();
+
+        return docs.map((doc) => FacultyMapper.toDomain(doc));
     }
 
-    async countFaculty(query): Promise<number> {
-        return FacultyRegister.countDocuments(query);
+    async countFaculty(filters: IFacultyFilters): Promise<number> {
+        const query = this._buildQuery(filters);
+        return await FacultyRegisterModel.countDocuments(query);
     }
 
-    async getFacultyById(id: string) {
-        if (!mongoose.isValidObjectId(id)) {
-            throw new Error(FacultyErrorType.InvalidFacultyId);
-        }
-
-        const faculty = await FacultyRegister.findById(id)
-            .select('fullName email phone department qualification experience aboutMe cvUrl certificatesUrl createdAt status blocked')
-            .lean();
-
-        if (!faculty) {
-            throw new Error(FacultyErrorType.FacultyNotFound);
-        }
-
-        return faculty;
+    async getFacultyById(id: string): Promise<Faculty | null> {
+        if (!mongoose.isValidObjectId(id)) return null;
+        const doc = await FacultyRegisterModel.findById(id).lean().exec();
+        if (!doc) return null;
+        return FacultyMapper.toDomain(doc);
     }
 
-    async getFacultyByToken(token: string) {
-        const faculty = await FacultyRegister.findOne({ confirmationToken: token })
-            .select("fullName email phone department qualification experience aboutMe cvUrl certificatesUrl createdAt status confirmationToken tokenExpiry")
-            .lean();
-        if (!faculty) {
-            return null;
-        }
-        return faculty;
+    async getFacultyByToken(token: string): Promise<Faculty | null> {
+        const doc = await FacultyRegisterModel.findOne({ confirmationToken: token }).lean().exec();
+        if (!doc) return null;
+        return FacultyMapper.toDomain(doc);
     }
 
-    async approveFaculty(params: { id: string, additionalInfo: { status: FacultyStatus, confirmationToken: string, tokenExpiry: Date, department: string } }) {
-        const faculty = await FacultyRegister.findById(params.id);
-        if (!faculty) {
-            return null;
-        }
-        faculty.department = params.additionalInfo.department;
-        if ((params.additionalInfo).status) faculty.status = (params.additionalInfo).status as FacultyStatus;
-        if ((params.additionalInfo).confirmationToken) faculty.confirmationToken = (params.additionalInfo).confirmationToken;
-        if ((params.additionalInfo).tokenExpiry) faculty.tokenExpiry = (params.additionalInfo).tokenExpiry;
-        await faculty.save();
-        return { message: "Faculty updated" };
+    async updateFaculty(faculty: Faculty): Promise<Faculty> {
+        if (!faculty.id) throw new Error("Faculty ID is required for update");
+
+        // We convert Domain Entity back to Persistence format
+        const persistenceData = FacultyMapper.toPersistence(faculty);
+
+        const updatedDoc = await FacultyRegisterModel.findByIdAndUpdate(
+            faculty.id,
+            { $set: persistenceData },
+            { new: true }
+        ).lean().exec();
+
+        if (!updatedDoc) throw new Error("Faculty not found to update");
+        return FacultyMapper.toDomain(updatedDoc);
     }
 
-    async rejectFaculty(id: string) {
-        const faculty = await FacultyRegister.findById(id);
-        if (!faculty) {
-            return null;
-        }
-        faculty.status = "rejected";
-        faculty.rejectedBy = "admin";
-        await faculty.save();
-        return { message: "Faculty registration rejected" };
+    async deleteFaculty(id: string): Promise<boolean> {
+        const result = await FacultyRegisterModel.deleteOne({ _id: id });
+        return result.deletedCount === 1;
     }
 
-    async deleteFaculty(id: string) {
-        const faculty = await FacultyRegister.findById(id);
-        if (!faculty) {
-            return null;
-        }
-        await FacultyRegister.deleteOne({ _id: id });
-        return { message: "Faculty registration deleted" };
+    async saveFaculty(faculty: Faculty): Promise<Faculty> {
+        // This method implies creating a new Faculty.
+        const persistenceData = FacultyMapper.toPersistence(faculty);
+        const newDoc = new FacultyRegisterModel(persistenceData);
+        await newDoc.save();
+        return FacultyMapper.toDomain(newDoc.toObject());
     }
 
-    async confirmFacultyOffer(params: { id: string, action: "accept" | "reject" }) {
-        const facultyRegister = await FacultyRegister.findById(params.id);
-        if (!facultyRegister) {
-            return null;
-        }
-        if (params.action === "accept") {
-            facultyRegister.status = "approved";
-            facultyRegister.rejectedBy = undefined;
-        } else {
-            facultyRegister.status = "rejected";
-            facultyRegister.rejectedBy = "user";
-        }
-        facultyRegister.confirmationToken = undefined;
-        facultyRegister.tokenExpiry = undefined;
-        await facultyRegister.save();
-        return {
-            message: params.action === "accept"
-                ? "Faculty offer accepted and faculty account created"
-                : "Faculty offer rejected",
-        };
-    }
-
-    async downloadCertificate(id: string) {
-        const faculty = await FacultyRegister.findById(id);
-        if (!faculty) {
-            return null;
-        }
-        return null;
-    }
-
-    async blockFaculty(id: string): Promise<{ message: string }> {
-        const facultyRegister = await FacultyRegister.findById(id);
-        const email = facultyRegister ? facultyRegister.email : undefined;
-        let facultyModel = email ? await FacultyModel.findOne({ email }) : null;
-        let blockedStatus: boolean | undefined = undefined;
-        if (facultyModel) {
-            facultyModel.blocked = !facultyModel.blocked;
-            blockedStatus = facultyModel.blocked;
-            await facultyModel.save();
-        }
-        if (facultyRegister) {
-            facultyRegister.blocked = blockedStatus !== undefined ? blockedStatus : !facultyRegister.blocked;
-            await facultyRegister.save();
-        }
-        if (!facultyModel && !facultyRegister) {
-            throw new Error('Faculty not found in FacultyRegister or FacultyModel');
-        }
-        return { message: (blockedStatus ?? facultyRegister?.blocked) ? 'Faculty blocked' : 'Faculty unblocked' };
-    }
-
-    async saveFaculty(faculty) {
-        return faculty.save();
+    async blockFaculty(id: string): Promise<boolean> {
+        const result = await FacultyRegisterModel.updateOne({ _id: id }, { blocked: true });
+        return result.modifiedCount > 0;
     }
 }

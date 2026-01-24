@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { User as UserModel } from '../../infrastructure/database/mongoose/auth/user.model';
-import { Faculty as FacultyModel } from '../../infrastructure/database/mongoose/auth/faculty.model';
+import { FacultyUserModel as FacultyModel } from '../../infrastructure/database/mongoose/faculty/faculty.model';
 import { authMiddleware } from '../../shared/middlewares/authMiddleware';
 
 const router = Router();

@@ -7,7 +7,7 @@ import {
 import { MessageModel, IMessage } from '../../database/mongoose/communication/communication.model';
 import { User as UserModel } from '../../database/mongoose/auth/user.model';
 import { Admin as AdminModel } from '../../database/mongoose/auth/admin.model';
-import { Faculty as FacultyModel } from '../../database/mongoose/auth/faculty.model';
+import { FacultyUserModel as FacultyModel } from '../../database/mongoose/faculty/faculty.model';
 import mongoose from 'mongoose';
 import { CommunicationMapper } from './mappers/CommunicationMapper';
 

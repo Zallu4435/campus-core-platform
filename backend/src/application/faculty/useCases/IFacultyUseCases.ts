@@ -7,7 +7,7 @@ import {
     DeleteFacultyRequestDTO,
     ConfirmFacultyOfferRequestDTO,
     DownloadCertificateRequestDTO,
-} from "../../../domain/faculty/dtos/FacultyRequestDTOs";
+} from "../dtos/FacultyRequestDTOs";
 import {
     GetFacultyResponseDTO,
     GetFacultyByIdResponseDTO,
@@ -18,7 +18,7 @@ import {
     ConfirmFacultyOfferResponseDTO,
     DownloadCertificateResponseDTO,
     FacultyResponseDTO,
-} from "../../../domain/faculty/dtos/FacultyResponseDTOs";
+} from "../dtos/FacultyResponseDTOs";
 
 export interface ResponseDTO<T> {
     data: T | { error: string };
@@ -60,4 +60,8 @@ export interface IDownloadCertificateUseCase {
 
 export interface IBlockFacultyUseCase {
     execute(params: { id: string }): Promise<ResponseDTO<{ message: string }>>;
+}
+
+export interface IServeDocumentUseCase {
+    execute(params: { facultyId: string, documentUrl: string, type: string, requestingUserId: string }): Promise<ResponseDTO<{ pdfData: string, fileName: string, contentType: string }>>;
 }

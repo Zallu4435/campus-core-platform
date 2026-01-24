@@ -1,17 +1,17 @@
 import {
-  GetFacultyDashboardStatsResponseDTO,
-  GetFacultyDashboardDataResponseDTO,
-  GetFacultyWeeklyAttendanceResponseDTO,
-  GetFacultyCoursePerformanceResponseDTO,
-  GetFacultySessionDistributionResponseDTO,
-  GetFacultyRecentActivitiesResponseDTO,
-} from "../../../../domain/faculty/dashboard/dtos/FacultyDashboardResponseDTOs";
+  DashboardStats,
+  FacultyDashboardData,
+  WeeklyAttendance,
+  AssignmentPerformance,
+  SessionDistribution,
+  RecentActivity
+} from "../../../../domain/faculty/dashboard/entities/FacultyDashboardEntities";
 
 export interface IFacultyDashboardRepository {
-  getDashboardStats(facultyId: string): Promise<GetFacultyDashboardStatsResponseDTO>;
-  getDashboardData(facultyId: string): Promise<GetFacultyDashboardDataResponseDTO>;
-  getWeeklyAttendance(facultyId: string): Promise<GetFacultyWeeklyAttendanceResponseDTO>;
-  getAssignmentPerformance(facultyId: string): Promise<GetFacultyCoursePerformanceResponseDTO>;
-  getSessionDistribution(facultyId: string): Promise<GetFacultySessionDistributionResponseDTO>;
-  getRecentActivities(facultyId: string): Promise<GetFacultyRecentActivitiesResponseDTO>;
+  getDashboardStats(facultyId: string): Promise<DashboardStats>;
+  getDashboardData(facultyId: string): Promise<FacultyDashboardData>;
+  getWeeklyAttendance(facultyId: string): Promise<WeeklyAttendance[]>;
+  getAssignmentPerformance(facultyId: string): Promise<AssignmentPerformance[]>;
+  getSessionDistribution(facultyId: string): Promise<SessionDistribution[]>;
+  getRecentActivities(facultyId: string): Promise<RecentActivity[]>;
 } 

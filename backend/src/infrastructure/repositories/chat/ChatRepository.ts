@@ -2,7 +2,7 @@ import { IChatRepository } from "../../../application/chat/repositories/IChatRep
 import { ChatModel } from "../../database/mongoose/chat/ChatModel";
 import { MessageModel } from "../../database/mongoose/chat/MessageModel";
 import { User as UserModel } from "../../database/mongoose/auth/user.model";
-import { Faculty as FacultyModel } from "../../database/mongoose/auth/faculty.model";
+import { FacultyUserModel as FacultyModel } from "../../database/mongoose/faculty/faculty.model";
 import { MessageStatus, MessageType } from "../../../domain/chat/entities/Message";
 import { ChatFilter, ChatType } from "../../../domain/chat/entities/Chat";
 
@@ -306,52 +306,52 @@ export class ChatRepository implements IChatRepository {
   async createChat(params: { creatorId: string; participantId: string; type: string; name?: string; avatar?: string }) {
     const { creatorId, participantId, type, name, avatar } = params;
 
-      if (type === 'direct') {
-        const existingChat = await ChatModel.findOne({
-          type: 'direct',
-          participants: { $all: [creatorId, participantId] }
-        });
-
-        if (existingChat) {
-          throw new Error('Chat already exists');
-        }
-      }
-
-      const [userCreator, facultyCreator] = await Promise.all([
-        UserModel.findById(creatorId),
-        FacultyModel.findById(creatorId)
-      ]);
-
-      const creator = userCreator || facultyCreator;
-      if (!creator) {
-        throw new Error('Creator not found');
-      }
-
-      const [userParticipant, facultyParticipant] = await Promise.all([
-        UserModel.findById(participantId),
-        FacultyModel.findById(participantId)
-      ]);
-
-      const participant = userParticipant || facultyParticipant;
-      if (!participant) {
-        throw new Error('Participant not found');
-      }
-
-      const chat = await ChatModel.create({
-        type,
-        name: type === 'direct' ? `${participant.firstName} ${participant.lastName}` : name,
-        avatar: type === 'direct' ? (participant.profilePicture || '') : avatar,
-        participants: [creatorId, participantId],
-        createdBy: creatorId,
-        admins: [creatorId],
-        settings: {
-          onlyAdminsCanPost: false,
-          onlyAdminsCanAddMembers: false,
-          onlyAdminsCanChangeInfo: false
-        },
-        createdAt: new Date(),
-        updatedAt: new Date()
+    if (type === 'direct') {
+      const existingChat = await ChatModel.findOne({
+        type: 'direct',
+        participants: { $all: [creatorId, participantId] }
       });
+
+      if (existingChat) {
+        throw new Error('Chat already exists');
+      }
+    }
+
+    const [userCreator, facultyCreator] = await Promise.all([
+      UserModel.findById(creatorId),
+      FacultyModel.findById(creatorId)
+    ]);
+
+    const creator = userCreator || facultyCreator;
+    if (!creator) {
+      throw new Error('Creator not found');
+    }
+
+    const [userParticipant, facultyParticipant] = await Promise.all([
+      UserModel.findById(participantId),
+      FacultyModel.findById(participantId)
+    ]);
+
+    const participant = userParticipant || facultyParticipant;
+    if (!participant) {
+      throw new Error('Participant not found');
+    }
+
+    const chat = await ChatModel.create({
+      type,
+      name: type === 'direct' ? `${participant.firstName} ${participant.lastName}` : name,
+      avatar: type === 'direct' ? (participant.profilePicture || '') : avatar,
+      participants: [creatorId, participantId],
+      createdBy: creatorId,
+      admins: [creatorId],
+      settings: {
+        onlyAdminsCanPost: false,
+        onlyAdminsCanAddMembers: false,
+        onlyAdminsCanChangeInfo: false
+      },
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
 
     return {
       id: chat._id.toString(),
@@ -381,64 +381,64 @@ export class ChatRepository implements IChatRepository {
   async editMessage(params: { chatId: string; messageId: string; content: string; userId: string }) {
     const { chatId, messageId, content, userId } = params;
 
-      const message = await MessageModel.findOne({ _id: messageId, chatId });
-      if (!message) {
-        throw new Error('Message not found');
-      }
+    const message = await MessageModel.findOne({ _id: messageId, chatId });
+    if (!message) {
+      throw new Error('Message not found');
+    }
 
-      if (message.senderId.toString() !== userId) {
-        throw new Error('Not authorized to edit this message');
-      }
+    if (message.senderId.toString() !== userId) {
+      throw new Error('Not authorized to edit this message');
+    }
 
-      message.content = content;
-      await message.save();
+    message.content = content;
+    await message.save();
 
-      const chat = await ChatModel.findById(chatId);
-      if (chat?.lastMessage?.id === messageId) {
-        await ChatModel.findByIdAndUpdate(chatId, {
-          lastMessage: {
-            ...chat.lastMessage,
-            content: content,
-            attachments: message.attachments
-          }
-        });
-      }
+    const chat = await ChatModel.findById(chatId);
+    if (chat?.lastMessage?.id === messageId) {
+      await ChatModel.findByIdAndUpdate(chatId, {
+        lastMessage: {
+          ...chat.lastMessage,
+          content: content,
+          attachments: message.attachments
+        }
+      });
+    }
   }
 
   async deleteMessage(params: { messageId: string; userId: string; deleteForEveryone?: boolean }) {
     const { messageId, userId, deleteForEveryone } = params;
-      const message = await MessageModel.findOne({ _id: messageId });
-      if (!message) {
-        console.error('[deleteMessage] Message not found:', messageId);
-        throw new Error('Message not found');
+    const message = await MessageModel.findOne({ _id: messageId });
+    if (!message) {
+      console.error('[deleteMessage] Message not found:', messageId);
+      throw new Error('Message not found');
+    }
+    if (deleteForEveryone && message.senderId.toString() !== userId) {
+      console.error('[deleteMessage] Not authorized to delete for everyone:', { messageId, userId, senderId: message.senderId });
+      throw new Error('Not authorized to delete for everyone');
+    }
+    if (deleteForEveryone) {
+      message.isDeleted = true;
+      message.deletedForEveryone = true;
+    } else {
+      if (!message.deletedFor) {
+        message.deletedFor = [];
       }
-      if (deleteForEveryone && message.senderId.toString() !== userId) {
-        console.error('[deleteMessage] Not authorized to delete for everyone:', { messageId, userId, senderId: message.senderId });
-        throw new Error('Not authorized to delete for everyone');
+      if (!message.deletedFor.includes(userId)) {
+        message.deletedFor.push(userId);
       }
-      if (deleteForEveryone) {
-        message.isDeleted = true;
-        message.deletedForEveryone = true;
-      } else {
-        if (!message.deletedFor) {
-          message.deletedFor = [];
+    }
+    await message.save();
+    const chat = await ChatModel.findById(message.chatId);
+    if (chat?.lastMessage?.id === messageId) {
+      await ChatModel.findByIdAndUpdate(message.chatId, {
+        lastMessage: {
+          ...chat.lastMessage,
+          content: deleteForEveryone ? 'This message was deleted' : chat.lastMessage.content,
+          isDeleted: true,
+          deletedForEveryone: deleteForEveryone
         }
-        if (!message.deletedFor.includes(userId)) {
-          message.deletedFor.push(userId);
-        }
-      }
-      await message.save();
-      const chat = await ChatModel.findById(message.chatId);
-      if (chat?.lastMessage?.id === messageId) {
-        await ChatModel.findByIdAndUpdate(message.chatId, {
-          lastMessage: {
-            ...chat.lastMessage,
-            content: deleteForEveryone ? 'This message was deleted' : chat.lastMessage.content,
-            isDeleted: true,
-            deletedForEveryone: deleteForEveryone
-          }
-        });
-      }
+      });
+    }
   }
 
   async updateMessageStatus(messageId: string, status: MessageStatus) {

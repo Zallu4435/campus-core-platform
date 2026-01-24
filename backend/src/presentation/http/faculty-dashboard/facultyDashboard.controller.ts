@@ -14,7 +14,7 @@ import {
   GetFacultyCoursePerformanceRequestDTO,
   GetFacultySessionDistributionRequestDTO,
   GetFacultyRecentActivitiesRequestDTO,
-} from "../../../domain/faculty/dashboard/dtos/FacultyDashboardRequestDTOs";
+} from "../../../application/faculty/dashboard/dtos/FacultyDashboardRequestDTOs";
 import {
   GetFacultyDashboardStatsResponseDTO,
   GetFacultyDashboardDataResponseDTO,
@@ -22,13 +22,7 @@ import {
   GetFacultyCoursePerformanceResponseDTO,
   GetFacultySessionDistributionResponseDTO,
   GetFacultyRecentActivitiesResponseDTO,
-} from "../../../domain/faculty/dashboard/dtos/FacultyDashboardResponseDTOs";
-
-interface ErrorResponse {
-  error: string;
-  message?: string;
-  [key: string]: unknown;
-}
+} from "../../../application/faculty/dashboard/dtos/FacultyDashboardResponseDTOs";
 
 export class FacultyDashboardController implements IFacultyDashboardController {
   private _httpErrors: HttpErrors;
@@ -54,9 +48,12 @@ export class FacultyDashboardController implements IFacultyDashboardController {
     const params: GetFacultyDashboardStatsRequestDTO = { facultyId };
     const result = await this._getFacultyDashboardStatsUseCase.execute(params);
     if (result.success) {
-      return this._httpSuccess.success_200((result.data as GetFacultyDashboardStatsResponseDTO).stats);
+      // Manual type guard/assertion since ResponseDTO is generic
+      const successData = result.data as GetFacultyDashboardStatsResponseDTO;
+      return this._httpSuccess.success_200(successData.stats);
     } else {
-      return this._httpErrors.error_400((result.data as ErrorResponse)?.error || "Failed to fetch dashboard stats");
+      const errorData = result.data as { error: string };
+      return this._httpErrors.error_400(errorData.error || "Failed to fetch dashboard stats");
     }
   }
 
@@ -68,9 +65,11 @@ export class FacultyDashboardController implements IFacultyDashboardController {
     const params: GetFacultyDashboardDataRequestDTO = { facultyId };
     const result = await this._getFacultyDashboardDataUseCase.execute(params);
     if (result.success) {
-      return this._httpSuccess.success_200((result.data as GetFacultyDashboardDataResponseDTO).dashboardData);
+      const successData = result.data as GetFacultyDashboardDataResponseDTO;
+      return this._httpSuccess.success_200(successData.dashboardData);
     } else {
-      return this._httpErrors.error_400((result.data as ErrorResponse)?.error || "Failed to fetch dashboard data");
+      const errorData = result.data as { error: string };
+      return this._httpErrors.error_400(errorData.error || "Failed to fetch dashboard data");
     }
   }
 
@@ -82,9 +81,11 @@ export class FacultyDashboardController implements IFacultyDashboardController {
     const params: GetFacultyWeeklyAttendanceRequestDTO = { facultyId };
     const result = await this._getFacultyWeeklyAttendanceUseCase.execute(params);
     if (result.success) {
-      return this._httpSuccess.success_200((result.data as GetFacultyWeeklyAttendanceResponseDTO).weeklyAttendance);
+      const successData = result.data as GetFacultyWeeklyAttendanceResponseDTO;
+      return this._httpSuccess.success_200(successData.weeklyAttendance);
     } else {
-      return this._httpErrors.error_400((result.data as ErrorResponse)?.error || "Failed to fetch weekly attendance");
+      const errorData = result.data as { error: string };
+      return this._httpErrors.error_400(errorData.error || "Failed to fetch weekly attendance");
     }
   }
 
@@ -96,9 +97,11 @@ export class FacultyDashboardController implements IFacultyDashboardController {
     const params: GetFacultyCoursePerformanceRequestDTO = { facultyId };
     const result = await this._getFacultyCoursePerformanceUseCase.execute(params);
     if (result.success) {
-      return this._httpSuccess.success_200((result.data as GetFacultyCoursePerformanceResponseDTO).assignmentPerformance);
+      const successData = result.data as GetFacultyCoursePerformanceResponseDTO;
+      return this._httpSuccess.success_200(successData.assignmentPerformance);
     } else {
-      return this._httpErrors.error_400((result.data as ErrorResponse)?.error || "Failed to fetch assignment performance");
+      const errorData = result.data as { error: string };
+      return this._httpErrors.error_400(errorData.error || "Failed to fetch assignment performance");
     }
   }
 
@@ -110,9 +113,11 @@ export class FacultyDashboardController implements IFacultyDashboardController {
     const params: GetFacultySessionDistributionRequestDTO = { facultyId };
     const result = await this._getFacultySessionDistributionUseCase.execute(params);
     if (result.success) {
-      return this._httpSuccess.success_200((result.data as GetFacultySessionDistributionResponseDTO).sessionDistribution);
+      const successData = result.data as GetFacultySessionDistributionResponseDTO;
+      return this._httpSuccess.success_200(successData.sessionDistribution);
     } else {
-      return this._httpErrors.error_400((result.data as ErrorResponse)?.error || "Failed to fetch session distribution");
+      const errorData = result.data as { error: string };
+      return this._httpErrors.error_400(errorData.error || "Failed to fetch session distribution");
     }
   }
 
@@ -124,9 +129,11 @@ export class FacultyDashboardController implements IFacultyDashboardController {
     const params: GetFacultyRecentActivitiesRequestDTO = { facultyId };
     const result = await this._getFacultyRecentActivitiesUseCase.execute(params);
     if (result.success) {
-      return this._httpSuccess.success_200((result.data as GetFacultyRecentActivitiesResponseDTO).recentActivities);
+      const successData = result.data as GetFacultyRecentActivitiesResponseDTO;
+      return this._httpSuccess.success_200(successData.recentActivities);
     } else {
-      return this._httpErrors.error_400((result.data as ErrorResponse)?.error || "Failed to fetch recent activities");
+      const errorData = result.data as { error: string };
+      return this._httpErrors.error_400(errorData.error || "Failed to fetch recent activities");
     }
   }
 

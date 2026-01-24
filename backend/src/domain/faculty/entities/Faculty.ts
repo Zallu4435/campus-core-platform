@@ -1,94 +1,77 @@
-import { FacultyErrorType } from "../enums/FacultyErrorType";
-import { FacultyProps, FacultyStatus, FacultyRejectedBy } from "../FacultyTypes";
+import { FacultyStatus, FacultyRejectedBy } from "../enums/FacultyEnums";
 
-export class Faculty {
-  private _id?: string;
-  private _fullName: string;
-  private _email: string;
-  private _phone: string;
-  private _department: string;
-  private _qualification: string;
-  private _experience: string;
-  private _aboutMe: string;
-  private _cvUrl?: string;
-  private _certificatesUrl?: string[];
-  private _status: FacultyStatus;
-  private _confirmationToken?: string | null;
-  private _tokenExpiry?: Date | null;
-  private _rejectedBy?: FacultyRejectedBy;
-  private _createdAt?: Date;
-
-  constructor(props: FacultyProps & { status: FacultyStatus; confirmationToken?: string | null; tokenExpiry?: Date | null; rejectedBy?: FacultyRejectedBy; createdAt?: Date; }) {
-    this._id = props.id;
-    this._fullName = props.fullName;
-    this._email = props.email;
-    this._phone = props.phone;
-    this._department = props.department;
-    this._qualification = props.qualification;
-    this._experience = props.experience;
-    this._aboutMe = props.aboutMe;
-    this._cvUrl = props.cvUrl;
-    this._certificatesUrl = props.certificatesUrl;
-    this._status = props.status;
-    this._confirmationToken = props.confirmationToken;
-    this._tokenExpiry = props.tokenExpiry;
-    this._rejectedBy = props.rejectedBy;
-    this._createdAt = props.createdAt;
-  }
-
-  static create(props: FacultyProps & { status: FacultyStatus; confirmationToken?: string | null; tokenExpiry?: Date | null; rejectedBy?: FacultyRejectedBy; createdAt?: Date; }): Faculty {
-    if (!props.fullName || !props.email) {
-      throw new Error(FacultyErrorType.MissingRequiredFields);
-    }
-    return new Faculty(props);
-  }
-
-  get id(): string | undefined { return this._id; }
-  get fullName(): string { return this._fullName; }
-  get email(): string { return this._email; }
-  get phone(): string { return this._phone; }
-  get department(): string { return this._department; }
-  get qualification(): string { return this._qualification; }
-  get experience(): string { return this._experience; }
-  get aboutMe(): string { return this._aboutMe; }
-  get cvUrl(): string | undefined { return this._cvUrl; }
-  get certificatesUrl(): string[] | undefined { return this._certificatesUrl; }
-  get status(): FacultyStatus { return this._status; }
-  get confirmationToken(): string | undefined | null { return this._confirmationToken; }
-  get tokenExpiry(): Date | undefined | null { return this._tokenExpiry; }
-  get rejectedBy(): FacultyRejectedBy | undefined { return this._rejectedBy; }
-  get createdAt(): Date | undefined { return this._createdAt; }
-
-  updateStatus(status: FacultyStatus, rejectedBy?: FacultyRejectedBy): void {
-    if (!["pending", "approved", "rejected", "offered"].includes(status)) {
-      throw new Error(FacultyErrorType.InvalidStatus);
-    }
-    this._status = status;
-    this._rejectedBy = rejectedBy;
-  }
-
-  updateDepartment(department: string): void {
-    this._department = department;
-  }
-
-  setConfirmationToken(token: string, expiry: Date): void {
-    this._confirmationToken = token;
-    this._tokenExpiry = expiry;
-  }
-
-  clearConfirmationToken(): void {
-    this._confirmationToken = undefined;
-    this._tokenExpiry = undefined;
-  }
+export interface IFacultyProps {
+  id?: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  profilePicture?: string;
+  department?: string;
+  qualification?: string;
+  experience?: string;
+  aboutMe?: string;
+  cvUrl?: string;
+  certificatesUrl?: string[];
+  status: FacultyStatus;
+  rejectedBy?: FacultyRejectedBy;
+  confirmationToken?: string | null;
+  tokenExpiry?: Date | null;
+  blocked: boolean;
+  password?: string; // Optional because we might not always load it
+  passwordChangedAt?: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
-export interface FacultyFilter {
-  status?: { $regex: string; $options: string };
-  department?: { $regex: string; $options: string };
-  createdAt?: { $gte?: Date; $lte?: Date };
-  $or?: Array<{
-    fullName?: { $regex: string; $options: string };
-    email?: { $regex: string; $options: string };
-  }>;
-  [key: string]: unknown; // allows additional query fields if needed
+export class Faculty {
+  public readonly id?: string;
+  public readonly firstName: string;
+  public readonly lastName: string;
+  public readonly email: string;
+  public readonly phone?: string;
+  public readonly profilePicture?: string;
+  public readonly department?: string;
+  public readonly qualification?: string;
+  public readonly experience?: string;
+  public readonly aboutMe?: string;
+  public readonly cvUrl?: string;
+  public readonly certificatesUrl?: string[];
+  public readonly status: FacultyStatus;
+  public readonly rejectedBy?: FacultyRejectedBy;
+  public readonly confirmationToken?: string | null;
+  public readonly tokenExpiry?: Date | null;
+  public readonly blocked: boolean;
+  public readonly password?: string;
+  public readonly passwordChangedAt?: Date;
+  public readonly createdAt?: Date;
+  public readonly updatedAt?: Date;
+
+  constructor(props: IFacultyProps) {
+    this.id = props.id;
+    this.firstName = props.firstName;
+    this.lastName = props.lastName;
+    this.email = props.email;
+    this.phone = props.phone;
+    this.profilePicture = props.profilePicture;
+    this.department = props.department;
+    this.qualification = props.qualification;
+    this.experience = props.experience;
+    this.aboutMe = props.aboutMe;
+    this.cvUrl = props.cvUrl;
+    this.certificatesUrl = props.certificatesUrl;
+    this.status = props.status;
+    this.rejectedBy = props.rejectedBy;
+    this.confirmationToken = props.confirmationToken;
+    this.tokenExpiry = props.tokenExpiry;
+    this.blocked = props.blocked;
+    this.password = props.password;
+    this.passwordChangedAt = props.passwordChangedAt;
+    this.createdAt = props.createdAt;
+    this.updatedAt = props.updatedAt;
+  }
+
+  public get fullName(): string {
+    return `${this.firstName} ${this.lastName}`;
+  }
 }
