@@ -24,12 +24,10 @@ import {
 } from '../../../application/assignments/useCases/AssignmentUseCases';
 import { AssignmentController } from '../../../presentation/http/assignments/AssignmentController';
 import { IAssignmentController } from '../../../presentation/http/IHttp';
+import { storageService } from '../shared/CloudinaryStorageService';
 
 export function getAssignmentComposer(): IAssignmentController {
   const repository: IAssignmentRepository = new AssignmentRepository();
-
-  /* Storage Service */
-  const { storageService } = require('../../shared/CloudinaryStorageService');
 
   const getAssignmentsUseCase: IGetAssignmentsUseCase = new GetAssignmentsUseCase(repository);
   const getAssignmentByIdUseCase: IGetAssignmentByIdUseCase = new GetAssignmentByIdUseCase(repository);

@@ -72,7 +72,7 @@ export const ArticleGrid: React.FC = () => {
 
       {/* Enhanced grid layout */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
-        {highlights?.slice(0, 4).map((highlight) => (
+        {highlights?.sections.slice(0, 4).map((highlight) => (
           <div
             key={highlight.id}
             className="group bg-white rounded-xl overflow-hidden border border-cyan-100 shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
@@ -89,7 +89,7 @@ export const ArticleGrid: React.FC = () => {
                 </span>
               </div>
             </div>
-            
+
             <div className="p-4 sm:p-6">
               <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-2 sm:mb-3 group-hover:text-cyan-600 transition-colors">
                 {highlight.title}

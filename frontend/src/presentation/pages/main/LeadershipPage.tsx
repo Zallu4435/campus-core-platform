@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { FaArrowLeft, FaSearch, FaFilter, FaTimes } from 'react-icons/fa';
-import { useLeadership, useLeadershipCategories } from '../../../application/hooks/useSiteSections';
+import { useLeadership } from '../../../application/hooks/useSiteSections';
 import { SiteSection } from '../../../application/services/siteSections.service';
 import SiteSectionModal from '../../components/public/SiteSectionModal';
 import LoadingSpinner from '../../../shared/components/LoadingSpinner';
@@ -13,23 +13,48 @@ export const LeadershipPage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedLeader, setSelectedLeader] = useState<SiteSection | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [allLeaders, setAllLeaders] = useState<SiteSection[]>([]);
   const searchInputRef = useRef<HTMLInputElement>(null);
-
-  const { data: categories = ['all'] } = useLeadershipCategories();
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery);
-    }, 500); 
+    }, 500);
 
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const { data: leadership, isLoading, error } = useLeadership({
-    limit: 100,
+  // Reset page and list when filters change
+  useEffect(() => {
+    setPage(1);
+    setAllLeaders([]);
+  }, [debouncedSearchQuery, selectedCategory]);
+
+  const { data: response, isLoading, error } = useLeadership({
+    limit: 6,
+    page: page,
     search: debouncedSearchQuery || undefined,
     category: selectedCategory === 'all' ? undefined : selectedCategory,
   });
+
+  const categories = ['all', ...(response?.categories || [])];
+
+
+  useEffect(() => {
+    if (response?.sections) {
+      if (page === 1) {
+        setAllLeaders(response.sections);
+      } else {
+        setAllLeaders(prev => {
+          const newItems = response.sections.filter(
+            newItem => !prev.some(existingItem => existingItem.id === newItem.id)
+          );
+          return [...prev, ...newItems];
+        });
+      }
+    }
+  }, [response, page]);
 
   useEffect(() => {
     if (searchInputRef.current && searchQuery.length > 0) {
@@ -37,7 +62,7 @@ export const LeadershipPage: React.FC = () => {
         searchInputRef.current?.focus();
       }, 0);
     }
-  }, [leadership, searchQuery]);
+  }, [allLeaders, searchQuery]);
 
   const handleLeaderClick = (leader: SiteSection) => {
     setSelectedLeader(leader);
@@ -54,6 +79,12 @@ export const LeadershipPage: React.FC = () => {
     setTimeout(() => {
       searchInputRef.current?.focus();
     }, 0);
+  };
+
+  const handleLoadMore = () => {
+    if (response && page < response.totalPages) {
+      setPage(prev => prev + 1);
+    }
   };
 
   const errorMessage = error instanceof Error ? error.message : (error ? 'Failed to load leadership information. Please try again later.' : null);
@@ -77,7 +108,7 @@ export const LeadershipPage: React.FC = () => {
             </div>
             <div className="hidden md:flex items-center space-x-1 text-sm text-gray-500">
               <span>Total:</span>
-              <span className="font-semibold text-cyan-600">{leadership?.length || 0}</span>
+              <span className="font-semibold text-cyan-600">{response?.total || 0}</span>
             </div>
           </div>
 
@@ -128,49 +159,66 @@ export const LeadershipPage: React.FC = () => {
       <div className="max-w-7xl mx-auto px-6 py-12">
         {errorMessage ? (
           <ErrorMessage message={errorMessage} />
-        ) : isLoading ? (
+        ) : isLoading && page === 1 ? (
           <div className="py-12"><LoadingSpinner /></div>
-        ) : !leadership || leadership.length === 0 ? (
+        ) : allLeaders.length === 0 ? (
           <div className="text-center py-12">
             <FaSearch className="text-6xl text-gray-300 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-600 mb-2">No leadership found</h3>
             <p className="text-gray-500">Try adjusting your search or filter criteria</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {leadership.map((leader) => (
-              <div
-                key={leader.id}
-                onClick={() => handleLeaderClick(leader)}
-                className="group bg-white rounded-xl overflow-hidden border border-cyan-100 shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
-              >
-                <div className="relative overflow-hidden">
-                  <img
-                    src={leader.image}
-                    alt={leader.title}
-                    className="w-full h-64 object-cover transform group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute top-4 right-4">
-                    <span className="bg-gradient-to-r from-cyan-600 to-blue-500 text-white text-xs font-semibold px-3 py-1 rounded-full shadow-lg">
-                      {leader.category || 'Leadership'}
-                    </span>
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {allLeaders.map((leader) => (
+                <div
+                  key={leader.id}
+                  onClick={() => handleLeaderClick(leader)}
+                  className="group bg-white rounded-xl overflow-hidden border border-cyan-100 shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+                >
+                  <div className="relative overflow-hidden">
+                    <img
+                      src={leader.image}
+                      alt={leader.title}
+                      className="w-full h-64 object-cover transform group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute top-4 right-4">
+                      <span className="bg-gradient-to-r from-cyan-600 to-blue-500 text-white text-xs font-semibold px-3 py-1 rounded-full shadow-lg">
+                        {leader.category || 'Leadership'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="p-6">
+                    <h3 className="text-xl font-bold text-gray-800 mb-3 group-hover:text-cyan-600 transition-colors">
+                      {leader.title}
+                    </h3>
+                    <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+                      {leader.description}
+                    </p>
+                    <div className="flex items-center justify-between text-sm text-gray-500">
+                      <span>Joined: {new Date(leader.createdAt).toLocaleDateString()}</span>
+                      <span className="text-cyan-600 font-medium">View Profile →</span>
+                    </div>
                   </div>
                 </div>
-                <div className="p-6">
-                  <h3 className="text-xl font-bold text-gray-800 mb-3 group-hover:text-cyan-600 transition-colors">
-                    {leader.title}
-                  </h3>
-                  <p className="text-gray-600 text-sm mb-4 line-clamp-3">
-                    {leader.description}
-                  </p>
-                  <div className="flex items-center justify-between text-sm text-gray-500">
-                    <span>Joined: {new Date(leader.createdAt).toLocaleDateString()}</span>
-                    <span className="text-cyan-600 font-medium">View Profile →</span>
-                  </div>
-                </div>
+              ))}
+            </div>
+
+            {response && page < response.totalPages && (
+              <div className="mt-12 text-center">
+                <button
+                  onClick={handleLoadMore}
+                  disabled={isLoading}
+                  className="inline-flex items-center px-8 py-3 bg-white border-2 border-cyan-600 text-cyan-600 font-bold rounded-full hover:bg-cyan-600 hover:text-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed group"
+                >
+                  {isLoading ? (
+                    <div className="w-5 h-5 border-2 border-cyan-600 border-t-transparent rounded-full animate-spin mr-2 group-hover:border-white group-hover:border-t-transparent" />
+                  ) : null}
+                  Load More Leaders
+                </button>
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
       </div>
 

@@ -2,12 +2,12 @@ import { MaterialsRepository } from '../../repositories/materials/MaterialsRepos
 import { GetMaterialsUseCase, GetMaterialByIdUseCase, CreateMaterialUseCase, UpdateMaterialUseCase, DeleteMaterialUseCase } from '../../../application/materials/useCases/MaterialUseCases';
 import { IGetMaterialsUseCase, IGetMaterialByIdUseCase, ICreateMaterialUseCase, IUpdateMaterialUseCase, IDeleteMaterialUseCase } from '../../../application/materials/useCases/IMaterialUseCases';
 import { MaterialController } from '../../../presentation/http/materials/MaterialController';
+import { storageService } from '../shared/CloudinaryStorageService';
 
 export class MaterialComposers {
   static composeMaterialController(): MaterialController {
     const repository = new MaterialsRepository();
     // Use the singleton storage service exported from CloudinaryStorageService
-    const { storageService } = require('../../shared/CloudinaryStorageService');
 
     const getMaterialsUseCase: IGetMaterialsUseCase = new GetMaterialsUseCase(repository);
     const getMaterialByIdUseCase: IGetMaterialByIdUseCase = new GetMaterialByIdUseCase(repository);

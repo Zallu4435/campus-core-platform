@@ -70,16 +70,16 @@ export const ThoughtLeadership: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto">
-        {(leadershipItems as any[])?.map((item) => (
-          <div 
-            key={item.id} 
+        {leadershipItems?.sections.map((item) => (
+          <div
+            key={item.id}
             className="group rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-cyan-50"
           >
             <div className="relative overflow-hidden h-60">
-              <img 
-                src={item.image} 
-                alt={item.title} 
-                className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500" 
+              <img
+                src={item.image}
+                alt={item.title}
+                className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
               />
               <div className="absolute top-4 right-4">
                 <span className="bg-gradient-to-r from-cyan-600 to-blue-500 text-white text-xs font-semibold px-3 py-1 rounded-full shadow-lg">

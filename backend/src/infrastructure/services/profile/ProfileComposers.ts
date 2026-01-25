@@ -18,6 +18,7 @@ import { ProfileMapper } from '../../repositories/profile/ProfileMapper';
 import { PasswordService } from '../profile/PasswordService';
 import { ProfileController } from '../../../presentation/http/profile/ProfileController';
 import { IProfileController } from '../../../presentation/http/IHttp';
+import { storageService } from '../shared/CloudinaryStorageService';
 
 export function getProfileComposer(): IProfileController {
     // Infrastructure dependencies
@@ -31,7 +32,6 @@ export function getProfileComposer(): IProfileController {
     const changePasswordUseCase: IChangePasswordUseCase = new ChangePasswordUseCase(repository, passwordService);
 
     /* Storage Service for Cleanup */
-    const { storageService } = require('../../shared/CloudinaryStorageService');
     const updateProfilePictureUseCase: IUpdateProfilePictureUseCase = new UpdateProfilePictureUseCase(repository, storageService);
 
     // Controller

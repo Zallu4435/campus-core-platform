@@ -58,8 +58,8 @@ export const VagoNow: React.FC = () => {
     }
 
     // Split items into first row (3 items) and second row (2 items)
-    const firstRow = vagoNowItems?.slice(0, 3) || [];
-    const secondRow = vagoNowItems?.slice(3, 5) || [];
+    const firstRow = vagoNowItems?.sections.slice(0, 3) || [];
+    const secondRow = vagoNowItems?.sections.slice(3, 5) || [];
 
     return (
         <section className="bg-transparent_65 rounded-xl border border-cyan-100 shadow-sm p-4 sm:p-6 md:p-8">

@@ -85,51 +85,6 @@ export const useInfiniteLeadership = (searchQuery: string, selectedCategory: str
   });
 };
 
-export const useHighlightsCategories = () => {
-  return useQuery({
-    queryKey: ['site-highlights-categories'],
-    queryFn: async () => {
-      const highlights = await siteSectionsService.getHighlights({ limit: 100 });
-      const categories = highlights
-        .map(h => h.category)
-        .filter((category): category is string => Boolean(category));
-      return ['all', ...Array.from(new Set(categories))];
-    },
-    staleTime: 10 * 60 * 1000,
-    gcTime: 20 * 60 * 1000,
-  });
-};
-
-export const useVagoNowCategories = () => {
-  return useQuery({
-    queryKey: ['site-vago-now-categories'],
-    queryFn: async () => {
-      const vagoNowItems = await siteSectionsService.getVagoNow({ limit: 100 });
-      const categories = vagoNowItems
-        .map(item => item.category)
-        .filter((category): category is string => Boolean(category));
-      return ['all', ...Array.from(new Set(categories))];
-    },
-    staleTime: 10 * 60 * 1000,
-    gcTime: 20 * 60 * 1000,
-  });
-};
-
-export const useLeadershipCategories = () => {
-  return useQuery({
-    queryKey: ['site-leadership-categories'],
-    queryFn: async () => {
-      const leadershipItems = await siteSectionsService.getLeadership({ limit: 100 });
-      const categories = leadershipItems
-        .map(item => item.category)
-        .filter((category): category is string => Boolean(category));
-      return ['all', ...Array.from(new Set(categories))];
-    },
-    staleTime: 10 * 60 * 1000,
-    gcTime: 20 * 60 * 1000,
-  });
-};
-
 export const useAllSiteSections = () => {
   const highlights = useHighlights({ limit: 4 });
   const vagoNow = useVagoNow({ limit: 5 });

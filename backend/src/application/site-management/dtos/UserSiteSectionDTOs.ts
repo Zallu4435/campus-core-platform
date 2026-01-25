@@ -24,6 +24,7 @@ export interface UserSiteSectionDTO {
 
 export interface GetUserSiteSectionsResponseDTO {
   sections: UserSiteSectionDTO[];
+  categories: string[];
   total: number;
   page: number;
   limit: number;

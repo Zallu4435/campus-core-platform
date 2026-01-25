@@ -50,6 +50,7 @@ import {
   IClearChatUseCase,
   IGetChatMessagesUseCase,
 } from "../../../application/chat/useCases/IChatUseCases";
+import { storageService } from "../shared/CloudinaryStorageService";
 
 export const getChatComposer = () => {
   const chatRepository = new ChatRepository();
@@ -58,9 +59,6 @@ export const getChatComposer = () => {
   const searchChatsUseCase: ISearchChatsUseCase = new SearchChatsUseCase(chatRepository);
   const getChatMessagesUseCase: IGetChatMessagesUseCase = new GetChatMessagesUseCase(chatRepository);
 
-  /* Storage Service */
-  const { storageService } = require('../../shared/CloudinaryStorageService');
-  /* Injected Storage Service for Cleanup */
   const sendMessageUseCase: ISendMessageUseCase = new SendMessageUseCase(chatRepository, storageService);
 
   const markMessagesAsReadUseCase: IMarkMessagesAsReadUseCase = new MarkMessagesAsReadUseCase(chatRepository);

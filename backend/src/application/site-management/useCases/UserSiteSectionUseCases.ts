@@ -28,15 +28,17 @@ export class GetUserSiteSectionsUseCase implements IGetUserSiteSectionsUseCase {
     }
 
     const skip = (page - 1) * limit;
-    const [docs, total] = await Promise.all([
+    const [docs, total, categories] = await Promise.all([
       this._userSiteSectionRepository.findSectionsRaw(filter, skip, limit),
       this._userSiteSectionRepository.countSectionsRaw(filter),
+      this._userSiteSectionRepository.getDistinctCategories(sectionKey),
     ]);
 
     return {
       success: true,
       data: {
         sections: docs.map((doc) => SiteSectionMapper.toDTO(doc) as unknown as UserSiteSectionDTO),
+        categories,
         total,
         page,
         limit,

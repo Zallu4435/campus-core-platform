@@ -4,4 +4,5 @@ import { SiteSectionFilter } from '../../../domain/site-management/entities/Site
 export interface IUserSiteSectionRepository {
   findSectionsRaw(query: SiteSectionFilter, skip: number, limit: number): Promise<ISiteSection[]>;
   countSectionsRaw(query: SiteSectionFilter): Promise<number>;
+  getDistinctCategories(sectionKey: string): Promise<string[]>;
 } 

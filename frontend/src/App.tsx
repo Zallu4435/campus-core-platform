@@ -84,16 +84,10 @@ const App: React.FC = () => {
   const dispatch = useDispatch();
 
   useEffect(() => {
-    (async () => {
-      try {
-        const response = await httpClient.get('/auth/me');
-        if (response.data && response.data.user && response.data.collection) {
-          dispatch(setAuth({ user: response.data.user, collection: response.data.collection }));
-        }
-      } catch (err) {
-      }
-    })();
-  }, [dispatch]);
+    import('./frameworks/api/httpClient').then(({ getCurrentUser }) => {
+      getCurrentUser();
+    });
+  }, []);
 
   const departments = [
     { path: 'computer-science', component: ComputerScience },
@@ -101,7 +95,7 @@ const App: React.FC = () => {
   ];
 
   const departmentSubRoutes = [
-    { path: '', element: <DepartmentHome /> }, 
+    { path: '', element: <DepartmentHome /> },
     { path: 'about', element: <DepartmentAbout /> },
     { path: 'program', element: <DepartmentEducation /> },
     { path: 'community', element: <DepartmentCommunity /> },
@@ -120,298 +114,298 @@ const App: React.FC = () => {
   return (
     <Provider store={store}>
       <Routes>
-          {/* Login, Register, and Faculty Request Routes (unauthenticated only) */}
-          <Route element={<ProtectedRoute allowedCollections={[]} isPublic={true} />}>
-            <Route element={<PublicLayout />}>
-              <Route path="login" element={<LoginPage />} />
-              <Route path="register" element={<RegisterPage />} />
-              <Route
-                path="forgot-password"
-                element={
-                  <ForgotPasswordModal />
-                }
-              />
-              <Route path="faculty/request" element={<FacultyRequestForm />} />
-            </Route>
-
-            <Route element={<UGLayout />}>
-              <Route path="ug/login" element={<LoginPage />} />
-              <Route path="ug/register" element={<RegisterPage />} />
-            </Route>
+        {/* Login, Register, and Faculty Request Routes (unauthenticated only) */}
+        <Route element={<ProtectedRoute allowedCollections={[]} isPublic={true} />}>
+          <Route element={<PublicLayout />}>
+            <Route path="login" element={<LoginPage />} />
+            <Route path="register" element={<RegisterPage />} />
+            <Route
+              path="forgot-password"
+              element={
+                <ForgotPasswordModal />
+              }
+            />
+            <Route path="faculty/request" element={<FacultyRequestForm />} />
           </Route>
 
-          {/* Public Routes (accessible by all except admin, and not /login or /register for logged-in) */}
-          <Route element={<ProtectedRoute allowedCollections={['register', 'user', 'faculty']} isPublic={true} />}>
-            <Route element={<PublicLayout />}>
-              <Route index element={<Home />} />
-              <Route path="highlights" element={
-                <Suspense fallback={<LoadingSpinner />}>
-                  <HighlightsPage />
-                </Suspense>
-              } />
-              <Route path="vago-now" element={
-                <Suspense fallback={<LoadingSpinner />}>
-                  <VagoNowPage />
-                </Suspense>
-              } />
-              <Route path="leadership" element={
-                <Suspense fallback={<LoadingSpinner />}>
-                  <LeadershipPage />
-                </Suspense>
-              } />
-              <Route path="admissions" element={<Admissions />} />
-              <Route path="contact" element={<ContactUs />} />
-              <Route path="education" element={<Education />} />
-              <Route path="about" element={<About />} />
-              <Route path='program-prerequisites' element={
-                <Suspense fallback={<LoadingSpinner />}>
-                  <ProgramPrerequisites />
-                </Suspense>
-              } />
-              <Route path='undergraduate-scholarships' element={
-                <Suspense fallback={<LoadingSpinner />}>
-                  <ScholarshipComponent />
-                </Suspense>
-              } />
-            </Route>
-            <Route element={<UGLayout />}>
-              <Route path="ug" element={
-                <Suspense fallback={<LoadingSpinner />}>
-                  <UGHome />
-                </Suspense>
-              } />
-              <Route path="ug/admissions" element={
-                <Suspense fallback={<LoadingSpinner />}>
-                  <UGAdmissions />
-                </Suspense>
-              } />
-              <Route path="ug/programmes" element={
-                <Suspense fallback={<LoadingSpinner />}>
-                  <UGProgrammes />
-                </Suspense>
-              } />
-              <Route path="ug/scholarships" element={
-                <Suspense fallback={<LoadingSpinner />}>
-                  <UGScholarships />
-                </Suspense>
-              } />
-              <Route path="ug/why-vago" element={
-                <Suspense fallback={<LoadingSpinner />}>
-                  <UGWhy_VAGO />
-                </Suspense>
-              } />
-              <Route path="ug/contact" element={<ContactUs />} />
-            </Route>
+          <Route element={<UGLayout />}>
+            <Route path="ug/login" element={<LoginPage />} />
+            <Route path="ug/register" element={<RegisterPage />} />
           </Route>
+        </Route>
 
-          {/* Confirm Admission Route (no authentication required) */}
-          <Route path="/confirm-admission/:id/:action" element={
-            <Suspense fallback={<LoadingSpinner />}>
-              <ConfirmAdmission />
-            </Suspense>
-          } />
-
-          {/* Admission Route (register only) */}
-          <Route element={<ProtectedRoute allowedCollections={['register']} />}>
-            <Route path="admission" element={<ApplicationFormLayout>
+        {/* Public Routes (accessible by all except admin, and not /login or /register for logged-in) */}
+        <Route element={<ProtectedRoute allowedCollections={['register', 'user', 'faculty']} isPublic={true} />}>
+          <Route element={<PublicLayout />}>
+            <Route index element={<Home />} />
+            <Route path="highlights" element={
               <Suspense fallback={<LoadingSpinner />}>
-                <ApplicationForm />
-              </Suspense>
-            </ApplicationFormLayout>} />
-          </Route>
-
-          {/* Admin Routes (admin only) */}
-          <Route element={<ProtectedRoute allowedCollections={['admin']} />}>
-            <Route element={<AdminLayout />}>
-              <Route path="admin" element={
-                <Suspense fallback={<LoadingSpinner />}>
-                  <AdminDashboard />
-                </Suspense>
-              } />
-              <Route path="admin/user" element={
-                <Suspense fallback={<LoadingSpinner />}>
-                  <UserManagement />
-                </Suspense>
-              } />
-              <Route path="admin/faculty" element={
-                <Suspense fallback={<LoadingSpinner />}>
-                  <FacultyManagement />
-                </Suspense>
-              } />
-              <Route path="admin/course-management" element={
-                <Suspense fallback={<LoadingSpinner />}>
-                  <AdminCourseManagement />
-                </Suspense>
-              } />
-              <Route path="admin/content" element={
-                <Suspense fallback={<LoadingSpinner />}>
-                  <VideoManagementPage />
-                </Suspense>
-              } />
-              <Route path="admin/clubs" element={
-                <Suspense fallback={<LoadingSpinner />}>
-                  <AdminClubManagement />
-                </Suspense>
-              } />
-              <Route path="admin/sports" element={
-                <Suspense fallback={<LoadingSpinner />}>
-                  <AdminSportsManagement />
-                </Suspense>
-              } />
-              <Route path="admin/events" element={
-                <Suspense fallback={<LoadingSpinner />}>
-                  <AdminEventsManagement />
-                </Suspense>
-              } />
-              <Route path="admin/communication" element={
-                <Suspense fallback={<LoadingSpinner />}>
-                  <CommunicationManagement />
-                </Suspense>
-              } />
-              <Route path="admin/payment" element={
-                <Suspense fallback={<LoadingSpinner />}>
-                  <PaymentManagement />
-                </Suspense>
-              } />
-              <Route path="admin/notifications" element={
-                <Suspense fallback={<LoadingSpinner />}>
-                  <NotificationManagement />
-                </Suspense>
-              } />
-              <Route path="admin/diploma-courses" element={
-                <Suspense fallback={<LoadingSpinner />}>
-                  <DiplomaManagement />
-                </Suspense>
-              } />
-              <Route path="admin/material" element={
-                <Suspense fallback={<LoadingSpinner />}>
-                  <MaterialManagement />
-                </Suspense>
-              } />
-              <Route path="admin/site-management" element={
-                <Suspense fallback={<LoadingSpinner />}>
-                  <SiteManagement />
-                </Suspense>
-              } />
-              <Route path="admin/enquiry" element={
-                <Suspense fallback={<LoadingSpinner />}>
-                  <EnquiryManagement />
-                </Suspense>
-              } />
-            </Route>
-          </Route>
-
-          {/* User Routes (user only) */}
-          <Route element={<ProtectedRoute allowedCollections={['user']} />}>
-            <Route element={<UserLayout />}>
-              <Route path="dashboard/*" element={
-                <Suspense fallback={<LoadingSpinner />}>
-                  <DashboardPage />
-                </Suspense>
-              } />
-              <Route path="canvas/*" element={
-                <Suspense fallback={<LoadingSpinner />}>
-                  <StudentCanvas />
-                </Suspense>
-              } />
-            </Route>
-          </Route>
-
-          {/* Settings Route (user only, independent layout) */}
-          <Route element={<ProtectedRoute allowedCollections={['user']} />}>
-            <Route path="settings" element={
-              <Suspense fallback={<LoadingSpinner />}>
-                <Setting />
+                <HighlightsPage />
               </Suspense>
             } />
-            <Route path='help' element={
+            <Route path="vago-now" element={
               <Suspense fallback={<LoadingSpinner />}>
-                <HelpSupportPage />
+                <VagoNowPage />
+              </Suspense>
+            } />
+            <Route path="leadership" element={
+              <Suspense fallback={<LoadingSpinner />}>
+                <LeadershipPage />
+              </Suspense>
+            } />
+            <Route path="admissions" element={<Admissions />} />
+            <Route path="contact" element={<ContactUs />} />
+            <Route path="education" element={<Education />} />
+            <Route path="about" element={<About />} />
+            <Route path='program-prerequisites' element={
+              <Suspense fallback={<LoadingSpinner />}>
+                <ProgramPrerequisites />
+              </Suspense>
+            } />
+            <Route path='undergraduate-scholarships' element={
+              <Suspense fallback={<LoadingSpinner />}>
+                <ScholarshipComponent />
               </Suspense>
             } />
           </Route>
-
-          {/* Faculty Routes (faculty only) */}
-          <Route element={<ProtectedRoute allowedCollections={['faculty']} />}>
-            <Route element={<FacultyLayout />}>
-              <Route path="faculty" element={
-                <Suspense fallback={<LoadingSpinner />}>
-                  <FacultyDashboard />
-                </Suspense>
-              } />
-              <Route path="faculty/assignments" element={
-                <Suspense fallback={<LoadingSpinner />}>
-                  <AssignmentManagement />
-                </Suspense>
-              } />
-              <Route path="faculty/sessions" element={
-                <Suspense fallback={<LoadingSpinner />}>
-                  <SessionManagement />
-                </Suspense>
-              } />
-              <Route path="faculty/attendance" element={
-                <Suspense fallback={<LoadingSpinner />}>
-                  <SessionAttendancePage />
-                </Suspense>
-              } />
-              <Route path="faculty/attendance-summary" element={
-                <Suspense fallback={<LoadingSpinner />}>
-                  <AttendanceSummaryPage />
-                </Suspense>
-              } />
-            </Route>
-          </Route>
-
-          {/* Faculty Settings Route (faculty only, independent layout) */}
-          <Route element={<ProtectedRoute allowedCollections={['faculty']} />}>
-            <Route path="faculty/settings" element={
+          <Route element={<UGLayout />}>
+            <Route path="ug" element={
               <Suspense fallback={<LoadingSpinner />}>
-                <FacultySettings />
+                <UGHome />
+              </Suspense>
+            } />
+            <Route path="ug/admissions" element={
+              <Suspense fallback={<LoadingSpinner />}>
+                <UGAdmissions />
+              </Suspense>
+            } />
+            <Route path="ug/programmes" element={
+              <Suspense fallback={<LoadingSpinner />}>
+                <UGProgrammes />
+              </Suspense>
+            } />
+            <Route path="ug/scholarships" element={
+              <Suspense fallback={<LoadingSpinner />}>
+                <UGScholarships />
+              </Suspense>
+            } />
+            <Route path="ug/why-vago" element={
+              <Suspense fallback={<LoadingSpinner />}>
+                <UGWhy_VAGO />
+              </Suspense>
+            } />
+            <Route path="ug/contact" element={<ContactUs />} />
+          </Route>
+        </Route>
+
+        {/* Confirm Admission Route (no authentication required) */}
+        <Route path="/confirm-admission/:id/:action" element={
+          <Suspense fallback={<LoadingSpinner />}>
+            <ConfirmAdmission />
+          </Suspense>
+        } />
+
+        {/* Admission Route (register only) */}
+        <Route element={<ProtectedRoute allowedCollections={['register']} />}>
+          <Route path="admission" element={<ApplicationFormLayout>
+            <Suspense fallback={<LoadingSpinner />}>
+              <ApplicationForm />
+            </Suspense>
+          </ApplicationFormLayout>} />
+        </Route>
+
+        {/* Admin Routes (admin only) */}
+        <Route element={<ProtectedRoute allowedCollections={['admin']} />}>
+          <Route element={<AdminLayout />}>
+            <Route path="admin" element={
+              <Suspense fallback={<LoadingSpinner />}>
+                <AdminDashboard />
+              </Suspense>
+            } />
+            <Route path="admin/user" element={
+              <Suspense fallback={<LoadingSpinner />}>
+                <UserManagement />
+              </Suspense>
+            } />
+            <Route path="admin/faculty" element={
+              <Suspense fallback={<LoadingSpinner />}>
+                <FacultyManagement />
+              </Suspense>
+            } />
+            <Route path="admin/course-management" element={
+              <Suspense fallback={<LoadingSpinner />}>
+                <AdminCourseManagement />
+              </Suspense>
+            } />
+            <Route path="admin/content" element={
+              <Suspense fallback={<LoadingSpinner />}>
+                <VideoManagementPage />
+              </Suspense>
+            } />
+            <Route path="admin/clubs" element={
+              <Suspense fallback={<LoadingSpinner />}>
+                <AdminClubManagement />
+              </Suspense>
+            } />
+            <Route path="admin/sports" element={
+              <Suspense fallback={<LoadingSpinner />}>
+                <AdminSportsManagement />
+              </Suspense>
+            } />
+            <Route path="admin/events" element={
+              <Suspense fallback={<LoadingSpinner />}>
+                <AdminEventsManagement />
+              </Suspense>
+            } />
+            <Route path="admin/communication" element={
+              <Suspense fallback={<LoadingSpinner />}>
+                <CommunicationManagement />
+              </Suspense>
+            } />
+            <Route path="admin/payment" element={
+              <Suspense fallback={<LoadingSpinner />}>
+                <PaymentManagement />
+              </Suspense>
+            } />
+            <Route path="admin/notifications" element={
+              <Suspense fallback={<LoadingSpinner />}>
+                <NotificationManagement />
+              </Suspense>
+            } />
+            <Route path="admin/diploma-courses" element={
+              <Suspense fallback={<LoadingSpinner />}>
+                <DiplomaManagement />
+              </Suspense>
+            } />
+            <Route path="admin/material" element={
+              <Suspense fallback={<LoadingSpinner />}>
+                <MaterialManagement />
+              </Suspense>
+            } />
+            <Route path="admin/site-management" element={
+              <Suspense fallback={<LoadingSpinner />}>
+                <SiteManagement />
+              </Suspense>
+            } />
+            <Route path="admin/enquiry" element={
+              <Suspense fallback={<LoadingSpinner />}>
+                <EnquiryManagement />
               </Suspense>
             } />
           </Route>
+        </Route>
 
-          {/* Confirm Faculty Route */}
-          <Route path="/confirm-faculty/:id/:action" element={
-            <Suspense fallback={<LoadingSpinner />}>
-              <ConfirmFaculty />
-            </Suspense>
-          } />
-
-          {/* Department Routes */}
-          <Route path="/departments" element={<DepartmentLayout />}>
-            {departments.map((dept) => (
-              <Route key={dept.path} path={dept.path} element={<dept.component />}>
-                {departmentSubRoutes.map((subRoute, index) => (
-                  <Route
-                    key={index}
-                    path={subRoute.path}
-                    element={subRoute.element}
-                  />
-                ))}
-              </Route>
-            ))}
-            {/* Redirect if department is not found */}
-            <Route path="*" element={<Navigate to="/departments/computer-science" replace />} />
+        {/* User Routes (user only) */}
+        <Route element={<ProtectedRoute allowedCollections={['user']} />}>
+          <Route element={<UserLayout />}>
+            <Route path="dashboard/*" element={
+              <Suspense fallback={<LoadingSpinner />}>
+                <DashboardPage />
+              </Suspense>
+            } />
+            <Route path="canvas/*" element={
+              <Suspense fallback={<LoadingSpinner />}>
+                <StudentCanvas />
+              </Suspense>
+            } />
           </Route>
+        </Route>
 
-          {/* Confirm Registration Route (no authentication required) */}
-          <Route path="/confirm-registration" element={
+        {/* Settings Route (user only, independent layout) */}
+        <Route element={<ProtectedRoute allowedCollections={['user']} />}>
+          <Route path="settings" element={
             <Suspense fallback={<LoadingSpinner />}>
-              <ConfirmRegistration />
+              <Setting />
             </Suspense>
           } />
-
-          {/* Video Conference Route (accessible to all authenticated users) */}
-          <Route path="/faculty/video-conference/:sessionId" element={
+          <Route path='help' element={
             <Suspense fallback={<LoadingSpinner />}>
-              <VideoConferencePage />
+              <HelpSupportPage />
             </Suspense>
           } />
+        </Route>
 
-          {/* Fallback */}
-          <Route path="*" element={<Navigate to="/login" replace />} />
-        </Routes>
+        {/* Faculty Routes (faculty only) */}
+        <Route element={<ProtectedRoute allowedCollections={['faculty']} />}>
+          <Route element={<FacultyLayout />}>
+            <Route path="faculty" element={
+              <Suspense fallback={<LoadingSpinner />}>
+                <FacultyDashboard />
+              </Suspense>
+            } />
+            <Route path="faculty/assignments" element={
+              <Suspense fallback={<LoadingSpinner />}>
+                <AssignmentManagement />
+              </Suspense>
+            } />
+            <Route path="faculty/sessions" element={
+              <Suspense fallback={<LoadingSpinner />}>
+                <SessionManagement />
+              </Suspense>
+            } />
+            <Route path="faculty/attendance" element={
+              <Suspense fallback={<LoadingSpinner />}>
+                <SessionAttendancePage />
+              </Suspense>
+            } />
+            <Route path="faculty/attendance-summary" element={
+              <Suspense fallback={<LoadingSpinner />}>
+                <AttendanceSummaryPage />
+              </Suspense>
+            } />
+          </Route>
+        </Route>
+
+        {/* Faculty Settings Route (faculty only, independent layout) */}
+        <Route element={<ProtectedRoute allowedCollections={['faculty']} />}>
+          <Route path="faculty/settings" element={
+            <Suspense fallback={<LoadingSpinner />}>
+              <FacultySettings />
+            </Suspense>
+          } />
+        </Route>
+
+        {/* Confirm Faculty Route */}
+        <Route path="/confirm-faculty/:id/:action" element={
+          <Suspense fallback={<LoadingSpinner />}>
+            <ConfirmFaculty />
+          </Suspense>
+        } />
+
+        {/* Department Routes */}
+        <Route path="/departments" element={<DepartmentLayout />}>
+          {departments.map((dept) => (
+            <Route key={dept.path} path={dept.path} element={<dept.component />}>
+              {departmentSubRoutes.map((subRoute, index) => (
+                <Route
+                  key={index}
+                  path={subRoute.path}
+                  element={subRoute.element}
+                />
+              ))}
+            </Route>
+          ))}
+          {/* Redirect if department is not found */}
+          <Route path="*" element={<Navigate to="/departments/computer-science" replace />} />
+        </Route>
+
+        {/* Confirm Registration Route (no authentication required) */}
+        <Route path="/confirm-registration" element={
+          <Suspense fallback={<LoadingSpinner />}>
+            <ConfirmRegistration />
+          </Suspense>
+        } />
+
+        {/* Video Conference Route (accessible to all authenticated users) */}
+        <Route path="/faculty/video-conference/:sessionId" element={
+          <Suspense fallback={<LoadingSpinner />}>
+            <VideoConferencePage />
+          </Suspense>
+        } />
+
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
     </Provider>
   );
 };

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { FaArrowLeft, FaSearch, FaFilter, FaTimes} from 'react-icons/fa';
-import { useVagoNow, useVagoNowCategories } from '../../../application/hooks/useSiteSections';
+import { FaArrowLeft, FaSearch, FaFilter, FaTimes } from 'react-icons/fa';
+import { useVagoNow } from '../../../application/hooks/useSiteSections';
 import { SiteSection } from '../../../application/services/siteSections.service';
 import SiteSectionModal from '../../components/public/SiteSectionModal';
 import LoadingSpinner from '../../../shared/components/LoadingSpinner';
@@ -13,23 +13,48 @@ export const VagoNowPage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedItem, setSelectedItem] = useState<SiteSection | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [allVagoNowItems, setAllVagoNowItems] = useState<SiteSection[]>([]);
   const searchInputRef = useRef<HTMLInputElement>(null);
-
-  const { data: categories = ['all'] } = useVagoNowCategories();
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery);
-    }, 500); 
+    }, 500);
 
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const { data: vagoNowItems, isLoading, error } = useVagoNow({
-    limit: 100,
+  // Reset page and list when filters change
+  useEffect(() => {
+    setPage(1);
+    setAllVagoNowItems([]);
+  }, [debouncedSearchQuery, selectedCategory]);
+
+  const { data: response, isLoading, error } = useVagoNow({
+    limit: 6,
+    page: page,
     search: debouncedSearchQuery || undefined,
     category: selectedCategory === 'all' ? undefined : selectedCategory,
   });
+
+  const categories = ['all', ...(response?.categories || [])];
+
+
+  useEffect(() => {
+    if (response?.sections) {
+      if (page === 1) {
+        setAllVagoNowItems(response.sections);
+      } else {
+        setAllVagoNowItems(prev => {
+          const newItems = response.sections.filter(
+            newItem => !prev.some(existingItem => existingItem.id === newItem.id)
+          );
+          return [...prev, ...newItems];
+        });
+      }
+    }
+  }, [response, page]);
 
   useEffect(() => {
     if (searchInputRef.current && searchQuery.length > 0) {
@@ -37,7 +62,7 @@ export const VagoNowPage: React.FC = () => {
         searchInputRef.current?.focus();
       }, 0);
     }
-  }, [vagoNowItems, searchQuery]);
+  }, [allVagoNowItems, searchQuery]);
 
   const handleItemClick = (item: SiteSection) => {
     setSelectedItem(item);
@@ -54,6 +79,12 @@ export const VagoNowPage: React.FC = () => {
     setTimeout(() => {
       searchInputRef.current?.focus();
     }, 0);
+  };
+
+  const handleLoadMore = () => {
+    if (response && page < response.totalPages) {
+      setPage(prev => prev + 1);
+    }
   };
 
   const errorMessage = error instanceof Error ? error.message : (error ? 'Failed to load VAGO Now content. Please try again later.' : null);
@@ -77,7 +108,7 @@ export const VagoNowPage: React.FC = () => {
             </div>
             <div className="hidden md:flex items-center space-x-1 text-sm text-gray-500">
               <span>Total:</span>
-              <span className="font-semibold text-cyan-600">{vagoNowItems?.length || 0}</span>
+              <span className="font-semibold text-cyan-600">{response?.total || 0}</span>
             </div>
           </div>
 
@@ -128,47 +159,64 @@ export const VagoNowPage: React.FC = () => {
       <div className="max-w-7xl mx-auto px-6 py-12">
         {errorMessage ? (
           <ErrorMessage message={errorMessage} />
-        ) : isLoading ? (
+        ) : isLoading && page === 1 ? (
           <div className="py-12"><LoadingSpinner /></div>
-        ) : !vagoNowItems || vagoNowItems.length === 0 ? (
+        ) : allVagoNowItems.length === 0 ? (
           <div className="text-center py-12">
             <FaSearch className="text-6xl text-gray-300 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-600 mb-2">No content found</h3>
             <p className="text-gray-500">Try adjusting your search or filter criteria</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {vagoNowItems.map((item: SiteSection) => (
-              <div
-                key={item.id}
-                onClick={() => handleItemClick(item)}
-                className="group relative overflow-hidden rounded-xl shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
-              >
-                <img
-                  src={item.image}
-                  alt={item.title}
-                  className="w-full h-64 object-cover transform group-hover:scale-105 transition-transform duration-500"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-cyan-900/90 via-cyan-900/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-                    <span className="text-xs font-semibold px-3 py-1 bg-cyan-500/80 rounded-full mb-2 inline-block">
-                      {item.category || 'General'}
-                    </span>
-                    <h3 className="text-xl font-bold mb-2">{item.title}</h3>
-                    <p className="text-sm text-cyan-100 mb-3 line-clamp-2">
-                      {item.description}
-                    </p>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-cyan-200">
-                        {new Date(item.createdAt).toLocaleDateString()}
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {allVagoNowItems.map((item: SiteSection) => (
+                <div
+                  key={item.id}
+                  onClick={() => handleItemClick(item)}
+                  className="group relative overflow-hidden rounded-xl shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+                >
+                  <img
+                    src={item.image}
+                    alt={item.title}
+                    className="w-full h-64 object-cover transform group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-cyan-900/90 via-cyan-900/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
+                      <span className="text-xs font-semibold px-3 py-1 bg-cyan-500/80 rounded-full mb-2 inline-block">
+                        {item.category || 'General'}
                       </span>
-                      <span className="text-cyan-300 font-medium">Learn More →</span>
+                      <h3 className="text-xl font-bold mb-2">{item.title}</h3>
+                      <p className="text-sm text-cyan-100 mb-3 line-clamp-2">
+                        {item.description}
+                      </p>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-cyan-200">
+                          {new Date(item.createdAt).toLocaleDateString()}
+                        </span>
+                        <span className="text-cyan-300 font-medium">Learn More →</span>
+                      </div>
                     </div>
                   </div>
                 </div>
+              ))}
+            </div>
+
+            {response && page < response.totalPages && (
+              <div className="mt-12 text-center">
+                <button
+                  onClick={handleLoadMore}
+                  disabled={isLoading}
+                  className="inline-flex items-center px-8 py-3 bg-white border-2 border-cyan-600 text-cyan-600 font-bold rounded-full hover:bg-cyan-600 hover:text-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed group"
+                >
+                  {isLoading ? (
+                    <div className="w-5 h-5 border-2 border-cyan-600 border-t-transparent rounded-full animate-spin mr-2 group-hover:border-white group-hover:border-t-transparent" />
+                  ) : null}
+                  Load More Content
+                </button>
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
       </div>
 

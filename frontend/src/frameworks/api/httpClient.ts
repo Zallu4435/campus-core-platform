@@ -26,6 +26,31 @@ const MAX_UNAUTHORIZED_COUNT = 3;
 let lastRefreshAttempt = 0;
 const MIN_REFRESH_INTERVAL = 30000;
 let shouldAttemptRefresh = true;
+let authCheckPromise: Promise<void> | null = null;
+let hasCheckedAuth = false;
+
+export const getCurrentUser = async () => {
+  if (hasCheckedAuth) return;
+  if (authCheckPromise) return authCheckPromise;
+
+  authCheckPromise = (async () => {
+    try {
+      const response = await httpClient.get('/auth/me');
+      if (response.data && response.data.user && response.data.collection) {
+        store.dispatch(setAuth({ user: response.data.user, collection: response.data.collection }));
+      }
+    } catch (err) {
+      // Guest user or initial check failed
+    } finally {
+      authCheckPromise = null;
+      hasCheckedAuth = true;
+      // Reset unauthorized count to prevent initial guest 401s from triggering logout
+      unauthorizedCount = 0;
+    }
+  })();
+
+  return authCheckPromise;
+};
 
 const processQueue = (error: unknown = null) => {
   failedQueue.forEach(prom => {
@@ -58,15 +83,10 @@ httpClient.interceptors.request.use(
 
     const state: RootState = store.getState();
     const isAuthEndpoint = config.url?.includes('/auth/login') || config.url?.includes('/auth/register') || config.url?.includes('/auth/refresh-token') || config.url?.includes('/auth/me');
+
     if (!isAuthEndpoint && !state.auth.user && !config._checkedAuth) {
-      try {
-        config._checkedAuth = true;
-        const meResponse = await httpClient.get('/auth/me');
-        if (meResponse.data && meResponse.data.user && meResponse.data.collection) {
-          store.dispatch(setAuth({ user: meResponse.data.user, collection: meResponse.data.collection }));
-        }
-      } catch (err) {
-      }
+      config._checkedAuth = true;
+      await getCurrentUser();
     }
 
     return config;
@@ -134,7 +154,12 @@ httpClient.interceptors.response.use(
       now - lastRefreshAttempt < MIN_REFRESH_INTERVAL ||
       !shouldAttemptRefresh;
 
-    if (error.response?.status === 401 && !shouldSkipRefresh) {
+    const isAuthEndpoint = originalRequest?.url?.includes('/auth/login') ||
+      originalRequest?.url?.includes('/auth/register') ||
+      originalRequest?.url?.includes('/auth/refresh-token') ||
+      originalRequest?.url?.includes('/auth/me');
+
+    if (error.response?.status === 401 && !shouldSkipRefresh && !isAuthEndpoint) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
