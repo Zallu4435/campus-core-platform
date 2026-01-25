@@ -139,9 +139,16 @@ export interface AchievementListProps {
 }
 
 export interface AchievementSection {
-    questions: { [questionId: number]: string };
-    achievements: Achievement[];
+    questions: {
+        1: string;
+        2: string;
+        3: string;
+        4: string;
+        5: string;
+    };
+    achievements?: Achievement[];
     hasNoAchievements: boolean;
+    newAchievement?: Achievement;
 }
 
 export interface AchievementsProps {
@@ -292,6 +299,12 @@ export interface StepIndicatorProps {
 export interface OtherInfoProps {
     initialData?: unknown;
     onSave: (data: unknown) => void;
+    onNextTab?: () => void;
+}
+
+export interface OtherInfoRef {
+    trigger: () => Promise<boolean>;
+    getValues: () => any;
 }
 
 export interface ProgrammeModalProps {
@@ -305,8 +318,6 @@ export interface AchievementModalProps {
     show: boolean;
     onClose: () => void;
     onSubmit: () => void;
-    newAchievement: Achievement;
-    setNewAchievement: (a: Achievement) => void;
 }
 
 export interface Question {
@@ -318,8 +329,6 @@ export interface Question {
 
 export interface AchievementQuestionsProps {
     questions: Question[];
-    answers: { [key: number]: string };
-    onAnswerChange: (questionId: number, value: string) => void;
 }
 
 export interface PaymentResult {

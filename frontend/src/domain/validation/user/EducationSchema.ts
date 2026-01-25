@@ -1,13 +1,13 @@
 import { z } from 'zod';
 
 export const localEducationSchema = z.object({
-  schoolName: z.string().min(1, 'School name is required'),
-  country: z.string().min(1, 'Country is required'),
-  from: z.string().regex(/^\d{4}$/, 'Enter a valid 4-digit year (e.g., 2020)'),
-  to: z.string().regex(/^\d{4}$/, 'Enter a معتبر 4-digit year (e.g., 2023)'),
-  nationalID: z.string().min(1, 'National ID is required'),
-  localSchoolCategory: z.string().min(1, 'School category is required'),
-  stateOrProvince: z.string().min(1, 'State or province is required'),
+  schoolName: z.string().trim().min(1, 'School name is required'),
+  country: z.string().trim().min(1, 'Country is required'),
+  from: z.string().trim().regex(/^\d{4}$/, 'Enter a valid 4-digit year (e.g., 2020)'),
+  to: z.string().trim().regex(/^\d{4}$/, 'Enter a valid 4-digit year (e.g., 2023)'),
+  nationalID: z.string().trim().min(1, 'National ID is required'),
+  localSchoolCategory: z.string().trim().min(1, 'School category is required'),
+  stateOrProvince: z.string().trim().min(1, 'State or province is required'),
 }).refine(
   (data) => {
     if (data.from && data.to) {
@@ -22,16 +22,16 @@ export const localEducationSchema = z.object({
 );
 
 export const transferEducationSchema = z.object({
-  schoolName: z.string().min(1, 'School name is required'),
-  country: z.string().min(1, 'Country is required'),
-  from: z.string().regex(/^\d{4}$/, 'Enter a valid 4-digit year (e.g., 2020)'),
-  to: z.string().regex(/^\d{4}$/, 'Enter a valid 4-digit year (e.g., 2023)'),
-  previousUniversity: z.string().min(1, 'Previous university is required'),
-  otherUniversity: z.string().optional(),
-  creditsEarned: z.string().regex(/^\d+$/, 'Enter a valid number of credits'),
-  gpa: z.string().regex(/^\d(\.\d{1,2})?$/, 'Enter a valid GPA (e.g., 3.5)'),
-  programStudied: z.string().min(1, 'Program studied is required'),
-  reasonForTransfer: z.string().min(1, 'Reason for transfer is required'),
+  schoolName: z.string().trim().min(1, 'School name is required'),
+  country: z.string().trim().min(1, 'Country is required'),
+  from: z.string().trim().regex(/^\d{4}$/, 'Enter a valid 4-digit year (e.g., 2020)'),
+  to: z.string().trim().regex(/^\d{4}$/, 'Enter a valid 4-digit year (e.g., 2023)'),
+  previousUniversity: z.string().trim().min(1, 'Previous university is required'),
+  otherUniversity: z.string().trim().optional(),
+  creditsEarned: z.string().trim().regex(/^\d+$/, 'Enter a valid number of credits'),
+  gpa: z.string().trim().regex(/^\d(\.\d{1,2})?$/, 'Enter a valid GPA (e.g., 3.5)'),
+  programStudied: z.string().trim().min(1, 'Program studied is required'),
+  reasonForTransfer: z.string().trim().min(1, 'Reason for transfer is required'),
 }).refine(
   (data) => {
     if (data.from && data.to) {
@@ -58,9 +58,9 @@ export const transferEducationSchema = z.object({
 
 export const subjectSchema = z
   .object({
-    subject: z.string().min(1, 'Subject is required'),
-    otherSubject: z.string().optional(),
-    grade: z.string().min(1, 'Grade is required'),
+    subject: z.string().trim().min(1, 'Subject is required'),
+    otherSubject: z.string().trim().optional(),
+    grade: z.string().trim().min(1, 'Grade is required'),
   })
   .refine(
     (data) => {
@@ -72,6 +72,19 @@ export const subjectSchema = z
     {
       path: ['otherSubject'],
       message: 'Other subject name is required when "Other" is selected',
+    }
+  );
+
+export const createSubjectSchema = (existingSubjects: string[]) =>
+  subjectSchema.refine(
+    (data) => {
+      const subjectName = data.subject === 'other' ? data.otherSubject : data.subject;
+      if (!subjectName) return true;
+      return !existingSubjects.some(s => s.toLowerCase() === subjectName.toLowerCase());
+    },
+    {
+      path: ['subject'],
+      message: 'This subject has already been added',
     }
   );
 
@@ -306,8 +319,8 @@ export const actSchema = z.object({
 );
 
 export const apSubjectSchema = z.object({
-  subject: z.string().min(1, 'Subject is required'),
-  score: z.string().regex(/^\d+$/, 'Enter a valid score (1-5)').refine(
+  subject: z.string().trim().min(1, 'Subject is required'),
+  score: z.string().trim().regex(/^\d+$/, 'Enter a valid score (1-5)').refine(
     (score) => {
       const num = parseInt(score);
       return num >= 1 && num <= 5;
@@ -317,8 +330,15 @@ export const apSubjectSchema = z.object({
 });
 
 export const apSchema = z.object({
-  date: z.string().regex(/^(0[1-9]|1[0-2])\/\d{4}$/, 'Enter a valid date (MM/YYYY)').optional(),
-  subjects: z.array(apSubjectSchema).optional(),
+  date: z.string().trim().regex(/^(0[1-9]|1[0-2])\/\d{4}$/, 'Enter a valid date (MM/YYYY)').optional(),
+  subjects: z.array(apSubjectSchema).optional().refine(
+    (items) => {
+      if (!items) return true;
+      const names = items.map(i => i.subject.toLowerCase());
+      return new Set(names).size === names.length;
+    },
+    { message: 'Duplicate subjects are not allowed' }
+  ),
 }).refine(
   (data) => {
     const hasData = data.date || (data.subjects && data.subjects.length > 0);
@@ -331,14 +351,23 @@ export const apSchema = z.object({
 );
 
 export const internationalEducationSchema = z.object({
-  schoolName: z.string().min(1, 'School name is required'),
-  country: z.string().min(1, 'Country is required'),
-  from: z.string().regex(/^\d{4}$/, 'Enter a valid 4-digit year (e.g., 2020)'),
-  to: z.string().regex(/^\d{4}$/, 'Enter a valid 4-digit year (e.g., 2023)'),
-  examination: z.string().min(1, 'Examination type is required'),
-  examMonthYear: z.string().regex(/^(0[1-9]|1[0-2])\/\d{4}$/, 'Enter a valid month/year (e.g., 06/2023)'),
+  schoolName: z.string().trim().min(1, 'School name is required'),
+  country: z.string().trim().min(1, 'Country is required'),
+  from: z.string().trim().regex(/^\d{4}$/, 'Enter a valid 4-digit year (e.g., 2020)'),
+  to: z.string().trim().regex(/^\d{4}$/, 'Enter a valid 4-digit year (e.g., 2023)'),
+  examination: z.string().trim().min(1, 'Examination type is required'),
+  examMonthYear: z.string().trim().regex(/^(0[1-9]|1[0-2])\/\d{4}$/, 'Enter a valid month/year (e.g., 06/2023)'),
   resultType: z.enum(['actual', 'predicted']),
-  subjects: z.array(subjectSchema).min(1, 'At least one subject is required'),
+  subjects: z
+    .array(subjectSchema)
+    .min(1, 'At least one subject is required')
+    .refine(
+      (items) => {
+        const names = items.map(i => (i.subject === 'other' ? i.otherSubject : i.subject)?.toLowerCase());
+        return new Set(names).size === names.length;
+      },
+      { message: 'Duplicate subjects are not allowed' }
+    ),
   ielts: ieltsSchema.optional(),
   toefl: toeflSchema.optional(),
   toeflEssentials1: toeflEssentialsSchema.optional(),

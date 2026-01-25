@@ -6,9 +6,9 @@ import { Education } from '../../components/application/Education/Education';
 import { Achievements } from '../../components/application/Achievements/Achievements';
 import { Documents } from '../../components/application/Documents/Documents';
 import { Declaration } from '../../components/application/Declaration';
-import type { 
-  FormData, 
-  ApplicationFormProps, 
+import type {
+  FormData,
+  ApplicationFormProps,
   ProgrammeChoice,
   PersonalInfo,
   EducationData,
@@ -16,7 +16,8 @@ import type {
   OtherInformationSection,
   DeclarationSection,
   DocumentUploadSection,
-  Achievement
+  Achievement,
+  OtherInfoRef
 } from '../../../domain/types/application';
 import Other_Info from '../../components/application/Other_Information/Other_Info';
 import { FormSubmissionFlow } from '../../components/application/FormSubmissionFlow';
@@ -48,24 +49,11 @@ export const ApplicationForm: React.FC<ApplicationFormProps> = ({ onLogout }) =>
 
   const personalFormRef = useRef<{ trigger: () => Promise<boolean>, getValues: () => PersonalInfo }>(null);
   const educationFormRef = useRef<{ trigger: () => Promise<boolean> }>(null);
-  const achievementsFormRef = useRef<{ trigger: () => Promise<boolean>; getValues: () => { questions: { 1: string; 2: string; 3: string; 4: string; 5: string; }; hasNoAchievements: boolean; achievements?: any[] } }>(null);
+  const achievementsFormRef = useRef<{ trigger: () => Promise<boolean>; getValues: () => AchievementSection }>(null);
 
-  const adaptAchievementsData = (data: AchievementSection | undefined) => {
-    if (!data) return undefined;
-    return {
-      questions: {
-        1: data.questions[1] || '',
-        2: data.questions[2] || '',
-        3: data.questions[3] || '',
-        4: data.questions[4] || '',
-        5: data.questions[5] || '',
-      },
-      hasNoAchievements: data.hasNoAchievements,
-      achievements: data.achievements,
-    };
-  };
   const documentsFormRef = useRef<{ trigger: () => Promise<boolean>; getValues: () => DocumentUploadSection }>(null);
   const choiceOfStudyRef = useRef<{ trigger: () => Promise<boolean>; getValues: () => ProgrammeChoice[] }>(null);
+  const otherInfoRef = useRef<OtherInfoRef>(null);
 
   const { user, collection } = useAuth();
   const dispatch = useDispatch();
@@ -300,7 +288,7 @@ export const ApplicationForm: React.FC<ApplicationFormProps> = ({ onLogout }) =>
     }
   };
 
-  const handleUpdateOtherInformation = (data: unknown) => {
+  const handleUpdateOtherInformation = async (data: unknown) => {
     const otherInfoData = data as OtherInformationSection;
     if (isInitializing) {
       return;
@@ -312,7 +300,7 @@ export const ApplicationForm: React.FC<ApplicationFormProps> = ({ onLogout }) =>
     try {
       setSaveError(null);
       setValue('otherInformation', otherInfoData, { shouldValidate: false });
-      saveOtherInfo({ applicationId: formData.applicationId, data: otherInfoData });
+      await saveOtherInfo({ applicationId: formData.applicationId, data: otherInfoData });
       calculateFormProgress({ ...formData, otherInformation: otherInfoData });
     } catch (error) {
       console.error('Error saving otherInformation:', error);
@@ -454,12 +442,20 @@ export const ApplicationForm: React.FC<ApplicationFormProps> = ({ onLogout }) =>
       }
     } else if (activeTab === 'otherInformation') {
       setValidationAttempted(true);
-      const isValid = !!formData.otherInformation;
-      if (isValid && formData.otherInformation) {
-        await saveOtherInfo({ applicationId: formData.applicationId, data: formData.otherInformation });
-        handleNextTab();
-      } else {
-        toast.error('Please complete the Other Information section.');
+      if (otherInfoRef.current) {
+        const isValid = await otherInfoRef.current.trigger();
+        const latestOtherInfo = otherInfoRef.current.getValues();
+        if (isValid && latestOtherInfo) {
+          try {
+            await handleUpdateOtherInformation(latestOtherInfo);
+            handleNextTab();
+          } catch (error) {
+            console.error('Error saving other information:', error);
+            setSaveError('Failed to save other information. Please try again.');
+          }
+        } else {
+          toast.error('Please complete the Other Information section.');
+        }
       }
     } else if (activeTab === 'documents') {
       setValidationAttempted(true);
@@ -698,12 +694,13 @@ export const ApplicationForm: React.FC<ApplicationFormProps> = ({ onLogout }) =>
             <Education
               initialData={formData.education}
               onSave={handleUpdateEducation}
+              onNextTab={handleSaveCurrentTab}
               ref={educationFormRef}
             />
           )}
           {activeTab === 'achievements' && (
             <Achievements
-              initialData={adaptAchievementsData(formData.achievements)}
+              initialData={formData.achievements}
               onSave={handleUpdateAchievements}
               ref={achievementsFormRef}
             />
@@ -712,6 +709,8 @@ export const ApplicationForm: React.FC<ApplicationFormProps> = ({ onLogout }) =>
             <Other_Info
               initialData={formData.otherInformation}
               onSave={handleUpdateOtherInformation}
+              onNextTab={handleSaveCurrentTab}
+              ref={otherInfoRef}
             />
           )}
           {activeTab === 'documents' && (

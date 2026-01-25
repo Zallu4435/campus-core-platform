@@ -1,20 +1,16 @@
 import React from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { RootState } from '../../appStore/store';
 import { Header } from '../components/public/Header';
-import { logout } from '../../appStore/authSlice';
-import { useNavigate } from 'react-router-dom';
+import { useLogout } from '../../application/hooks/useAuthQueries';
 
 const ApplicationFormLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const user = useSelector((state: RootState) => state.auth.user);
   const fullName = `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim();
-
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
+  const logoutMutation = useLogout();
 
   const handleLogout = () => {
-    dispatch(logout());
-    navigate('/login');
+    logoutMutation.mutate();
   };
 
   return (
@@ -24,6 +20,7 @@ const ApplicationFormLayout: React.FC<{ children: React.ReactNode }> = ({ childr
         isAuthenticated={!!user}
         layoutType="public"
         hideNavLinks
+        hideSettings
         onLogout={handleLogout}
       />
       <main className="mt-24 sm:mt-26 md:mt-28 lg:mt-30">

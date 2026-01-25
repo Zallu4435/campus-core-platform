@@ -39,7 +39,7 @@ export class AdmissionsRepository implements IAdmissionsRepository {
         draft = new AdmissionDraftModel({
             applicationId,
             registerId: params.userId,
-            personal: {},
+            personalInfo: {},
             choiceOfStudy: [],
             education: {},
             achievements: {},
@@ -74,7 +74,7 @@ export class AdmissionsRepository implements IAdmissionsRepository {
             { applicationId: draft.getApplicationId() },
             {
                 $set: {
-                    personal: draft.getPersonal(),
+                    personalInfo: draft.getPersonalInfo(),
                     choiceOfStudy: draft.getChoiceOfStudy(),
                     education: draft.getEducation(),
                     achievements: draft.getAchievements(),
@@ -184,7 +184,7 @@ export class AdmissionsRepository implements IAdmissionsRepository {
         const newAdmission = new AdmissionModel({
             applicationId: draft.applicationId,
             registerId: draft.registerId,
-            personal: draft.personal,
+            personalInfo: draft.personalInfo,
             choiceOfStudy: draft.choiceOfStudy,
             education: draft.education,
             achievements: draft.achievements,

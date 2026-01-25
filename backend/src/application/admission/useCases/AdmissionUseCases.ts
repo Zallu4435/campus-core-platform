@@ -65,16 +65,7 @@ export class SaveSectionUseCase implements ISaveSectionUseCase {
         const draft = await this._admissionsRepository.findDraftByApplicationId(params.applicationId);
         if (!draft) throw new Error("Application not found");
 
-        const sectionMap: { [key: string]: string } = {
-            personalInfo: "personal",
-            choiceOfStudy: "choiceOfStudy",
-            education: "education",
-            achievements: "achievements",
-            otherInformation: "otherInformation",
-            documents: "documents",
-            declaration: "declaration",
-        };
-        const field = sectionMap[params.section];
+        const field = params.section;
         if (!field) throw new InvalidSectionException();
 
         draft.updateSection(field, params.data);

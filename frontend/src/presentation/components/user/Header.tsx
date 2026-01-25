@@ -109,6 +109,7 @@ export default function Header({ mobileMenuOpen, setMobileMenuOpen, onLogout, us
   };
 
   const handleDropdownAction = (action: DropdownAction) => {
+    setIsProfileDropdownOpen(false);
     if (action === 'logout') {
       onLogout();
     } else if (action === 'settings') {
@@ -116,7 +117,6 @@ export default function Header({ mobileMenuOpen, setMobileMenuOpen, onLogout, us
     } else if (action === 'help') {
       navigate('/help');
     }
-    setIsProfileDropdownOpen(false);
   };
 
   const handlePortalToggle = () => {
@@ -258,8 +258,8 @@ export default function Header({ mobileMenuOpen, setMobileMenuOpen, onLogout, us
                           key={result.id}
                           onClick={() => handleSearchResultSelect(result)}
                           className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group ${index === focusedResultIndex
-                              ? `${styles.button.primary} shadow-lg`
-                              : `${styles.textPrimary} ${styles.card.hover}`
+                            ? `${styles.button.primary} shadow-lg`
+                            : `${styles.textPrimary} ${styles.card.hover}`
                             }`}
                           onMouseEnter={() => setFocusedResultIndex(index)}
                         >
@@ -367,7 +367,7 @@ export default function Header({ mobileMenuOpen, setMobileMenuOpen, onLogout, us
                     <ul className="py-2">
                       <li>
                         <button
-                          onClick={() => handleDropdownAction('settings')}
+                          onMouseDown={() => handleDropdownAction('settings')}
                           className={`w-full flex items-center space-x-3 px-4 py-3 ${styles.textPrimary} ${styles.card.hover} transition-all duration-200 group`}
                         >
                           <div className={`p-1.5 rounded-lg ${styles.button.secondary}`}>
@@ -378,7 +378,7 @@ export default function Header({ mobileMenuOpen, setMobileMenuOpen, onLogout, us
                       </li>
                       <li>
                         <button
-                          onClick={() => handleDropdownAction('help')}
+                          onMouseDown={() => handleDropdownAction('help')}
                           className={`w-full flex items-center space-x-3 px-4 py-3 ${styles.textPrimary} ${styles.card.hover} transition-all duration-200 group`}
                         >
                           <div className={`p-1.5 rounded-lg ${styles.button.secondary}`}>
@@ -435,7 +435,7 @@ export default function Header({ mobileMenuOpen, setMobileMenuOpen, onLogout, us
                     <ul className="py-2">
                       <li>
                         <button
-                          onClick={() => handleDropdownAction('settings')}
+                          onMouseDown={() => handleDropdownAction('settings')}
                           className={`w-full flex items-center space-x-3 px-4 py-3 ${styles.textPrimary} ${styles.card.hover} transition-all duration-200 group`}
                         >
                           <div className={`p-1.5 rounded-lg ${styles.button.secondary}`}>
@@ -446,7 +446,7 @@ export default function Header({ mobileMenuOpen, setMobileMenuOpen, onLogout, us
                       </li>
                       <li>
                         <button
-                          onClick={() => handleDropdownAction('help')}
+                          onMouseDown={() => handleDropdownAction('help')}
                           className={`w-full flex items-center space-x-3 px-4 py-3 ${styles.textPrimary} ${styles.card.hover} transition-all duration-200 group`}
                         >
                           <div className={`p-1.5 rounded-lg ${styles.button.secondary}`}>
@@ -533,8 +533,8 @@ export default function Header({ mobileMenuOpen, setMobileMenuOpen, onLogout, us
                         }
                       }}
                       className={`relative px-4 py-2 rounded-xl font-medium transition-all duration-300 ${isActive
-                          ? `${styles.button.primary} shadow-lg transform scale-105`
-                          : `${styles.textPrimary} ${styles.card.hover}`
+                        ? `${styles.button.primary} shadow-lg transform scale-105`
+                        : `${styles.textPrimary} ${styles.card.hover}`
                         }`}
                     >
                       {isActive && (
@@ -592,8 +592,8 @@ export default function Header({ mobileMenuOpen, setMobileMenuOpen, onLogout, us
                                 setMobileMenuOpen(false);
                               }}
                               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group ${index === focusedResultIndex
-                                  ? `${styles.button.primary} shadow-lg`
-                                  : `${styles.textPrimary} ${styles.card.hover}`
+                                ? `${styles.button.primary} shadow-lg`
+                                : `${styles.textPrimary} ${styles.card.hover}`
                                 }`}
                               onMouseEnter={() => setFocusedResultIndex(index)}
                             >
@@ -681,8 +681,8 @@ export default function Header({ mobileMenuOpen, setMobileMenuOpen, onLogout, us
                         }
                       }}
                       className={`w-full text-left px-5 py-3 rounded-xl font-medium transition-all duration-300 ${isActive
-                          ? `${styles.button.primary} shadow-lg transform scale-105`
-                          : `${styles.textPrimary} ${styles.card.hover}`
+                        ? `${styles.button.primary} shadow-lg transform scale-105`
+                        : `${styles.textPrimary} ${styles.card.hover}`
                         }`}
                     >
                       {isActive && (

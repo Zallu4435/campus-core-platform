@@ -31,14 +31,10 @@ export const PersonalSection: React.FC = () => {
                   placeholder={field.placeholder}
                   className="border-cyan-200 focus:border-cyan-400 focus:ring-cyan-200 bg-white"
                   labelClassName="text-cyan-700"
+                  error={errors[field.id as keyof PersonalFormData]?.message}
                 />
               )}
             />
-            {errors[field.id as keyof PersonalFormData]?.message && (
-              <p className="mt-1 text-sm text-red-600">
-                {errors[field.id as keyof PersonalFormData]?.message}
-              </p>
-            )}
           </div>
         ) : (
           <div key={field.id} className="flex flex-col">
@@ -51,12 +47,8 @@ export const PersonalSection: React.FC = () => {
               placeholder={field.placeholder}
               className="border-cyan-200 focus:border-cyan-400 focus:ring-cyan-200 bg-white"
               labelClassName="text-cyan-700"
+              error={errors[field.id as keyof PersonalFormData]?.message}
             />
-            {errors[field.id as keyof PersonalFormData]?.message && (
-              <p className="mt-1 text-sm text-red-600">
-                {errors[field.id as keyof PersonalFormData]?.message}
-              </p>
-            )}
           </div>
         )
       )}
@@ -70,20 +62,10 @@ export const PersonalSection: React.FC = () => {
           required={true}
           className="border-cyan-200 focus:border-cyan-400 focus:ring-cyan-200 bg-white"
           labelClassName="text-cyan-700"
+          countryError={errors.mobileCountry?.message}
+          areaError={errors.mobileArea?.message}
+          numberError={errors.mobileNumber?.message}
         />
-        {(errors.mobileCountry?.message || errors.mobileArea?.message || errors.mobileNumber?.message) && (
-          <div className="mt-1 space-y-1">
-            {errors.mobileCountry?.message && (
-              <p className="text-sm text-red-600">{errors.mobileCountry.message}</p>
-            )}
-            {errors.mobileArea?.message && (
-              <p className="text-sm text-red-600">{errors.mobileArea.message}</p>
-            )}
-            {errors.mobileNumber?.message && (
-              <p className="text-sm text-red-600">{errors.mobileNumber.message}</p>
-            )}
-          </div>
-        )}
       </div>
 
       <div className="flex flex-col">
@@ -94,20 +76,10 @@ export const PersonalSection: React.FC = () => {
           label="Home Telephone"
           className="border-cyan-200 focus:border-cyan-400 focus:ring-cyan-200 bg-white"
           labelClassName="text-cyan-700"
+          countryError={errors.phoneCountry?.message}
+          areaError={errors.phoneArea?.message}
+          numberError={errors.phoneNumber?.message}
         />
-        {(errors.phoneCountry?.message || errors.phoneArea?.message || errors.phoneNumber?.message) && (
-          <div className="mt-1 space-y-1">
-            {errors.phoneCountry?.message && (
-              <p className="text-sm text-red-600">{errors.phoneCountry.message}</p>
-            )}
-            {errors.phoneArea?.message && (
-              <p className="text-sm text-red-600">{errors.phoneArea.message}</p>
-            )}
-            {errors.phoneNumber?.message && (
-              <p className="text-sm text-red-600">{errors.phoneNumber.message}</p>
-            )}
-          </div>
-        )}
       </div>
     </div>
   );

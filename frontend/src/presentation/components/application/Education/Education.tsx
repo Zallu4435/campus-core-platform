@@ -16,6 +16,7 @@ const studentTypeOptions = [
 interface EducationProps {
   initialData?: EducationFormData;
   onSave: (values: EducationFormData) => void;
+  onNextTab?: () => void;
 }
 
 interface EducationRef {
@@ -37,7 +38,7 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
   }
 }
 
-export const Education = forwardRef<EducationRef, EducationProps>(({ initialData }, ref) => {
+export const Education = forwardRef<EducationRef, EducationProps>(({ initialData, onNextTab }, ref) => {
   const methods = useFormContext();
   const { control, formState: { errors }, setValue, trigger, watch, getValues } = methods;
 
@@ -46,15 +47,15 @@ export const Education = forwardRef<EducationRef, EducationProps>(({ initialData
   useEffect(() => {
     if (initialData) {
       setValue('studentType', initialData.studentType || '');
-      
+
       if (initialData.local) {
         setValue('local', initialData.local);
       }
-      
+
       if (initialData.transfer) {
         setValue('transfer', initialData.transfer);
       }
-      
+
       if (initialData.international) {
         setValue('international', initialData.international);
       }
@@ -69,7 +70,7 @@ export const Education = forwardRef<EducationRef, EducationProps>(({ initialData
           return false;
         }
         const isValid = await trigger();
-        
+
         if (isValid) {
           const educationData = {
             studentType: currentValues.studentType,
@@ -79,7 +80,7 @@ export const Education = forwardRef<EducationRef, EducationProps>(({ initialData
           };
           setValue('education', educationData, { shouldValidate: false });
         }
-        
+
         return isValid;
       } catch (error) {
         console.error('Education: Validation error:', error);
@@ -88,12 +89,12 @@ export const Education = forwardRef<EducationRef, EducationProps>(({ initialData
     },
   }));
 
-const handleStudentTypeChange = (value: string) => {
-  setValue('local', undefined);
-  setValue('transfer', undefined);
-  setValue('international', undefined);
-  setValue('studentType', value, { shouldValidate: true });
-};
+  const handleStudentTypeChange = (value: string) => {
+    setValue('local', undefined);
+    setValue('transfer', undefined);
+    setValue('international', undefined);
+    setValue('studentType', value, { shouldValidate: true });
+  };
 
   return (
     <ErrorBoundary>
@@ -131,7 +132,7 @@ const handleStudentTypeChange = (value: string) => {
 
           {studentType === 'local' && <LocalEducation />}
           {studentType === 'transfer' && <TransferEducation />}
-          {studentType === 'international' && <InternationalEducation />}
+          {studentType === 'international' && <InternationalEducation onNextTab={onNextTab} />}
         </div>
       </div>
     </ErrorBoundary>

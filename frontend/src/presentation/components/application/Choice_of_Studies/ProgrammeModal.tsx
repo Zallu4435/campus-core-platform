@@ -13,13 +13,15 @@ export const ProgrammeModal: React.FC<ProgrammeModalProps> = ({
   onSubmit,
   choices,
 }) => {
-  const { control, handleSubmit, watch, reset } = useForm<ProgrammeChoiceFormData>({
-    resolver: zodResolver(createProgrammeChoiceSchema(choices)),
+  const resolver = React.useMemo(() => zodResolver(createProgrammeChoiceSchema(choices)), [choices]);
+
+  const { control, handleSubmit, watch, reset, formState: { errors } } = useForm<ProgrammeChoiceFormData>({
+    resolver,
     defaultValues: {
       programme: '',
       preferredMajor: '',
     },
-    mode: 'onChange',
+    mode: 'onSubmit',
   });
 
   const selectedProgramme = watch('programme');
@@ -49,6 +51,16 @@ export const ProgrammeModal: React.FC<ProgrammeModalProps> = ({
           ×
         </button>
         <h2 className="text-xl font-semibold mb-6 text-blue-900">Add Programme</h2>
+
+        {errors.programme?.message && (
+          <div className="mb-6 p-3 bg-red-50 border-l-4 border-red-500 rounded text-sm text-red-700 flex items-center gap-2">
+            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>{errors.programme.message}</span>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit(onFormSubmit)}>
           <Controller
             name="programme"
@@ -84,6 +96,7 @@ export const ProgrammeModal: React.FC<ProgrammeModalProps> = ({
                   required
                   className="border-blue-200 focus:border-blue-400 focus:ring-blue-200 bg-white"
                   labelClassName="text-blue-700"
+                  error={errors.preferredMajor?.message}
                 />
               )}
             />

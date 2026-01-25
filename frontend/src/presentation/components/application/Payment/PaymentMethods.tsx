@@ -1,20 +1,13 @@
 import React from 'react';
-import { 
-  FaCreditCard, 
-  FaStripe 
+import {
+  FaStripe
 } from 'react-icons/fa';
 import { PaymentMethodsProps } from '../../../../domain/types/application';
 
 const paymentMethods = [
-  { 
-    id: 'credit_card', 
-    name: 'Credit Card', 
-    icon: FaCreditCard,
-    description: 'Pay securely with your credit card'
-  },
-  { 
-    id: 'stripe', 
-    name: 'Stripe', 
+  {
+    id: 'stripe',
+    name: 'Stripe',
     icon: FaStripe,
     description: 'Secure online payment gateway'
   },
@@ -54,8 +47,8 @@ export const PaymentMethods: React.FC<PaymentMethodsProps> = ({
               <div className="text-left flex-grow">
                 <h4 className={`
                   font-medium 
-                  ${selectedMethod === method.id 
-                    ? 'text-cyan-900' 
+                  ${selectedMethod === method.id
+                    ? 'text-cyan-900'
                     : 'text-gray-800 group-hover:text-cyan-900'}
                 `}>
                   {method.name}
@@ -66,18 +59,18 @@ export const PaymentMethods: React.FC<PaymentMethodsProps> = ({
               </div>
               {selectedMethod === method.id && (
                 <div className="ml-auto text-cyan-600">
-                  <svg 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    className="h-6 w-6" 
-                    fill="none" 
-                    viewBox="0 0 24 24" 
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-6 w-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
                     stroke="currentColor"
                   >
-                    <path 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round" 
-                      strokeWidth={2} 
-                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" 
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                     />
                   </svg>
                 </div>

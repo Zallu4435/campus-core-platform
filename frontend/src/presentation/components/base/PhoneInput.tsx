@@ -41,42 +41,39 @@ export const PhoneInput: React.FC<FormPhoneInputProps> = ({
           <input
             {...register(countryName)}
             placeholder="Country"
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 ${
-              countryError 
-                ? 'border-red-500 focus:border-red-500 focus:ring-red-200 bg-red-50' 
+            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 ${countryError
+                ? 'border-red-500 focus:border-red-500 focus:ring-red-200 bg-red-50'
                 : className
-            }`}
+              }`}
           />
           {countryError && (
-            <p className="mt-1 text-xs text-red-600">{countryError}</p>
+            <p className="mt-1 text-sm text-red-600">{countryError}</p>
           )}
         </div>
         <div className="w-24">
           <input
             {...register(areaName)}
             placeholder="Area"
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 ${
-              areaError 
-                ? 'border-red-500 focus:border-red-500 focus:ring-red-200 bg-red-50' 
+            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 ${areaError
+                ? 'border-red-500 focus:border-red-500 focus:ring-red-200 bg-red-50'
                 : className
-            }`}
+              }`}
           />
           {areaError && (
-            <p className="mt-1 text-xs text-red-600">{areaError}</p>
+            <p className="mt-1 text-sm text-red-600">{areaError}</p>
           )}
         </div>
         <div className="flex-1">
           <input
             {...register(numberName)}
             placeholder="Number"
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 ${
-              numberError 
-                ? 'border-red-500 focus:border-red-500 focus:ring-red-200 bg-red-50' 
+            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 ${numberError
+                ? 'border-red-500 focus:border-red-500 focus:ring-red-200 bg-red-50'
                 : className
-            }`}
+              }`}
           />
           {numberError && (
-            <p className="mt-1 text-xs text-red-600">{numberError}</p>
+            <p className="mt-1 text-sm text-red-600">{numberError}</p>
           )}
         </div>
       </div>

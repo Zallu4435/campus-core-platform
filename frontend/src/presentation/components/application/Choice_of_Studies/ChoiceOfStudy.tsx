@@ -39,24 +39,17 @@ export const ChoiceOfStudy = forwardRef<ChoiceOfStudyRef, ChoiceOfStudyProps>(
 
     const handleAddProgramme = (data: unknown) => {
       const formData = data as ProgrammeChoiceFormData;
-      const newChoice: ProgrammeChoice = { 
-        programme: formData.programme, 
+      const newChoice: ProgrammeChoice = {
+        programme: formData.programme,
         preferredMajor: formData.preferredMajor ?? ''
       };
-      const updatedChoices = [...currentChoices, newChoice].map(choice => ({
-        programme: choice.programme,
-        preferredMajor: choice.preferredMajor ?? ''
-      }));
-      setValue('choices', updatedChoices, { shouldValidate: false });
+      setValue('choices', [...currentChoices, newChoice], { shouldValidate: true });
       setShowModal(false);
     };
 
     const handleRemove = (idx: number) => {
-      const updatedChoices = currentChoices.filter((_, i) => i !== idx).map(choice => ({
-        programme: choice.programme,
-        preferredMajor: choice.preferredMajor ?? ''
-      }));
-      setValue('choices', updatedChoices, { shouldValidate: false });
+      const updatedChoices = currentChoices.filter((_, i) => i !== idx);
+      setValue('choices', updatedChoices, { shouldValidate: true });
     };
 
     return (
@@ -111,11 +104,7 @@ export const ChoiceOfStudy = forwardRef<ChoiceOfStudyRef, ChoiceOfStudyProps>(
                         <td className="py-4 px-4 text-cyan-600" colSpan={4}>No record(s)</td>
                       </tr>
                     ) : (
-                      currentChoices?.map((choice, idx: number) => (
-                        ((choice: ProgrammeChoice) => ({
-                          ...choice,
-                          preferredMajor: choice.preferredMajor ?? ''
-                        }))(choice),
+                      currentChoices.map((choice, idx) => (
                         <tr key={idx} className="border-b border-cyan-100 hover:bg-cyan-50">
                           <td className="py-3 px-4 text-cyan-800">{idx + 1}</td>
                           <td className="py-3 px-4 text-cyan-800">{choice.programme}</td>

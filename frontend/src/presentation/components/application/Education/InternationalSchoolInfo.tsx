@@ -180,6 +180,7 @@ export const InternationalSchoolInfo: React.FC<InternationalSchoolInfoProps> = (
                 onChange={field.onChange}
                 required
                 className="md:col-span-2 mt-2 text-cyan-700"
+                error={getNestedObjectError(errors, 'international', 'resultType')}
               />
             )}
           />
@@ -250,6 +251,10 @@ export const InternationalSchoolInfo: React.FC<InternationalSchoolInfoProps> = (
       <SubjectModal
         showModal={showSubjectModal}
         onClose={() => setShowSubjectModal(false)}
+        existingSubjects={subjects.map(s => {
+          const subj = s as { subject?: string; otherSubject?: string };
+          return subj.subject === 'other' ? (subj.otherSubject || '') : (subj.subject || '');
+        })}
         onSubmit={handleAddSubject}
       />
     </div>

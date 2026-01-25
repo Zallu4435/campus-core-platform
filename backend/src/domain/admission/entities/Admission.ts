@@ -10,7 +10,7 @@ export class AdmissionDraft {
   private idValue?: string;
   private applicationId: string;
   private registerId: string;
-  private personal: Record<string, unknown>;
+  private personalInfo: Record<string, unknown>;
   private choiceOfStudy: Record<string, unknown>[];
   private education: Record<string, unknown>;
   private achievements: Record<string, unknown>;
@@ -25,7 +25,7 @@ export class AdmissionDraft {
     this.idValue = props.id;
     this.applicationId = props.applicationId;
     this.registerId = props.registerId;
-    this.personal = props.personal || {};
+    this.personalInfo = props.personalInfo || {};
     this.choiceOfStudy = props.choiceOfStudy || [];
     this.education = props.education || {};
     this.achievements = props.achievements || {};
@@ -47,7 +47,7 @@ export class AdmissionDraft {
   get id(): string | undefined { return this.idValue; }
   getApplicationId(): string { return this.applicationId; }
   getRegisterId(): string { return this.registerId; }
-  getPersonal() { return this.personal; }
+  getPersonalInfo() { return this.personalInfo; }
   getChoiceOfStudy() { return this.choiceOfStudy; }
   getEducation() { return this.education; }
   getAchievements() { return this.achievements; }
@@ -65,7 +65,7 @@ export class AdmissionDraft {
   }
 
   updateSection(section: string, data: Record<string, unknown> | Record<string, unknown>[]): void {
-    if (section === 'personal') this.personal = data as Record<string, unknown>;
+    if (section === 'personalInfo') this.personalInfo = data as Record<string, unknown>;
     else if (section === 'choiceOfStudy') {
       if (Array.isArray(data)) {
         this.choiceOfStudy = data;

@@ -34,6 +34,15 @@ export const choiceOfStudyFormSchema = z.object({
     .max(8, 'Maximum of 8 programmes allowed')
     .refine(
       (choices) => {
+        const programmes = choices.map(c => c.programme);
+        return new Set(programmes).size === programmes.length;
+      },
+      {
+        message: 'Duplicate programmes are not allowed',
+      }
+    )
+    .refine(
+      (choices) => {
         const restrictedProgrammes = ['Dentistry', 'Medicine'];
         const restrictedIndices = choices
           .map((choice, idx) => (restrictedProgrammes.includes(choice.programme) ? idx : -1))

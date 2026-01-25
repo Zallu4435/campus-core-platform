@@ -90,7 +90,7 @@ export const mainFields = [
     required: true,
     placeholder: "Select residential status",
   },
-  { id: "familyName", label: "Family Name / Surname", type: "input", placeholder: "Enter family name" },
+  { id: "familyName", label: "Family Name / Surname", type: "input", required: true, placeholder: "Enter family name" },
   {
     id: "race",
     label: "Race / Ethnic Group",
@@ -99,7 +99,7 @@ export const mainFields = [
     required: true,
     placeholder: "Select race/ethnic group",
   },
-  { id: "givenName", label: "Given Name", type: "input", placeholder: "Enter given name" },
+  { id: "givenName", label: "Given Name", type: "input", required: true, placeholder: "Enter given name" },
   {
     id: "religion",
     label: "Religion",
@@ -124,7 +124,7 @@ export const mainFields = [
     placeholder: "Select marital status",
   },
   { id: "postalCode", label: "Postal Code", type: "input", required: true, placeholder: "Enter postal code" },
-  { id: "passportNumber", label: "Passport Number", type: "input", placeholder: "Enter passport number" },
+  { id: "passportNumber", label: "Passport Number", type: "input", required: true, placeholder: "Enter passport number" },
   {
     id: "blockNumber",
     label: "Block / House Number",
@@ -151,7 +151,7 @@ export const mainFields = [
   { id: "buildingName", label: "Building Name", type: "input", placeholder: "Enter building name" },
   { id: "floorNumber", label: "Floor Number", type: "input", placeholder: "Enter floor number" },
   { id: "unitNumber", label: "Unit Number", type: "input", placeholder: "Enter unit number" },
-  { id: "stateCity", label: "State / City", type: "input", placeholder: "Enter state or city" },
+  { id: "stateCity", label: "State / City", type: "input", required: true, placeholder: "Enter state or city" },
   {
     id: "country",
     label: "Country",
@@ -172,7 +172,7 @@ const relationshipOptions = [
 ];
 
 export const altContactFields = [
-  { id: 'alternateContactName', label: 'Name of Guardian', type: 'input', placeholder: 'Enter name', required: false },
-  { id: 'relationshipWithApplicant', label: 'Relationship with Applicant', type: 'select', options: relationshipOptions, placeholder: 'Select relationship', required: false },
-  { id: 'occupation', label: 'Occupation', type: 'input', placeholder: 'Enter occupation', required: false },
+  { id: 'alternateContactName', label: 'Name of Guardian', type: 'input', placeholder: 'Enter name', required: true },
+  { id: 'relationshipWithApplicant', label: 'Relationship with Applicant', type: 'select', options: relationshipOptions, placeholder: 'Select relationship', required: true },
+  { id: 'occupation', label: 'Occupation', type: 'input', placeholder: 'Enter occupation', required: true },
 ];

@@ -1,31 +1,42 @@
 import React from 'react';
-import { useFormContext } from 'react-hook-form';
+import { useFormContext, Controller } from 'react-hook-form';
 import { Input } from '../../base/Input';
 import { Button } from '../../base/Button';
 import { Select } from '../../base/Select';
 import { Textarea } from '../../base/Textarea';
-import { getReferenceFields, getSelectFields } from './fields';
 import { getNestedError } from '../../../../shared/utils/formErrors';
-import type { AchievementModalProps, ReferenceContact } from '../../../../domain/types/application';
+import type { AchievementModalProps } from '../../../../domain/types/application';
+import { AchievementFormData, Achievement } from '../../../../domain/validation/user/AchievementSchema';
+import { FieldPath } from 'react-hook-form';
+
+type NewAchievementPath = Extract<FieldPath<AchievementFormData>, `newAchievement.${keyof Achievement}`>;
 
 export const AchievementModal: React.FC<AchievementModalProps> = ({
   show,
   onClose,
   onSubmit,
-  newAchievement,
-  setNewAchievement,
 }) => {
-  const { register, formState: { errors }, setValue, trigger } = useFormContext();
+  const { register, formState: { errors }, trigger, control } = useFormContext<AchievementFormData>();
 
   if (!show) return null;
 
-  const selectFields = getSelectFields(newAchievement, setNewAchievement);
-  const referenceFields = getReferenceFields(newAchievement.reference, (updatedRef: ReferenceContact) => {
-    setNewAchievement({ ...newAchievement, reference: updatedRef });
-    setValue('newAchievement.reference', updatedRef, { shouldValidate: false });
-  });
+  const selectFields: Array<{ id: keyof Achievement, label: string, placeholder: string, options: Array<{ value: string, label: string }> }> = [
+    { id: 'activity', label: 'Activity', placeholder: 'Select Activity', options: [{ value: 'Sports', label: 'Sports' }, { value: 'Arts', label: 'Arts' }, { value: 'Leadership', label: 'Leadership' }, { value: 'Work Experience', label: 'Work Experience' }, { value: 'Other', label: 'Other' }] },
+    { id: 'level', label: 'Level', placeholder: 'Select Level', options: [{ value: 'School', label: 'School' }, { value: 'Regional', label: 'Regional' }, { value: 'National', label: 'National' }, { value: 'International', label: 'International' }] },
+    { id: 'levelOfAchievement', label: 'Level of Achievement', placeholder: 'Select Achievement Level', options: [{ value: 'Participation', label: 'Participation' }, { value: 'Bronze', label: 'Bronze' }, { value: 'Silver', label: 'Silver' }, { value: 'Gold', label: 'Gold' }, { value: 'Other', label: 'Other' }] },
+    { id: 'positionHeld', label: 'Position Held', placeholder: 'Select Position', options: [{ value: 'Participant', label: 'Participant' }, { value: 'Team Member', label: 'Team Member' }, { value: 'Team Leader', label: 'Team Leader' }, { value: 'President', label: 'President' }, { value: 'Other', label: 'Other' }] },
+  ];
+  const referenceFields: Array<{ id: string, label: string, registerId: FieldPath<AchievementFormData>, placeholder: string, type?: string }> = [
+    { id: 'firstName', label: 'First Name', registerId: 'newAchievement.reference.firstName', placeholder: 'Enter first name' },
+    { id: 'lastName', label: 'Last Name', registerId: 'newAchievement.reference.lastName', placeholder: 'Enter last name' },
+    { id: 'position', label: 'Position / Title', registerId: 'newAchievement.reference.position', placeholder: 'Enter position or title' },
+    { id: 'email', label: 'Email', registerId: 'newAchievement.reference.email', placeholder: 'Enter email address', type: 'email' },
+    { id: 'phoneCountry', label: 'Country Code', registerId: 'newAchievement.reference.phone.country', placeholder: 'e.g., +65' },
+    { id: 'phoneArea', label: 'Area Code', registerId: 'newAchievement.reference.phone.area', placeholder: 'e.g., 123' },
+    { id: 'phoneNumber', label: 'Phone Number', registerId: 'newAchievement.reference.phone.number', placeholder: 'e.g., 4567890' },
+  ];
 
-  const handleSubmit = async () => {
+  const handleModalSubmit = async () => {
     const isValid = await trigger(['newAchievement'], { shouldFocus: true });
     if (isValid) {
       onSubmit();
@@ -62,42 +73,44 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            {selectFields.map(field => (
-              <div key={field.id}>
-                <Select
-                  id={field.id}
-                  label={field.label}
-                  options={field.options}
-                  value={field.value}
-                  onChange={(val) => {
-                    setNewAchievement({ ...newAchievement, [field.id]: val });
-                    setValue(`newAchievement.${field.id}`, val, { shouldValidate: false });
-                  }}
-                  required
-                  placeholder={field.placeholder}
-                  className="border-cyan-200 focus:border-cyan-400 focus:ring-cyan-200 bg-white"
-                  labelClassName="text-cyan-700"
-                />
-                {getNestedError(errors, `newAchievement.${field.id}`) && (
-                  <p className="text-sm text-red-700 mt-1">
-                    {getNestedError(errors, `newAchievement.${field.id}`)}
-                  </p>
-                )}
-              </div>
-            ))}
+            {selectFields.map(field => {
+              const fieldName = `newAchievement.${field.id}` as NewAchievementPath;
+              return (
+                <div key={field.id}>
+                  <Controller<AchievementFormData, NewAchievementPath>
+                    name={fieldName}
+                    control={control}
+                    render={({ field: { onChange, value, ref } }) => (
+                      <Select
+                        id={field.id}
+                        label={field.label}
+                        options={field.options}
+                        value={(value as unknown as string) || ''}
+                        onChange={onChange}
+                        ref={ref}
+                        required
+                        placeholder={field.placeholder}
+                        className="border-cyan-200 focus:border-cyan-400 focus:ring-cyan-200 bg-white"
+                        labelClassName="text-cyan-700"
+                      />
+                    )}
+                  />
+                  {getNestedError(errors, fieldName) && (
+                    <p className="text-sm text-red-700 mt-1">
+                      {getNestedError(errors, fieldName)}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
 
             {(['organizationName', 'fromDate', 'toDate'] as const).map((fieldKey) => (
               <div key={fieldKey}>
                 <Input
                   id={fieldKey}
                   label={fieldKey === 'organizationName' ? 'Organization / Employer' :
-                        fieldKey === 'fromDate' ? 'From (MM/YYYY)' : 'To (MM/YYYY)'}
+                    fieldKey === 'fromDate' ? 'From (MM/YYYY)' : 'To (MM/YYYY)'}
                   {...register(`newAchievement.${fieldKey}`)}
-                  value={newAchievement[fieldKey]}
-                  onChange={e => {
-                    setNewAchievement({ ...newAchievement, [fieldKey]: e.target.value });
-                    setValue(`newAchievement.${fieldKey}`, e.target.value, { shouldValidate: false });
-                  }}
                   placeholder={fieldKey.includes('Date') ? 'MM/YYYY' : 'Enter name'}
                   className="border-cyan-200 focus:border-cyan-400 focus:ring-cyan-200 bg-white"
                   labelClassName="text-cyan-700"
@@ -116,12 +129,6 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({
               id="description"
               label="Key Contribution Description"
               {...register('newAchievement.description')}
-              value={newAchievement.description}
-              onChange={e => {
-                const value = e.target.value.slice(0, 1000);
-                setNewAchievement({ ...newAchievement, description: value });
-                setValue('newAchievement.description', value, { shouldValidate: false });
-              }}
               placeholder="Describe your achievement (max 1000 characters)"
               className="border-cyan-200 focus:border-cyan-400 focus:ring-cyan-200 bg-white"
               labelClassName="text-cyan-700"
@@ -144,7 +151,7 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {referenceFields.map(field => {
-                const errorMessage = getNestedError(errors, `newAchievement.reference.${field.registerId}`);
+                const errorMessage = getNestedError(errors, field.registerId);
 
                 return (
                   <div key={field.id}>
@@ -152,9 +159,7 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({
                       id={field.id}
                       label={field.label}
                       type={field.type || 'text'}
-                      {...register(`newAchievement.reference.${field.registerId}`)}
-                      value={field.value}
-                      onChange={e => field.onChange(e.target.value)}
+                      {...register(field.registerId)}
                       placeholder={field.placeholder}
                       className="border-cyan-200 focus:border-cyan-400 focus:ring-cyan-200 bg-white"
                       labelClassName="text-cyan-700"
@@ -179,7 +184,7 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({
           <Button
             label="Submit"
             variant="primary"
-            onClick={handleSubmit}
+            onClick={handleModalSubmit}
             className="bg-gradient-to-r from-cyan-400 to-blue-400 text-white hover:from-cyan-500 hover:to-blue-500"
           />
         </div>

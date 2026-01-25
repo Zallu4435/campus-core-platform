@@ -3,12 +3,13 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Input } from '../../base/Input';
 import { Button } from '../../base/Button';
-import { subjectSchema } from '../../../../domain/validation/user/EducationSchema';
-import { getNestedError } from '../../../../shared/utils/formErrors'; // Add this import
+import { createSubjectSchema } from '../../../../domain/validation/user/EducationSchema';
+import { getNestedError } from '../../../../shared/utils/formErrors';
 
 interface SubjectModalProps {
   showModal: boolean;
   onClose: () => void;
+  existingSubjects: string[];
   onSubmit: (subject: {
     subject: string;
     otherSubject: string;
@@ -19,20 +20,23 @@ interface SubjectModalProps {
 export const SubjectModal: React.FC<SubjectModalProps> = ({
   showModal,
   onClose,
+  existingSubjects,
   onSubmit,
 }) => {
+  const resolver = React.useMemo(() => zodResolver(createSubjectSchema(existingSubjects)), [existingSubjects]);
+
   const { control, handleSubmit, formState: { errors }, reset, watch } = useForm<{
     subject: string;
     otherSubject: string;
     grade: string;
   }>({
-    resolver: zodResolver(subjectSchema) as any,
+    resolver: resolver as any,
     defaultValues: {
       subject: '',
       otherSubject: '',
       grade: '',
     },
-    mode: 'onChange',
+    mode: 'onSubmit',
   });
 
   const subjectValue = watch('subject');
@@ -65,6 +69,16 @@ export const SubjectModal: React.FC<SubjectModalProps> = ({
           ×
         </button>
         <h2 className="text-xl font-semibold mb-6 text-cyan-900">Add Subject</h2>
+
+        {errors.subject?.message && (
+          <div className="mb-6 p-3 bg-red-50 border-l-4 border-red-500 rounded text-sm text-red-700 flex items-center gap-2">
+            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>{errors.subject.message}</span>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit(onFormSubmit)}>
           <Controller
             name="subject"
@@ -80,7 +94,6 @@ export const SubjectModal: React.FC<SubjectModalProps> = ({
                 placeholder="Enter subject"
                 className="border-cyan-200 focus:border-cyan-400 focus:ring-cyan-200"
                 labelClassName="text-cyan-700"
-                error={getNestedError(errors, 'subject')}
               />
             )}
           />

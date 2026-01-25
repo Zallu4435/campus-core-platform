@@ -7,6 +7,7 @@ import { DocumentUpload, DocumentUploadSectionFormData, DocumentUploadSectionSch
 import { DocumentUploadSection } from '../../../../domain/types/application';
 import { toast } from 'react-hot-toast';
 import { documentUploadService } from '../../../../application/services/documentUploadService';
+import { getNestedError } from '../../../../shared/utils/formErrors';
 
 export interface DocumentsRef {
   trigger: () => Promise<boolean>;
@@ -118,9 +119,13 @@ export const Documents = React.forwardRef<DocumentsRef, DocumentsProps>(
           </div>
 
           <div className="p-6 space-y-6">
-            {errors.documents && (
+            {(getNestedError(errors, 'documents') || errors.documents) && (
               <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded mb-6">
-                <p className="text-sm text-red-700">{errors.documents.message}</p>
+                <p className="text-sm text-red-700">
+                  {getNestedError(errors, 'documents') ||
+                    (typeof errors.documents === 'object' && 'message' in (errors.documents as any) ? (errors.documents as any).message : null) ||
+                    'Either Passport or Birth Certificate must be uploaded, and Educational result slip is required.'}
+                </p>
               </div>
             )}
             <DocumentInstructions />

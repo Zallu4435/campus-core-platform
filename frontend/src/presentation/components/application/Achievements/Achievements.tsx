@@ -1,19 +1,14 @@
-import { useEffect, forwardRef, useImperativeHandle, useState } from 'react';
+import { useEffect, forwardRef, useImperativeHandle, useState, useRef } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AchievementQuestions } from './AchievementQuestions';
 import { questions } from './options';
 import { AchievementList } from './AchievementList';
 import { AchievementModal } from './AchievementModal';
-import type { Achievement } from '../../../../domain/types/application';
 import { AchievementSectionSchema, type AchievementFormData } from '../../../../domain/validation/user/AchievementSchema';
+import type { AchievementsProps, AchievementSection } from '../../../../domain/types/application';
 
-interface AchievementsProps {
-  initialData?: AchievementFormData;
-  onSave: (data: AchievementFormData) => void;
-}
-
-export const Achievements = forwardRef<{ trigger: () => Promise<boolean>, getValues: () => AchievementFormData }, AchievementsProps>(({ initialData }, ref) => {
+export const Achievements = forwardRef<{ trigger: () => Promise<boolean>, getValues: () => AchievementSection }, AchievementsProps>(({ initialData }, ref) => {
   const defaultValues: AchievementFormData = {
     questions: { 1: '', 2: '', 3: '', 4: '', 5: '' },
     achievements: [],
@@ -26,37 +21,28 @@ export const Achievements = forwardRef<{ trigger: () => Promise<boolean>, getVal
     mode: 'onSubmit',
   });
 
-  const { setValue, watch, formState: { errors }, trigger, reset } = methods;
+  const { setValue, watch, formState: { errors }, trigger, reset, getValues } = methods;
   const achievementData = watch();
 
   const [showModal, setShowModal] = useState(false);
-  const [newAchievement, setNewAchievement] = useState<Achievement>({
-    activity: '',
-    level: '',
-    levelOfAchievement: '',
-    positionHeld: '',
-    organizationName: '',
-    fromDate: '',
-    toDate: '',
-    description: '',
-    reference: {
-      firstName: '',
-      lastName: '',
-      position: '',
-      email: '',
-      phone: { country: '', area: '', number: '' },
-    },
-  });
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const previousDataRef = useRef<string>('');
 
   useEffect(() => {
     if (initialData) {
-      reset({
+      const dataToSet: AchievementSection = {
         ...initialData,
         achievements: Array.isArray(initialData.achievements) ? initialData.achievements : [],
         hasNoAchievements: !!initialData.hasNoAchievements,
         questions: initialData.questions || { 1: '', 2: '', 3: '', 4: '', 5: '' }
-      }, { keepDirty: false });
+      };
+
+      const dataString = JSON.stringify(dataToSet);
+
+      if (dataString !== previousDataRef.current) {
+        previousDataRef.current = dataString;
+        reset(dataToSet, { keepDirty: false });
+      }
     }
   }, [initialData, reset]);
 
@@ -71,13 +57,6 @@ export const Achievements = forwardRef<{ trigger: () => Promise<boolean>, getVal
     getValues: () => methods.getValues(),
   }));
 
-  const handleAnswerChange = (questionId: number, value: string) => {
-    const maxLength = questions.find(q => q.id === questionId)?.maxLength || 1000;
-    if (value.length <= maxLength) {
-      setValue('questions', { ...achievementData.questions, [questionId]: value }, { shouldValidate: false, shouldDirty: true });
-    }
-  };
-
   const handleToggleNoAchievements = () => {
     const newValue = !achievementData.hasNoAchievements;
     setValue('hasNoAchievements', newValue, { shouldValidate: false });
@@ -91,8 +70,8 @@ export const Achievements = forwardRef<{ trigger: () => Promise<boolean>, getVal
     setValue('achievements', newAchievements, { shouldValidate: false });
   };
 
-  const resetModalFields = () => {
-    setNewAchievement({
+  const initNewAchievement = () => {
+    setValue('newAchievement', {
       activity: '',
       level: '',
       levelOfAchievement: '',
@@ -109,11 +88,11 @@ export const Achievements = forwardRef<{ trigger: () => Promise<boolean>, getVal
         phone: { country: '', area: '', number: '' },
       },
     });
-    setEditingIndex(null);
   };
 
   const handleAddAchievement = () => {
-    resetModalFields();
+    initNewAchievement();
+    setEditingIndex(null);
     setShowModal(true);
   };
 
@@ -148,11 +127,7 @@ export const Achievements = forwardRef<{ trigger: () => Promise<boolean>, getVal
               </p>
             </div>
 
-            <AchievementQuestions
-              questions={questions}
-              answers={achievementData.questions}
-              onAnswerChange={handleAnswerChange}
-            />
+            <AchievementQuestions questions={questions} />
 
             <div className="mt-8">
               <div className="bg-gradient-to-r from-cyan-50 to-blue-50 p-4 rounded-lg mb-4">
@@ -191,7 +166,7 @@ export const Achievements = forwardRef<{ trigger: () => Promise<boolean>, getVal
                 achievements={achievementData.achievements || []}
                 onAdd={handleAddAchievement}
                 onEdit={(achievement, index) => {
-                  setNewAchievement(achievement);
+                  setValue('newAchievement', achievement);
                   setEditingIndex(index);
                   setShowModal(true);
                 }}
@@ -208,30 +183,29 @@ export const Achievements = forwardRef<{ trigger: () => Promise<boolean>, getVal
           show={showModal}
           onClose={() => {
             setShowModal(false);
-            resetModalFields();
+            initNewAchievement();
           }}
-          onSubmit={async () => {
-            const isValid = await trigger(['achievements'], { shouldFocus: true });
-            if (!isValid) {
-              return;
-            }
+          onSubmit={() => {
+            const formData = getValues();
+            const newAchievement = formData.newAchievement;
 
-            const currentAchievements = [...(achievementData.achievements || [])];
-            if (editingIndex !== null && editingIndex !== undefined) {
-              currentAchievements[editingIndex] = newAchievement;
-            } else if (currentAchievements.length < 4) {
-              currentAchievements.push(newAchievement);
+            if (newAchievement) {
+              const currentAchievements = [...(achievementData.achievements || [])];
+              if (editingIndex !== null && editingIndex !== undefined) {
+                currentAchievements[editingIndex] = newAchievement;
+              } else if (currentAchievements.length < 4) {
+                currentAchievements.push(newAchievement);
+              }
+              setValue('achievements', currentAchievements, { shouldValidate: true });
             }
-            setValue('achievements', currentAchievements, { shouldValidate: false });
             setShowModal(false);
-            resetModalFields();
+            initNewAchievement();
           }}
-          newAchievement={newAchievement}
-          setNewAchievement={setNewAchievement}
         />
       </div>
     </FormProvider>
   );
 });
+
 
 Achievements.displayName = 'Achievements';

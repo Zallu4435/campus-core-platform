@@ -27,10 +27,21 @@ export class PaymentService implements IPaymentService {
 
     async confirmPayment(paymentIntentId: string, paymentMethodId: string): Promise<{ status: string }> {
         try {
-            const paymentIntent = await stripe.paymentIntents.confirm(paymentIntentId, {
-                payment_method: paymentMethodId,
-            });
-            return { status: paymentIntent.status };
+            // Retrieve current status first to avoid redundant confirmation errors
+            const intent = await stripe.paymentIntents.retrieve(paymentIntentId);
+
+            if (intent.status === 'succeeded' || intent.status === 'processing' || intent.status === 'requires_capture') {
+                return { status: intent.status };
+            }
+
+            if (intent.status === 'requires_confirmation') {
+                const paymentIntent = await stripe.paymentIntents.confirm(paymentIntentId, {
+                    payment_method: paymentMethodId,
+                });
+                return { status: paymentIntent.status };
+            }
+
+            return { status: intent.status };
         } catch (error) {
             Logger.error("Stripe confirmPayment error:", error);
             throw new Error("Failed to confirm payment");

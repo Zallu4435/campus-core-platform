@@ -52,6 +52,16 @@ const APSection: React.FC = () => {
               className="bg-gradient-to-r from-cyan-400 to-blue-400 text-white px-4 py-2 rounded-lg hover:from-cyan-500 hover:to-blue-500 transition-all duration-300 shadow-sm"
             />
           </div>
+
+          {getNestedObjectError(errors, 'international.ap', 'subjects') && (
+            <div className="mx-4 mt-4 p-3 bg-red-50 border-l-4 border-red-500 rounded text-sm text-red-700 flex items-center gap-2">
+              <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>{getNestedObjectError(errors, 'international.ap', 'subjects')}</span>
+            </div>
+          )}
+
           <table className="w-full">
             <thead>
               <tr className="bg-cyan-50 border-b border-cyan-200">

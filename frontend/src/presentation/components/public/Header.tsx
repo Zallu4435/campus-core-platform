@@ -12,6 +12,7 @@ interface HeaderProps {
   isAuthenticated?: boolean;
   layoutType?: 'public' | 'ug' | 'department';
   hideNavLinks?: boolean;
+  hideSettings?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -20,6 +21,7 @@ export const Header: React.FC<HeaderProps> = ({
   isAuthenticated = false,
   layoutType = 'public',
   hideNavLinks = false,
+  hideSettings = false,
 }) => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -97,15 +99,18 @@ export const Header: React.FC<HeaderProps> = ({
 
               {showProfileMenu && (
                 <div className="absolute right-0 mt-2 w-48 lg:w-52 bg-gradient-to-br from-cyan-700 to-blue-600 rounded-xl shadow-2xl py-2 z-50 border border-cyan-300/30 backdrop-blur-sm">
-                  <Link
-                    to="/settings"
-                    className="flex items-center px-4 py-3 text-white hover:bg-white/20 transition-colors"
-                  >
-                    <FaCog className="w-4 h-4 lg:w-5 lg:h-5 mr-3 text-cyan-200" />
-                    <span className="font-medium">Settings</span>
-                  </Link>
+                  {!hideSettings && (
+                    <Link
+                      to="/settings"
+                      className="flex items-center px-4 py-3 text-white hover:bg-white/20 transition-colors"
+                    >
+                      <FaCog className="w-4 h-4 lg:w-5 lg:h-5 mr-3 text-cyan-200" />
+                      <span className="font-medium">Settings</span>
+                    </Link>
+                  )}
                   <button
                     onMouseDown={() => {
+                      setShowProfileMenu(false);
                       onLogout && onLogout();
                     }}
                     className="flex items-center w-full px-4 py-3 text-white hover:bg-white/20 transition-colors"
@@ -141,15 +146,18 @@ export const Header: React.FC<HeaderProps> = ({
 
               {showProfileMenu && (
                 <div className="absolute right-0 mt-2 w-48 bg-gradient-to-br from-cyan-700 to-blue-600 rounded-xl shadow-2xl py-2 z-50 border border-cyan-300/30 backdrop-blur-sm">
-                  <Link
-                    to="/settings"
-                    className="flex items-center px-4 py-3 text-white hover:bg-white/20 transition-colors"
-                  >
-                    <FaCog className="w-4 h-4 mr-3 text-cyan-200" />
-                    <span className="font-medium">Settings</span>
-                  </Link>
+                  {!hideSettings && (
+                    <Link
+                      to="/settings"
+                      className="flex items-center px-4 py-3 text-white hover:bg-white/20 transition-colors"
+                    >
+                      <FaCog className="w-4 h-4 mr-3 text-cyan-200" />
+                      <span className="font-medium">Settings</span>
+                    </Link>
+                  )}
                   <button
                     onMouseDown={() => {
+                      setShowProfileMenu(false);
                       onLogout && onLogout();
                     }}
                     className="flex items-center w-full px-4 py-3 text-white hover:bg-white/20 transition-colors"
@@ -161,7 +169,7 @@ export const Header: React.FC<HeaderProps> = ({
               )}
             </div>
           )}
-          
+
           {!isAuthenticated && (
             <Link
               to={loginRoute}
@@ -188,7 +196,7 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {mobileMenuOpen && (
-        <div 
+        <div
           ref={mobileMenuRef}
           className="md:hidden bg-gradient-to-br from-cyan-700 to-blue-600 border-t border-cyan-300/30 shadow-lg"
         >

@@ -80,7 +80,7 @@ const InternationalTestInfo: React.FC<InternationalTestInfoProps> = ({ onBack, o
               className="text-cyan-600 hover:text-cyan-700 border border-cyan-300 hover:border-cyan-400 px-6 py-3 rounded-lg"
             />
             <Button
-              label="Submit"
+              label="Save & Next"
               type="button"
               variant="primary"
               onClick={handleSubmitWithValidation}

@@ -1,23 +1,20 @@
 import React, { useState } from 'react';
-import { loadStripe } from '@stripe/stripe-js';
-import { 
-  Elements, 
-  CardElement, 
-  useStripe, 
-  useElements 
+import {
+  CardElement,
+  useStripe,
+  useElements
 } from '@stripe/react-stripe-js';
-import { 
-  FaCreditCard, 
-  FaLock 
+import {
+  FaCreditCard,
+  FaLock
 } from 'react-icons/fa';
 import type { PaymentDetailsProps } from '../../../../domain/types/application';
+import { PAYMENT_CONFIG } from '../../../../shared/config/paymentConfig';
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
-
-const StripePaymentForm: React.FC<PaymentDetailsProps> = ({ 
-  amount, 
-  currency, 
-  onSubmit 
+export const PaymentDetails: React.FC<PaymentDetailsProps> = ({
+  amount,
+  currency,
+  onSubmit
 }) => {
   const stripe = useStripe();
   const elements = useElements();
@@ -27,14 +24,14 @@ const StripePaymentForm: React.FC<PaymentDetailsProps> = ({
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    
+
     if (!stripe || !elements) {
       setError('Stripe has not loaded. Please try again.');
       return;
     }
 
     const cardElement = elements.getElement(CardElement);
-    
+
     if (!cardElement) {
       setError('Card details are required');
       return;
@@ -67,13 +64,20 @@ const StripePaymentForm: React.FC<PaymentDetailsProps> = ({
         onSubmit({ paymentMethodId: paymentMethod.id });
       }
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error 
-        ? err.message 
+      const errorMessage = err instanceof Error
+        ? err.message
         : 'An unexpected error occurred';
       setError(errorMessage);
     } finally {
       setProcessing(false);
     }
+  };
+
+  const formatCurrency = (val: number) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: currency || PAYMENT_CONFIG.APPLICATION_FEE_CURRENCY
+    }).format(val);
   };
 
   return (
@@ -107,7 +111,7 @@ const StripePaymentForm: React.FC<PaymentDetailsProps> = ({
                 color: '#424770',
                 '::placeholder': { color: '#aab7c4' },
               },
-              invalid: { 
+              invalid: {
                 color: '#9e2146',
                 iconColor: '#9e2146'
               },
@@ -124,10 +128,7 @@ const StripePaymentForm: React.FC<PaymentDetailsProps> = ({
       )}
 
       <div className="bg-cyan-50 border-l-4 border-cyan-400 p-3 rounded text-sm text-cyan-800">
-        <strong>Total Payment:</strong> {new Intl.NumberFormat('en-IN', { 
-          style: 'currency', 
-          currency: currency 
-        }).format(amount)}
+        <strong>Total Payment:</strong> {formatCurrency(amount || PAYMENT_CONFIG.APPLICATION_FEE_AMOUNT)}
       </div>
 
       <button
@@ -141,10 +142,7 @@ const StripePaymentForm: React.FC<PaymentDetailsProps> = ({
             : 'bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 shadow-md'}
         `}
       >
-        {processing ? 'Processing...' : `Pay ${new Intl.NumberFormat('en-IN', { 
-          style: 'currency', 
-          currency: currency 
-        }).format(amount)}`}
+        {processing ? 'Processing...' : `Pay ${formatCurrency(amount || PAYMENT_CONFIG.APPLICATION_FEE_AMOUNT)}`}
       </button>
 
       <div className="text-center mt-4 text-xs text-gray-500 flex items-center justify-center gap-2">
@@ -154,11 +152,5 @@ const StripePaymentForm: React.FC<PaymentDetailsProps> = ({
     </form>
   );
 };
-
-const PaymentDetails: React.FC<PaymentDetailsProps> = (props) => (
-  <Elements stripe={stripePromise}>
-    <StripePaymentForm {...props} />
-  </Elements>
-);
 
 export default PaymentDetails;

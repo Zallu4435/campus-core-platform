@@ -5,7 +5,7 @@ export interface IAdmissionDraftSource {
     id?: string;
     applicationId: string;
     registerId: string;
-    personal?: Record<string, unknown>;
+    personalInfo?: Record<string, unknown>;
     choiceOfStudy?: Array<{ programme: string; degree: string; catalogYear: string }>;
     education?: Record<string, unknown>;
     achievements?: Record<string, unknown>;

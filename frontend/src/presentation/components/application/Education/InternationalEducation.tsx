@@ -4,7 +4,11 @@ import { InternationalSchoolInfo } from './InternationalSchoolInfo';
 import { InternationalTestInfo } from './InternationalTestInfo';
 import { getNestedError } from '../../../../shared/utils/formErrors';
 
-export const InternationalEducation: React.FC = () => {
+interface InternationalEducationProps {
+  onNextTab?: () => void;
+}
+
+export const InternationalEducation: React.FC<InternationalEducationProps> = ({ onNextTab }) => {
   const { formState: { errors }, trigger, handleSubmit } = useFormContext();
   const [step, setStep] = useState(1);
 
@@ -30,6 +34,9 @@ export const InternationalEducation: React.FC = () => {
   };
 
   const onSubmit = () => {
+    if (onNextTab) {
+      onNextTab();
+    }
   };
 
   return (

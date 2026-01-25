@@ -2,9 +2,11 @@ import React from 'react';
 import { useFormContext } from 'react-hook-form';
 import type { AchievementQuestionsProps } from '../../../../domain/types/application';
 import { Textarea } from '../../base/Textarea';
+import { getNestedError } from '../../../../shared/utils/formErrors';
+import { AchievementFormData } from '../../../../domain/validation/user/AchievementSchema';
 
-export const AchievementQuestions: React.FC<AchievementQuestionsProps> = ({ questions, answers, onAnswerChange }) => {
-  const { register } = useFormContext();
+export const AchievementQuestions: React.FC<AchievementQuestionsProps> = ({ questions }) => {
+  const { register, formState: { errors } } = useFormContext<AchievementFormData>();
 
   return (
     <div className="mb-8 bg-white rounded-xl border border-cyan-100 overflow-hidden">
@@ -19,9 +21,9 @@ export const AchievementQuestions: React.FC<AchievementQuestionsProps> = ({ ques
 
         <div className="space-y-4 mb-6">
           <p className="text-sm text-cyan-800">
-            As part of our admissions process, we would like to get to know you better through a series of 5 short response questions. 
-            This is a self-evaluation of your interests and suitability for the programme, so please answer simply and honestly in Standard English, 
-            and in your own words. Do not use any external aid such as Artificial Intelligence or Ghostwriting: doing so may have a negative impact 
+            As part of our admissions process, we would like to get to know you better through a series of 5 short response questions.
+            This is a self-evaluation of your interests and suitability for the programme, so please answer simply and honestly in Standard English,
+            and in your own words. Do not use any external aid such as Artificial Intelligence or Ghostwriting: doing so may have a negative impact
             on your application.
           </p>
           <p className="text-sm italic text-cyan-600">
@@ -42,16 +44,13 @@ export const AchievementQuestions: React.FC<AchievementQuestionsProps> = ({ ques
               </label>
               <Textarea
                 id={`question-${q.id}`}
-                {...register(`questions.${q.id}`)}
-                value={(answers as Record<string, string>)?.[String(q.id)] ?? ''}
-                onChange={e => {
-                  onAnswerChange(q.id, e.target.value);
-                }}
+                {...register(`questions.${q.id}` as any)}
                 maxLength={q.maxLength}
                 rows={6}
                 required
                 placeholder="Type your answer here"
                 className="border-cyan-200 focus:border-cyan-400 focus:ring-cyan-200 text-cyan-800 placeholder-cyan-400"
+                error={getNestedError(errors, `questions.${q.id}` as any)}
               />
             </div>
           ))}

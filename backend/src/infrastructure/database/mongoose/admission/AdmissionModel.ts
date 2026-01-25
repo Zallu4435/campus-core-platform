@@ -7,7 +7,7 @@ const AdmissionSchema = new Schema<IAdmissionDocument>(
   {
     applicationId: { type: String, required: true, unique: true },
     registerId: { type: String, required: true, ref: "Register" },
-    personal: { type: Object, default: {} },
+    personalInfo: { type: Object, default: {} },
     choiceOfStudy: { type: [Object], default: [] },
     education: { type: Object, default: {} },
     achievements: { type: Object, default: {} },
