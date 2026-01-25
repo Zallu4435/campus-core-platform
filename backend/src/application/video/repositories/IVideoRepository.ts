@@ -4,7 +4,7 @@ import { IDiplomaInfo } from "../../../domain/video/entities/VideoTypes";
 // If IRepoDiploma is significant, we should define a Domain Entity for Diploma or use IDiplomaInfo
 // For now, mapping to a structured type that fits the Domain or a specialized DTO for repo interaction
 export interface RepoDiplomaInfo {
-    _id?: string;
+    id?: string;
     title: string;
     category: string;
     videoIds: string[];

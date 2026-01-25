@@ -6,8 +6,8 @@ export enum ProfileRole {
     Admin = 'admin'
 }
 
-export interface UserProfilePersistence {
-    _id: string;
+export interface UserProfileData {
+    id: string;
     firstName: string;
     lastName?: string;
     email: string;

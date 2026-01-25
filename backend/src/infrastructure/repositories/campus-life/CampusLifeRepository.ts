@@ -11,197 +11,189 @@ import {
   JoinClubRequest,
   JoinEventRequest,
   JoinSportRequest,
-  RawCampusEvent,
-  RawClub,
-  RawSport,
+  CampusEventData,
+  ClubData,
+  SportData,
   SportFilter,
   SportsRequest,
-  RawJoinRequest
+  JoinRequestData
 } from "../../../domain/campus-life/entities/CampusLifeTypes";
 import { RequestStatus } from "../../../domain/campus-life/enums/CampusLifeEnums";
+import { ICampusEventSource, IClubSource, IJoinRequestSource, ITeamSource } from "./infraTypes";
 import { CAMPUS_LIFE_CONSTANTS } from "../../../application/campus-life/constants/CampusLifeConstants";
 
 export class CampusLifeRepository implements ICampusLifeRepository {
-  async findEvents(query: CampusEventFilter, skip: number, limit: number) {
-    return CampusEventModel.find(query)
-      .select(CAMPUS_LIFE_CONSTANTS.FIELDS.EVENT_SELECT)
-      .skip(skip)
-      .limit(limit)
-      .lean<RawCampusEvent[]>();
+
+  private mapRawToData<T extends { _id: any }>(raw: T): Omit<T, '_id'> & { id: string } {
+    const { _id, ...rest } = raw;
+    return { id: _id.toString(), ...rest };
   }
 
-  async findEventById(eventId: string) {
-    return CampusEventModel.findById(eventId)
-      .select(CAMPUS_LIFE_CONSTANTS.FIELDS.EVENT_SELECT)
-      .lean<RawCampusEvent | null>();
+  private mapEventFilter(filter: CampusEventFilter): Record<string, unknown> {
+    const query: Record<string, unknown> = {};
+    if (filter.searchQuery) {
+      query.title = { $regex: filter.searchQuery, $options: 'i' };
+    }
+    if (filter.status && filter.status !== 'all') {
+      const today = new Date().toISOString().split("T")[0];
+      query.date = filter.status === "upcoming" ? { $gte: today } : { $lte: today };
+    }
+    if (filter.organizer) {
+      query.organizer = { $regex: filter.organizer, $options: 'i' };
+    }
+    return query;
   }
 
-  async findSports(query: SportFilter) {
-    return TeamModel.find(query)
-      .select(CAMPUS_LIFE_CONSTANTS.FIELDS.SPORT_SELECT)
-      .lean<RawSport[]>();
+  private mapSportFilter(filter: SportFilter): Record<string, unknown> {
+    const query: Record<string, unknown> = {};
+    if (filter.type) {
+      query.type = filter.type;
+    }
+    if (filter.searchQuery) {
+      query.title = { $regex: filter.searchQuery, $options: 'i' };
+    }
+    if (filter.division) {
+      query.division = filter.division;
+    }
+    if (filter.headCoach) {
+      query.headCoach = { $regex: filter.headCoach, $options: 'i' };
+    }
+    return query;
   }
 
-  async findSportById(sportId: string) {
-    return TeamModel.findById(sportId)
-      .select(CAMPUS_LIFE_CONSTANTS.FIELDS.SPORT_SELECT)
-      .lean<RawSport | null>();
-  }
-
-  async findClubs(query: ClubFilter) {
-    return ClubModel.find(query)
-      .select(CAMPUS_LIFE_CONSTANTS.FIELDS.CLUB_SELECT)
-      .lean<RawClub[]>();
-  }
-
-  async findClubById(clubId: string) {
-    return ClubModel.findById(clubId)
-      .select(CAMPUS_LIFE_CONSTANTS.FIELDS.CLUB_SELECT)
-      .lean<RawClub | null>();
-  }
-
-  async findEventRequestsByUser(userId: string) {
-    return EventRequestModel.find({ userId }).lean<RawJoinRequest[]>();
-  }
-
-  async findSportRequestsByUser(userId: string) {
-    return SportRequestModel.find({ userId }).lean<RawJoinRequest[]>();
-  }
-
-  async findClubRequestsByUser(userId: string) {
-    return ClubRequestModel.find({ userId }).lean<RawJoinRequest[]>();
-  }
-
-  async countEvents(query: CampusEventFilter) {
-    return CampusEventModel.countDocuments(query);
-  }
-
-  async countSports(query: SportFilter) {
-    return TeamModel.countDocuments(query);
-  }
-
-  async countClubs(query: ClubFilter) {
-    return ClubModel.countDocuments(query);
+  private mapClubFilter(filter: ClubFilter): Record<string, unknown> {
+    const query: Record<string, unknown> = {};
+    if (filter.searchQuery) {
+      query.name = { $regex: filter.searchQuery, $options: 'i' };
+    }
+    if (filter.type) {
+      query.type = { $regex: filter.type, $options: 'i' };
+    }
+    if (filter.status && filter.status !== 'all') {
+      query.status = filter.status;
+    }
+    return query;
   }
 
   async getCampusLifeOverview(params: CampusLifeOverviewRequest) {
-    const events = await CampusEventModel.find()
+    const eventsRaw = await CampusEventModel.find()
       .select(CAMPUS_LIFE_CONSTANTS.FIELDS.EVENT_SELECT)
       .limit(CAMPUS_LIFE_CONSTANTS.PAGINATION.OVERVIEW_LIMIT)
-      .lean<RawCampusEvent[]>();
+      .lean<ICampusEventSource[]>();
 
-    const sports = await TeamModel.find()
+    const sportsRaw = await TeamModel.find()
       .select(CAMPUS_LIFE_CONSTANTS.FIELDS.SPORT_SELECT)
       .limit(CAMPUS_LIFE_CONSTANTS.PAGINATION.OVERVIEW_LIMIT)
-      .lean<RawSport[]>();
+      .lean<ITeamSource[]>();
 
-    const clubs = await ClubModel.find()
+    const clubsRaw = await ClubModel.find()
       .select(CAMPUS_LIFE_CONSTANTS.FIELDS.CLUB_SELECT)
       .limit(CAMPUS_LIFE_CONSTANTS.PAGINATION.OVERVIEW_LIMIT)
-      .lean<RawClub[]>();
+      .lean<IClubSource[]>();
 
-    return { events, sports, clubs };
+    return {
+      events: eventsRaw.map(e => this.mapRawToData(e) as unknown as CampusEventData),
+      sports: sportsRaw.map(s => this.mapRawToData(s) as unknown as SportData),
+      clubs: clubsRaw.map(c => this.mapRawToData(c) as unknown as ClubData)
+    };
   }
 
   async getEvents(params: EventsRequest) {
-    const query: CampusEventFilter = {};
-    const hasFilter = !!(params.search || (params.status && params.status !== CAMPUS_LIFE_CONSTANTS.QUERY.STATUS_ALL));
-    if (params.search) {
-      query.title = { $regex: params.search, $options: CAMPUS_LIFE_CONSTANTS.QUERY.CASE_INSENSITIVE };
-    }
-    if (params.status && params.status !== CAMPUS_LIFE_CONSTANTS.QUERY.STATUS_ALL) {
-      const today = new Date().toISOString().split("T")[0];
-      query.date = params.status === "upcoming" ? { $gte: today } : { $lte: today };
-    }
-
+    const filter: CampusEventFilter = {
+      searchQuery: params.search,
+      status: params.status
+    };
+    const query = this.mapEventFilter(filter);
     const skip = CAMPUS_LIFE_CONSTANTS.PAGINATION.calculateSkip(params.page, params.limit);
-    const totalItems = await this.countEvents(query);
+    const totalItems = await CampusEventModel.countDocuments(query);
     const totalPages = CAMPUS_LIFE_CONSTANTS.PAGINATION.calculateTotalPages(totalItems, params.limit);
     const currentPage = params.page;
 
-    let events: RawCampusEvent[];
-    if (!hasFilter) {
-      events = await CampusEventModel.find()
-        .select(CAMPUS_LIFE_CONSTANTS.FIELDS.EVENT_SELECT)
-        .skip(skip)
-        .limit(params.limit)
-        .lean<RawCampusEvent[]>();
-    } else {
-      events = await this.findEvents(query, skip, params.limit);
+    const eventsRaw = await CampusEventModel.find(query)
+      .select(CAMPUS_LIFE_CONSTANTS.FIELDS.EVENT_SELECT)
+      .skip(skip)
+      .limit(params.limit)
+      .lean<ICampusEventSource[]>();
+
+    const events = eventsRaw.map(e => this.mapRawToData(e) as unknown as CampusEventData);
+
+    let requests: JoinRequestData[] = [];
+    if (params.userId) {
+      const requestsRaw = await EventRequestModel.find({ userId: params.userId }).lean<IJoinRequestSource[]>();
+      requests = requestsRaw.map(r => this.mapRawToData(r) as unknown as JoinRequestData);
     }
 
-    let requests: RawJoinRequest[] = [];
-    if (params.userId) {
-      requests = await this.findEventRequestsByUser(params.userId);
-    }
     return { events, requests, totalItems, totalPages, currentPage };
   }
 
-  async getEventById(id: string) {
-    return await this.findEventById(id);
+  async getEventById(id: string): Promise<CampusEventData | null> {
+    const raw = await CampusEventModel.findById(id)
+      .select(CAMPUS_LIFE_CONSTANTS.FIELDS.EVENT_SELECT)
+      .lean<ICampusEventSource | null>();
+    return raw ? this.mapRawToData(raw) as unknown as CampusEventData : null;
   }
 
   async getSports(params: SportsRequest) {
-    const query: SportFilter = {};
-    if (params.type) {
-      query.type = params.type;
-    }
-    if (params.search) {
-      query.title = { $regex: params.search, $options: CAMPUS_LIFE_CONSTANTS.QUERY.CASE_INSENSITIVE };
-    }
-    const totalItems = await this.countSports(query);
-    const sports = await TeamModel.find(query)
+    const filter: SportFilter = {
+      searchQuery: params.search,
+      type: params.type
+    };
+    const query = this.mapSportFilter(filter);
+
+    const totalItems = await TeamModel.countDocuments(query);
+    const sportsRaw = await TeamModel.find(query)
       .select(CAMPUS_LIFE_CONSTANTS.FIELDS.SPORT_SELECT)
-      .lean<RawSport[]>();
-    let requests: RawJoinRequest[] = [];
+      .lean<ITeamSource[]>();
+
+    const sports = sportsRaw.map(s => this.mapRawToData(s) as unknown as SportData);
+
+    let requests: JoinRequestData[] = [];
     if (params.userId) {
-      requests = await this.findSportRequestsByUser(params.userId);
+      const requestsRaw = await SportRequestModel.find({ userId: params.userId }).lean<IJoinRequestSource[]>();
+      requests = requestsRaw.map(r => this.mapRawToData(r) as unknown as JoinRequestData);
     }
     return { sports, requests, totalItems };
   }
 
-  async getSportById(id: string) {
-    return await TeamModel.findById(id)
+  async getSportById(id: string): Promise<SportData | null> {
+    const raw = await TeamModel.findById(id)
       .select(CAMPUS_LIFE_CONSTANTS.FIELDS.SPORT_SELECT)
-      .lean<RawSport | null>();
+      .lean<ITeamSource | null>();
+    return raw ? this.mapRawToData(raw) as unknown as SportData : null;
   }
 
   async getClubs(params: ClubsRequest) {
-    const query: ClubFilter = {};
-    const hasFilter = !!(params.search || params.type || (params.status && params.status !== CAMPUS_LIFE_CONSTANTS.QUERY.STATUS_ALL));
-    if (params.search) {
-      query.name = { $regex: params.search, $options: CAMPUS_LIFE_CONSTANTS.QUERY.CASE_INSENSITIVE };
-    }
-    if (params.type) {
-      query.type = { $regex: params.type, $options: CAMPUS_LIFE_CONSTANTS.QUERY.CASE_INSENSITIVE };
-    }
-    if (params.status && params.status !== CAMPUS_LIFE_CONSTANTS.QUERY.STATUS_ALL) {
-      query.status = params.status;
-    }
-    let clubs: RawClub[];
-    if (!hasFilter) {
-      clubs = await ClubModel.find()
-        .select(CAMPUS_LIFE_CONSTANTS.FIELDS.CLUB_SELECT)
-        .limit(CAMPUS_LIFE_CONSTANTS.PAGINATION.CLUBS_DEFAULT_LIMIT)
-        .lean<RawClub[]>();
-    } else {
-      clubs = await this.findClubs(query);
-    }
-    const totalItems = await this.countClubs(query);
-    let requests: RawJoinRequest[] = [];
+    const filter: ClubFilter = {
+      searchQuery: params.search,
+      type: params.type,
+      status: params.status
+    };
+    const query = this.mapClubFilter(filter);
+
+    const clubsRaw = await ClubModel.find(query)
+      .select(CAMPUS_LIFE_CONSTANTS.FIELDS.CLUB_SELECT)
+      .limit(CAMPUS_LIFE_CONSTANTS.PAGINATION.CLUBS_DEFAULT_LIMIT)
+      .lean<IClubSource[]>();
+
+    const clubs = clubsRaw.map(c => this.mapRawToData(c) as unknown as ClubData);
+    const totalItems = await ClubModel.countDocuments(query);
+
+    let requests: JoinRequestData[] = [];
     if (params.userId) {
-      requests = await this.findClubRequestsByUser(params.userId);
+      const requestsRaw = await ClubRequestModel.find({ userId: params.userId }).lean<IJoinRequestSource[]>();
+      requests = requestsRaw.map(r => this.mapRawToData(r) as unknown as JoinRequestData);
     }
     return { clubs, requests, totalItems };
   }
 
-  async getClubById(id: string) {
-    return await ClubModel.findById(id)
+  async getClubById(id: string): Promise<ClubData | null> {
+    const raw = await ClubModel.findById(id)
       .select(CAMPUS_LIFE_CONSTANTS.FIELDS.CLUB_SELECT)
-      .lean<RawClub | null>();
+      .lean<IClubSource | null>();
+    return raw ? this.mapRawToData(raw) as unknown as ClubData : null;
   }
 
-  async joinClub(params: JoinClubRequest) {
+  async joinClub(params: JoinClubRequest): Promise<JoinRequestData> {
     const newRequest = new ClubRequestModel({
       clubId: params.clubId,
       userId: params.studentId,
@@ -211,10 +203,10 @@ export class CampusLifeRepository implements ICampusLifeRepository {
       createdAt: new Date(),
     });
     await newRequest.save();
-    return newRequest.toObject() as RawJoinRequest;
+    return this.mapRawToData(newRequest.toObject()) as unknown as JoinRequestData;
   }
 
-  async joinSport(params: JoinSportRequest) {
+  async joinSport(params: JoinSportRequest): Promise<JoinRequestData> {
     const newRequest = new SportRequestModel({
       sportId: params.sportId,
       userId: params.studentId,
@@ -224,10 +216,10 @@ export class CampusLifeRepository implements ICampusLifeRepository {
       createdAt: new Date(),
     });
     await newRequest.save();
-    return newRequest.toObject() as RawJoinRequest;
+    return this.mapRawToData(newRequest.toObject()) as unknown as JoinRequestData;
   }
 
-  async joinEvent(params: JoinEventRequest) {
+  async joinEvent(params: JoinEventRequest): Promise<JoinRequestData> {
     const newRequest = new EventRequestModel({
       eventId: params.eventId,
       userId: params.studentId,
@@ -237,6 +229,6 @@ export class CampusLifeRepository implements ICampusLifeRepository {
       createdAt: new Date(),
     });
     await newRequest.save();
-    return newRequest.toObject() as RawJoinRequest;
+    return this.mapRawToData(newRequest.toObject()) as unknown as JoinRequestData;
   }
 }

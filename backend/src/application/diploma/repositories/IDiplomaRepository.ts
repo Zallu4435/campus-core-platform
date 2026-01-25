@@ -1,4 +1,4 @@
-import { DiplomaProps, EnrollStudentProps, UnenrollStudentProps } from "../../../domain/diploma/types";
+import { DiplomaProps, EnrollStudentProps, UnenrollStudentProps } from "../../../domain/diploma/types/DiplomaTypes";
 import { GetDiplomasRequestDTO } from "../dtos/DiplomaRequestDTOs";
 import { DiplomaSummaryDTO, DiplomaDetailsDTO } from "../dtos/DiplomaResponseDTOs";
 

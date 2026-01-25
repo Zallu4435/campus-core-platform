@@ -12,7 +12,8 @@ import {
     MarkNotificationAsReadResponseDTO,
     MarkAllNotificationsAsReadResponseDTO,
 } from "../dtos/NotificationResponseDTOs";
-import { INotificationRepository, NotificationFilter } from "../repositories/INotificationRepository";
+import { INotificationRepository } from "../repositories/INotificationRepository";
+import { NotificationFilter } from "../repositories/NotificationFilter";
 import { INotificationService } from "../services/INotificationService";
 import { NotificationStatus, NotificationRecipientType } from "../../../domain/notifications/entities/NotificationTypes";
 import { Notification } from "../../../domain/notifications/entities/Notification";
@@ -132,7 +133,7 @@ export class GetAllNotificationsUseCase implements IGetAllNotificationsUseCase {
         }
 
         const skip = (page - 1) * limit;
-        const sort = { createdAt: -1 };
+        const sort = { createdAt: -1 } as Record<string, 1 | -1>;
 
         const notifications = await this._notificationRepository.find(filter, { skip, limit, sort });
         const totalItems = await this._notificationRepository.count(filter);

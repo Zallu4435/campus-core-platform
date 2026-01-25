@@ -1,10 +1,10 @@
 import { JoinRequest } from '../../../../domain/campus-life/entities/CampusLife';
-import { RawJoinRequest } from '../../../../domain/campus-life/entities/CampusLifeTypes';
+import { JoinRequestData } from '../../../../domain/campus-life/entities/CampusLifeTypes';
 import { RequestStatus } from '../../../../domain/campus-life/enums/CampusLifeEnums';
 
 /**
  * Join Request Mapper
- * Handles transformation between persistence (Raw) and domain (JoinRequest) layers
+ * Handles transformation between persistence (Data) and domain (JoinRequest) layers
  */
 export class JoinRequestMapper {
     /**
@@ -12,9 +12,9 @@ export class JoinRequestMapper {
      * @param raw - Raw join request from database
      * @returns Domain JoinRequest entity
      */
-    static toDomain(raw: RawJoinRequest): JoinRequest {
+    static toDomain(raw: JoinRequestData): JoinRequest {
         return new JoinRequest(
-            raw._id,
+            raw.id,
             raw.userId,
             raw.status as RequestStatus,
             raw.whyJoin,
@@ -29,7 +29,7 @@ export class JoinRequestMapper {
      * @param raws - Array of raw join requests
      * @returns Array of domain JoinRequest entities
      */
-    static toDomainList(raws: RawJoinRequest[]): JoinRequest[] {
+    static toDomainList(raws: JoinRequestData[]): JoinRequest[] {
         return raws.map(raw => this.toDomain(raw));
     }
 
@@ -38,7 +38,7 @@ export class JoinRequestMapper {
      * @param domain - Domain JoinRequest entity
      * @returns Partial raw join request for database
      */
-    static toPersistence(domain: JoinRequest): Partial<RawJoinRequest> {
+    static toPersistence(domain: JoinRequest): Partial<JoinRequestData> {
         return {
             userId: domain.userId,
             status: domain.status,

@@ -12,22 +12,22 @@ export class CommunicationDTOMapper {
         const attachments = message.attachments || [];
 
         const mappedRecipients = recipients.map((r) => ({
-            _id: r._id.toString(),
+            id: r.id,
             name: r.name,
             email: r.email,
             role: r.role
         }));
 
         return {
-            _id: message._id.toString(),
+            id: message.id,
             subject: message.subject,
             content: message.content,
             sender: message.sender ? {
-                _id: message.sender._id.toString(),
+                id: message.sender.id,
                 name: message.sender.name,
                 email: message.sender.email,
                 role: message.sender.role
-            } : ({} as UserInfo), // Should ideally be handled
+            } : ({} as UserInfo),
             recipients: mappedRecipients,
             recipientCount: recipients.length,
             isBroadcast: message.isBroadcast || false,
@@ -40,7 +40,7 @@ export class CommunicationDTOMapper {
     static toMessageSummaryDTO(message: Message): MessageSummaryDTO {
         const recipients = message.recipients || [];
         return {
-            _id: message._id.toString(),
+            id: message.id,
             subject: message.subject,
             content: message.content,
             sender: message.sender,
@@ -76,7 +76,7 @@ export class CommunicationDTOMapper {
         }
 
         return {
-            _id: message._id.toString(),
+            id: message.id,
             subject: message.subject,
             content: message.content,
             recipients: recipientsDisplay,

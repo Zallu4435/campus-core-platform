@@ -3,8 +3,8 @@ import { Faculty } from "../../../domain/faculty/entities/Faculty";
 import { FacultyRegisterModel, FacultyRegisterDocument } from "../../database/mongoose/faculty/facultyRegister.model";
 import { FacultyUserModel } from "../../database/mongoose/faculty/faculty.model";
 import { FacultyMapper } from "./FacultyMapper";
-import { FacultyStatus } from "../../../domain/faculty/enums/FacultyEnums";
 import mongoose, { FilterQuery } from "mongoose";
+import { IFacultySource } from "./infraTypes";
 
 export class FacultyRepository implements IFacultyRepository {
     private _buildQuery(filters: IFacultyFilters): FilterQuery<FacultyRegisterDocument> {
@@ -36,8 +36,7 @@ export class FacultyRepository implements IFacultyRepository {
             .sort({ updatedAt: -1, createdAt: -1 })
             .skip(options.skip || 0)
             .limit(options.limit || 0)
-            .lean()
-            .exec();
+            .lean() as unknown as IFacultySource[];
 
         return docs.map((doc) => FacultyMapper.toDomain(doc));
     }
@@ -49,13 +48,13 @@ export class FacultyRepository implements IFacultyRepository {
 
     async getFacultyById(id: string): Promise<Faculty | null> {
         if (!mongoose.isValidObjectId(id)) return null;
-        const doc = await FacultyRegisterModel.findById(id).lean().exec();
+        const doc = await FacultyRegisterModel.findById(id).lean() as unknown as IFacultySource;
         if (!doc) return null;
         return FacultyMapper.toDomain(doc);
     }
 
     async getFacultyByToken(token: string): Promise<Faculty | null> {
-        const doc = await FacultyRegisterModel.findOne({ confirmationToken: token }).lean().exec();
+        const doc = await FacultyRegisterModel.findOne({ confirmationToken: token }).lean() as unknown as IFacultySource;
         if (!doc) return null;
         return FacultyMapper.toDomain(doc);
     }
@@ -70,7 +69,7 @@ export class FacultyRepository implements IFacultyRepository {
             faculty.id,
             { $set: persistenceData },
             { new: true }
-        ).lean().exec();
+        ).lean() as unknown as IFacultySource;
 
         if (!updatedDoc) throw new Error("Faculty not found to update");
         return FacultyMapper.toDomain(updatedDoc);
@@ -86,11 +85,16 @@ export class FacultyRepository implements IFacultyRepository {
         const persistenceData = FacultyMapper.toPersistence(faculty);
         const newDoc = new FacultyRegisterModel(persistenceData);
         await newDoc.save();
-        return FacultyMapper.toDomain(newDoc.toObject());
+        return FacultyMapper.toDomain(newDoc.toObject() as unknown as IFacultySource);
     }
 
     async blockFaculty(id: string): Promise<boolean> {
         const result = await FacultyRegisterModel.updateOne({ _id: id }, { blocked: true });
         return result.modifiedCount > 0;
+    }
+
+    async createFacultyAccount(data: { firstName: string; lastName: string; email: string; password?: string }): Promise<void> {
+        const facultyAccount = new FacultyUserModel(data);
+        await facultyAccount.save();
     }
 }

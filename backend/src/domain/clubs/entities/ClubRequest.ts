@@ -3,8 +3,8 @@ import { ClubRequestProps, ClubRequestStatus } from "./ClubTypes";
 
 export class ClubRequest {
   private idValue?: string;
-  private clubIdValue: string | { _id: string; name: string; type: string; about: string; nextMeeting: string; enteredMembers: number };
-  private userIdValue: string | { _id: string; firstName: string; lastName: string; email: string };
+  private clubIdValue: string | { id: string; name: string; type: string; about: string; nextMeeting: string; enteredMembers: number };
+  private userIdValue: string | { id: string; firstName: string; lastName: string; email: string };
   private statusValue: ClubRequestStatus;
   private whyJoinValue: string;
   private additionalInfoValue: string;
@@ -32,9 +32,18 @@ export class ClubRequest {
   }
 
   get id(): string | undefined { return this.idValue; }
-  get clubId(): string | { _id: string; name: string; type: string; about: string; nextMeeting: string; enteredMembers: number } { return this.clubIdValue; }
-  get userId(): string | { _id: string; firstName: string; lastName: string; email: string } { return this.userIdValue; }
+  get clubId(): string | { id: string; name: string; type: string; about: string; nextMeeting: string; enteredMembers: number } { return this.clubIdValue; }
+  get userId(): string | { id: string; firstName: string; lastName: string; email: string } { return this.userIdValue; }
   get status(): ClubRequestStatus { return this.statusValue; }
   get whyJoin(): string { return this.whyJoinValue; }
   get additionalInfo(): string { return this.additionalInfoValue; }
+
+  // Helper methods to get clean IDs
+  get clubIdString(): string {
+    return typeof this.clubIdValue === 'string' ? this.clubIdValue : this.clubIdValue.id;
+  }
+
+  get userIdString(): string {
+    return typeof this.userIdValue === 'string' ? this.userIdValue : this.userIdValue.id;
+  }
 }

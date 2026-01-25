@@ -8,5 +8,5 @@ export interface NotificationFilter {
     readBy?: string | { $ne: string };
     createdAt?: { $gte?: Date; $lte?: Date };
     search?: string;
-    $or?: any[];
+    $or?: Record<string, unknown>[];
 }

@@ -1,36 +1,35 @@
 import { Assignment } from "../../../../domain/assignments/entities/Assignment";
 import { Submission } from "../../../../domain/assignments/entities/Submission";
-import { IAssignmentDocument } from "../../../database/mongoose/assignment/AssignmentModel";
-import { ISubmissionDocument } from "../../../database/mongoose/assignment/SubmissionModel";
+import { IAssignmentSource, ISubmissionSource, IAssignmentFileSource } from "../infraTypes";
 import { AssignmentStatus, SubmissionStatus } from "../../../../domain/assignments/enums/AssignmentEnums";
 import { AssignmentResponseDTO, SubmissionResponseDTO } from "../../../../application/assignments/dtos/AssignmentDTOs";
 
 export class AssignmentMapper {
-    static toDomain(doc: IAssignmentDocument): Assignment {
+    static toDomain(doc: IAssignmentSource): Assignment {
         return Assignment.create({
             id: doc._id.toString(),
             title: doc.title,
             subject: doc.subject,
             description: doc.description,
             maxMarks: doc.maxMarks,
-            dueDate: doc.dueDate,
+            dueDate: doc.dueDate instanceof Date ? doc.dueDate : new Date(doc.dueDate),
             files: doc.files || [],
-            status: doc.status,
-            createdAt: doc.createdAt,
-            updatedAt: doc.updatedAt,
-            totalSubmissions: doc.totalSubmissions,
-            averageMarks: doc.averageMarks,
+            status: doc.status as AssignmentStatus,
+            createdAt: doc.createdAt instanceof Date ? doc.createdAt : new Date(doc.createdAt || Date.now()),
+            updatedAt: doc.updatedAt instanceof Date ? doc.updatedAt : new Date(doc.updatedAt || Date.now()),
+            totalSubmissions: doc.totalSubmissions || 0,
+            averageMarks: doc.averageMarks || 0,
         });
     }
 
-    static toPersistence(entity: Assignment): Partial<IAssignmentDocument> {
+    static toPersistence(entity: Assignment): Partial<IAssignmentSource> {
         return {
             title: entity.title,
             subject: entity.subject,
             description: entity.description,
             maxMarks: entity.maxMarks,
             dueDate: entity.dueDate,
-            files: entity.files,
+            files: entity.files as unknown as IAssignmentFileSource[],
             status: entity.status,
             totalSubmissions: entity.totalSubmissions,
             averageMarks: entity.averageMarks,
@@ -54,19 +53,19 @@ export class AssignmentMapper {
         };
     }
 
-    static submissionToDomain(doc: ISubmissionDocument): Submission {
+    static submissionToDomain(doc: ISubmissionSource): Submission {
         return Submission.create({
             id: doc._id.toString(),
             assignmentId: doc.assignmentId.toString(),
             studentId: doc.studentId.toString(),
             studentName: doc.studentName,
-            submittedDate: doc.submittedDate,
+            submittedDate: doc.submittedDate instanceof Date ? doc.submittedDate : new Date(doc.submittedDate),
             status: doc.status as SubmissionStatus,
             isLate: doc.isLate,
             files: doc.files || [],
             marks: doc.marks,
             feedback: doc.feedback,
-            reviewedAt: doc.reviewedAt,
+            reviewedAt: doc.reviewedAt ? (doc.reviewedAt instanceof Date ? doc.reviewedAt : new Date(doc.reviewedAt)) : undefined,
         });
     }
 

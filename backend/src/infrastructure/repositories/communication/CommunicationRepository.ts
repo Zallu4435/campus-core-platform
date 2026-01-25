@@ -11,20 +11,22 @@ import { FacultyUserModel as FacultyModel } from '../../database/mongoose/facult
 import mongoose from 'mongoose';
 import { CommunicationMapper } from './mappers/CommunicationMapper';
 
+import { IMessageSource, IParamsUserSource, IRecipientSource } from './infraTypes';
+import { IUserSource, IFacultySource, IAdminSource } from '../auth/infraTypes';
+
 // Define explicit interfaces for query filters to avoid any type
 interface MessageFilter {
   "recipients._id"?: string;
-  "recipients.status"?: MessageStatus | string; // Assuming input might be string
+  "recipients.status"?: MessageStatus | string;
   "sender._id"?: string;
   $and?: Record<string, unknown>[];
   $or?: Record<string, unknown>[];
 }
 
 export class CommunicationRepository implements ICommunicationRepository {
-  private messageModel: mongoose.Model<IMessage>;
+  private messageModel: mongoose.Model<IMessage> = MessageModel as mongoose.Model<IMessage>;
 
   constructor() {
-    this.messageModel = MessageModel as mongoose.Model<IMessage>;
   }
 
   async getInboxMessages(userId: string, page: number, limit: number, search?: string, status?: string) {
@@ -51,11 +53,11 @@ export class CommunicationRepository implements ICommunicationRepository {
       }
     }
     const skip = (page - 1) * limit;
-    const messages = await this.messageModel.find(query)
+    const messages = await this.messageModel.find(query as mongoose.FilterQuery<IMessage>)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .lean();
+      .lean() as unknown as IMessageSource[];
 
     // Map to Domain Entities
     const domainMessages = messages.map(msg => CommunicationMapper.toDomain(msg)).filter(msg => msg !== null) as Message[];
@@ -76,11 +78,11 @@ export class CommunicationRepository implements ICommunicationRepository {
       ];
     }
     const skip = (page - 1) * limit;
-    const messages = await this.messageModel.find(query)
+    const messages = await this.messageModel.find(query as mongoose.FilterQuery<IMessage>)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .lean();
+      .lean() as unknown as IMessageSource[];
 
     const domainMessages = messages.map(msg => CommunicationMapper.toDomain(msg)).filter(msg => msg !== null) as Message[];
 
@@ -112,25 +114,32 @@ export class CommunicationRepository implements ICommunicationRepository {
       }
 
       // Deduplicate
-      recipients = recipients.filter((v, i, a) => a.findIndex(t => (t._id === v._id)) === i);
-
-      // Create Domain Entity (without ID first, or let DB generate it)
-      // Actually, we should probably construct the object for Mongoose directly or use Mapper.toPersistence if we had a full domain object.
-      // Since we rely on Mongoose to generate ID and timestamps, we'll construct the data object.
+      recipients = recipients.filter((v, i, a) => a.findIndex(t => (t.id === v.id)) === i);
 
       const messageData = {
         subject,
         content,
-        sender,
-        recipients,
+        sender: {
+          _id: new mongoose.Types.ObjectId(sender.id),
+          name: sender.name,
+          email: sender.email,
+          role: sender.role
+        },
+        recipients: recipients.map(r => ({
+          _id: new mongoose.Types.ObjectId(r.id),
+          name: r.name,
+          email: r.email,
+          role: r.role,
+          status: MessageStatus.Unread
+        })),
         isBroadcast: false,
         attachments: attachments || []
       };
 
-      const message = await this.messageModel.create(messageData);
+      const message = await this.messageModel.create(messageData as unknown as Partial<IMessage>);
+      const source = message.toObject ? message.toObject() : message;
 
-      // Convert to Domain Entity
-      const domainMessage = CommunicationMapper.toDomain(message.toObject ? message.toObject() : message);
+      const domainMessage = CommunicationMapper.toDomain(source as unknown as IMessageSource);
       if (!domainMessage) throw new Error('Failed to map created message');
       return domainMessage;
     } catch (error) {
@@ -153,48 +162,50 @@ export class CommunicationRepository implements ICommunicationRepository {
 
       let isBroadcast = false;
 
-      // Check for broadcast flags like 'all_students'
-      // Ideally these logic should be in UseCase or Domain Service, but for now we keep it here to avoid breaking logic flow, or move strictly.
-      // The instruction said "Strict Clean Architecture". Logic like expanding "all_students" -> specific users IS business logic (Application) or Domain Service.
-      // However, it often involves heavy DB queries (all users), so Repository is a convenient place, but improper.
-      // For this refactor, I will keep it here to ensure functionality, but clean up the code.
-
       for (const recipient of to) {
         if (recipient.value === 'all_students' || recipient.value === 'all-students') {
-          const users = await UserModel.find({}).select('_id firstName lastName email').lean();
+          const users = await UserModel.find({}).select('_id firstName lastName email').lean() as unknown as IUserSource[];
           const students = users.map((user) => ({
-            _id: user._id.toString(),
+            id: user._id.toString(),
             name: `${user.firstName} ${user.lastName}`,
             email: user.email,
             role: UserRole.Student
           }));
           recipients.push(...students);
           isBroadcast = true;
-          // Loop optimization: if broadcast to all, maybe we don't need to loop others? 
-          // But strict logic might allow mixed.
         } else {
-          // Try to find as student first? Or generic user?
-          // Original code assumed 'student'.
           const user = await this.findUserById(recipient.value, UserRole.Student);
           if (user) {
             recipients.push(user);
           }
         }
       }
-      recipients = recipients.filter((v, i, a) => a.findIndex(t => (t._id === v._id)) === i);
+      recipients = recipients.filter((v, i, a) => a.findIndex(t => (t.id === v.id)) === i);
 
       const messageData = {
         subject,
         content,
-        sender,
-        recipients,
+        sender: {
+          _id: new mongoose.Types.ObjectId(sender.id),
+          name: sender.name,
+          email: sender.email,
+          role: sender.role
+        },
+        recipients: recipients.map(r => ({
+          _id: new mongoose.Types.ObjectId(r.id),
+          name: r.name,
+          email: r.email,
+          role: r.role,
+          status: MessageStatus.Unread
+        })),
         isBroadcast: isBroadcast,
         attachments: attachments || []
       };
 
-      const message = await this.messageModel.create(messageData);
+      const message = await this.messageModel.create(messageData as unknown as Partial<IMessage>);
+      const source = message.toObject ? message.toObject() : message;
 
-      const domainMessage = CommunicationMapper.toDomain(message.toObject ? message.toObject() : message);
+      const domainMessage = CommunicationMapper.toDomain(source as unknown as IMessageSource);
       if (!domainMessage) throw new Error('Failed to map created message');
       return domainMessage;
     } catch (error) {
@@ -211,13 +222,13 @@ export class CommunicationRepository implements ICommunicationRepository {
   }
 
   async getMessageDetails(messageId: string): Promise<Message | null> {
-    const message = await this.messageModel.findById(messageId).lean();
+    const message = await this.messageModel.findById(messageId).lean() as unknown as IMessageSource;
     return CommunicationMapper.toDomain(message);
   }
 
   async getAllAdmins(search?: string): Promise<UserInfo[]> {
     try {
-      const query: mongoose.FilterQuery<typeof AdminModel> = {};
+      const query: mongoose.FilterQuery<any> = {};
       if (search) {
         query.$or = [
           { firstName: { $regex: search, $options: "i" } },
@@ -228,7 +239,7 @@ export class CommunicationRepository implements ICommunicationRepository {
 
       const admins = await AdminModel.find(query)
         .select("_id firstName lastName email")
-        .lean();
+        .lean() as unknown as IAdminSource[];
 
       return admins.map((admin) => {
         const firstName = admin.firstName || '';
@@ -236,7 +247,7 @@ export class CommunicationRepository implements ICommunicationRepository {
         const fullName = `${firstName} ${lastName}`.trim();
 
         return {
-          _id: admin._id.toString(),
+          id: admin._id.toString(),
           name: fullName || 'Unknown Admin',
           email: admin.email,
           role: UserRole.Admin,
@@ -250,7 +261,7 @@ export class CommunicationRepository implements ICommunicationRepository {
   }
 
   async fetchUsers(type: string, search?: string): Promise<UserInfo[]> {
-    const query: mongoose.FilterQuery<typeof UserModel> = {};
+    const query: mongoose.FilterQuery<any> = {};
 
     if (search) {
       query.$or = [
@@ -260,12 +271,9 @@ export class CommunicationRepository implements ICommunicationRepository {
       ];
     }
 
-    // Logic for 'type' filtering could be here or expanded
-    // Original code just fetched students mostly.
-
     const users = await UserModel.find(query)
       .select("_id firstName lastName email")
-      .lean();
+      .lean() as unknown as IUserSource[];
 
     return users.map((user) => {
       const firstName = user.firstName || '';
@@ -273,7 +281,7 @@ export class CommunicationRepository implements ICommunicationRepository {
       const fullName = `${firstName} ${lastName}`.trim();
 
       return {
-        _id: user._id.toString(),
+        id: user._id.toString(),
         name: fullName || 'Unknown User',
         email: user.email,
         role: UserRole.Student,
@@ -287,7 +295,7 @@ export class CommunicationRepository implements ICommunicationRepository {
     try {
       let user = null;
       if (role === UserRole.Admin || role === 'admin') {
-        user = await AdminModel.findOne({ _id: userId }).lean();
+        user = await AdminModel.findOne({ _id: userId }).lean() as unknown as IAdminSource;
         if (!user) return null;
 
         const firstName = user.firstName || '';
@@ -295,7 +303,7 @@ export class CommunicationRepository implements ICommunicationRepository {
         const fullName = `${firstName} ${lastName}`.trim();
 
         return {
-          _id: user._id.toString(),
+          id: user._id.toString(),
           name: fullName || 'Unknown Admin',
           email: user.email,
           role: UserRole.Admin,
@@ -303,8 +311,7 @@ export class CommunicationRepository implements ICommunicationRepository {
           lastName
         };
       } else {
-        // Assume student/user
-        user = await UserModel.findOne({ _id: userId }).lean();
+        user = await UserModel.findOne({ _id: userId }).lean() as unknown as IUserSource;
         if (!user) return null;
 
         const firstName = user.firstName || '';
@@ -312,7 +319,7 @@ export class CommunicationRepository implements ICommunicationRepository {
         const fullName = `${firstName} ${lastName}`.trim();
 
         return {
-          _id: user._id.toString(),
+          id: user._id.toString(),
           name: fullName || 'Unknown User',
           email: user.email,
           role: UserRole.Student,
@@ -325,8 +332,6 @@ export class CommunicationRepository implements ICommunicationRepository {
       return null;
     }
   }
-
-  // Interface requirements (some might not be in interface but were in class, interface was updated though)
 
   async findMessageById(messageId: string): Promise<Message | null> {
     return this.getMessageDetails(messageId);
@@ -349,17 +354,12 @@ export class CommunicationRepository implements ICommunicationRepository {
   }
 
   async findUsersByType(type: string, search?: string, requesterId?: string): Promise<UserInfo[]> {
-    // Reuse fetchUsers logic or expand
-    // Original had specific logic for 'faculty', 'all' etc.
-    // I will reimplement basic logic to satisfy interface if needed.
-    // The interface ICommunicationRepository has this method.
-
     if (type === 'students' || type === 'all_students') {
       return this.fetchUsers(type, search);
     }
 
     if (type === 'faculty' || type === 'all_faculty') {
-      const query: mongoose.FilterQuery<typeof FacultyModel> = {};
+      const query: mongoose.FilterQuery<any> = {};
       if (search) {
         query.$or = [
           { firstName: { $regex: search, $options: "i" } },
@@ -369,18 +369,18 @@ export class CommunicationRepository implements ICommunicationRepository {
       }
       const faculty = await FacultyModel.find(query)
         .select("_id firstName lastName email")
-        .lean();
+        .lean() as unknown as IFacultySource[];
+
       return faculty.map((user) => ({
-        _id: user._id.toString(),
-        name: `${user.firstName} ${user.lastName}`,
+        id: user._id.toString(),
+        name: `${user.fullName}`,
         email: user.email,
         role: UserRole.Faculty,
-        firstName: user.firstName,
-        lastName: user.lastName
+        firstName: user.fullName ? user.fullName.split(' ')[0] : '',
+        lastName: user.fullName ? user.fullName.split(' ').slice(1).join(' ') : ''
       }));
     }
 
-    // Implement 'all' if needed, or return empty for safely
     return [];
   }
 }

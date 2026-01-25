@@ -5,7 +5,7 @@ import {
     ClubSummaryDTO,
     ClubRequestDTO
 } from "./ClubBaseDTOs";
-import { Club } from "../../../domain/clubs/entities/ClubTypes";
+import { ClubData } from "../../../domain/clubs/entities/ClubTypes";
 
 // Re-exporting consolidated DTOs for convenience
 export { ClubSummaryDTO, ClubRequestDTO };
@@ -38,12 +38,12 @@ export interface UpdateClubResponseDTO {
 
 export interface JoinClubResponseDTO {
     message: string;
-    club: Club;
+    club: ClubData;
 }
 
 export interface LeaveClubResponseDTO {
     message: string;
-    club: Club;
+    club: ClubData;
 }
 
 export interface GetClubRequestsResponseDTO extends PaginatedResponseDTO<ClubRequestDTO> { }

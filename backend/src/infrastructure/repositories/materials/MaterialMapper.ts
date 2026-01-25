@@ -1,10 +1,12 @@
 import { Material, MaterialProps } from "../../../domain/materials/entities/Material";
 import { MaterialType, MaterialDifficulty } from "../../../domain/materials/entities/MaterialTypes";
 
+import { IMaterialSource } from "./infraTypes";
+
 export class MaterialMapper {
-    static toDomain(raw: Record<string, unknown>): Material {
+    static toDomain(raw: IMaterialSource): Material {
         const props: MaterialProps = {
-            id: raw._id?.toString() || raw.id?.toString() || '',
+            id: raw._id?.toString() || (raw.id as string) || '',
             title: raw.title as string,
             description: raw.description as string,
             subject: raw.subject as string,
@@ -27,7 +29,7 @@ export class MaterialMapper {
         return new Material(props);
     }
 
-    static toPersistence(material: Material): Record<string, unknown> {
+    static toPersistence(material: Material): Partial<IMaterialSource> {
         return {
             title: material.title,
             description: material.description,

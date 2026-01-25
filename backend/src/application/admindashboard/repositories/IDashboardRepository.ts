@@ -1,12 +1,12 @@
 import {
-  DashboardDataRaw,
   DashboardMetricsRaw,
   UserGrowthDataRaw,
   RevenueDataRaw,
   PerformanceRawData,
   ActivityItemRaw,
   SystemAlertRaw,
-} from "../../../domain/admindashboard/entities/AdminDashboardTypes";
+  DashboardDataRaw
+} from "../types/DashboardRepositoryTypes";
 
 export interface IDashboardRepository {
   getDashboardData(): Promise<DashboardDataRaw>;
@@ -17,5 +17,4 @@ export interface IDashboardRepository {
   getRecentActivities(): Promise<ActivityItemRaw>;
   getSystemAlerts(): Promise<SystemAlertRaw>;
   refreshDashboard(): Promise<DashboardDataRaw>;
-} 
-
+}

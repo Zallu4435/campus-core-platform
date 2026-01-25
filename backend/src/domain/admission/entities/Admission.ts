@@ -6,17 +6,8 @@ import {
 } from "./AdmissionTypes";
 import { AdmissionErrorType } from "../enums/AdmissionErrorType";
 
-export {
-  PaymentStatus,
-  PaymentMethod,
-  AdmissionStatus,
-  RejectedBy,
-  AdmissionDraftProps,
-  AdmissionProps
-} from "./AdmissionTypes";
-
 export class AdmissionDraft {
-  private _id?: string;
+  private idValue?: string;
   private applicationId: string;
   private registerId: string;
   private personal: Record<string, unknown>;
@@ -31,7 +22,7 @@ export class AdmissionDraft {
   private updatedAt?: Date;
 
   constructor(props: AdmissionDraftProps) {
-    this._id = props.id;
+    this.idValue = props.id;
     this.applicationId = props.applicationId;
     this.registerId = props.registerId;
     this.personal = props.personal || {};
@@ -53,7 +44,7 @@ export class AdmissionDraft {
     return new AdmissionDraft(props);
   }
 
-  get id(): string | undefined { return this._id; }
+  get id(): string | undefined { return this.idValue; }
   getApplicationId(): string { return this.applicationId; }
   getRegisterId(): string { return this.registerId; }
   getPersonal() { return this.personal; }
@@ -73,15 +64,29 @@ export class AdmissionDraft {
     }
   }
 
-  updateSection(section: string, data: Record<string, unknown>): void {
-    (this as any)[section] = data;
+  updateSection(section: string, data: Record<string, unknown> | Record<string, unknown>[]): void {
+    if (section === 'personal') this.personal = data as Record<string, unknown>;
+    else if (section === 'choiceOfStudy') {
+      if (Array.isArray(data)) {
+        this.choiceOfStudy = data;
+      } else {
+        // If single object is passed, wrap in array or handle logic (assuming explicit array based on type def)
+        // For partial updates, this logic might need refinement, but for now enforcing array if target is array
+        this.choiceOfStudy = [data as Record<string, unknown>];
+      }
+    }
+    else if (section === 'education') this.education = data as Record<string, unknown>;
+    else if (section === 'achievements') this.achievements = data as Record<string, unknown>;
+    else if (section === 'otherInformation') this.otherInformation = data as Record<string, unknown>;
+    else if (section === 'documents') this.documents = data as Record<string, unknown>;
+    else if (section === 'declaration') this.declaration = data as Record<string, unknown>;
   }
 }
 
 export class Admission extends AdmissionDraft {
   private paymentId: string;
   private status: AdmissionStatus;
-  private rejectedBy: RejectedBy | null;
+  private rejectedByValue: RejectedBy | null;
   private confirmationToken: string | null;
   private tokenExpiry: Date | null;
 
@@ -89,7 +94,7 @@ export class Admission extends AdmissionDraft {
     super(props);
     this.paymentId = props.paymentId;
     this.status = props.status || AdmissionStatus.PENDING;
-    this.rejectedBy = props.rejectedBy || null;
+    this.rejectedByValue = props.rejectedBy || null;
     this.confirmationToken = props.confirmationToken || null;
     this.tokenExpiry = props.tokenExpiry || null;
   }
@@ -103,7 +108,7 @@ export class Admission extends AdmissionDraft {
 
   getPaymentId(): string { return this.paymentId; }
   getStatus(): AdmissionStatus { return this.status; }
-  getRejectedBy(): RejectedBy | null { return this.rejectedBy; }
+  get rejectedBy(): RejectedBy | null { return this.rejectedByValue; }
   getConfirmationToken(): string | null { return this.confirmationToken; }
   getTokenExpiry(): Date | null { return this.tokenExpiry; }
 }

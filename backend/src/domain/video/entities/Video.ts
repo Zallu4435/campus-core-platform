@@ -41,10 +41,8 @@ export class Video {
 export interface VideoFilter {
     diplomaId?: string;
     status?: string;
-    uploadedAt?: { $gte?: Date; $lte?: Date };
-    $or?: Array<{
-        title?: { $regex: string; $options: string };
-        description?: { $regex: string; $options: string };
-    }>;
-    [key: string]: unknown;
+    startDate?: Date;
+    endDate?: Date;
+    search?: string;
+    id?: string;
 }

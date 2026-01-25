@@ -1,10 +1,10 @@
 import { Club } from '../../../../domain/campus-life/entities/CampusLife';
-import { RawClub, RawJoinRequest } from '../../../../domain/campus-life/entities/CampusLifeTypes';
+import { ClubData, JoinRequestData } from '../../../../domain/campus-life/entities/CampusLifeTypes';
 import { ClubStatus, RequestStatus } from '../../../../domain/campus-life/enums/CampusLifeEnums';
 
 /**
  * Club Mapper
- * Handles transformation between persistence (Raw), domain (Club), and DTO layers
+ * Handles transformation between persistence (Data), domain (Club), and DTO layers
  */
 export class ClubMapper {
     /**
@@ -13,16 +13,16 @@ export class ClubMapper {
      * @param userRequestStatus - Optional user request status to attach
      * @returns Domain Club entity
      */
-    static toDomain(raw: RawClub, userRequestStatus?: RequestStatus | null): Club {
+    static toDomain(raw: ClubData, userRequestStatus?: RequestStatus | null): Club {
         return new Club(
-            raw._id,
+            raw.id,
             raw.name,
             raw.type,
             Array.isArray(raw.members) ? raw.members.length : 0, // Convert array to count
             raw.icon,
             raw.color,
             raw.status as ClubStatus,
-            '', // role - RawClub doesn't have this field
+            '', // role - ClubData doesn't have this field
             raw.nextMeeting,
             raw.about,
             raw.upcomingEvents || [],
@@ -40,8 +40,8 @@ export class ClubMapper {
      * @returns Array of domain Club entities
      */
     static toDomainList(
-        raws: RawClub[],
-        requests: RawJoinRequest[],
+        raws: ClubData[],
+        requests: JoinRequestData[],
         userId?: string
     ): Club[] {
         return raws.map(raw => {
@@ -49,7 +49,7 @@ export class ClubMapper {
 
             if (userId && requests.length > 0) {
                 const userRequest = requests.find(
-                    req => req.clubId === raw._id && req.userId === userId
+                    req => req.clubId === raw.id && req.userId === userId
                 );
                 if (userRequest) {
                     userRequestStatus = userRequest.status as RequestStatus;
@@ -65,7 +65,7 @@ export class ClubMapper {
      * @param domain - Domain Club entity
      * @returns Partial raw club for database
      */
-    static toPersistence(domain: Club): Partial<RawClub> {
+    static toPersistence(domain: Club): Partial<ClubData> {
         return {
             name: domain.name,
             type: domain.type,

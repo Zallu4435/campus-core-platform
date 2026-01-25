@@ -3,62 +3,42 @@ import {
     RepositorySportData,
     SportSummaryDTO
 } from "../../../../application/sports/dtos/SportBaseDTOs";
-import { SportDoc, SportStatus } from "../../../../domain/sports/entities/SportTypes";
-
-interface LegacySportDoc {
-    _id?: { toString(): string };
-    title: string;
-    type: string;
-    category?: string;
-    organizer?: string;
-    organizerType?: string;
-    icon?: string;
-    color?: string;
-    division?: string;
-    headCoach?: string;
-    homeGames?: number;
-    record?: string;
-    upcomingGames?: { date: string; description: string }[];
-    participants?: number;
-    status?: string;
-    createdAt?: Date;
-    updatedAt?: Date;
-    logo?: string;
-}
+import { SportData, SportStatus } from "../../../../domain/sports/entities/SportTypes";
 
 export class SportMapper {
-    static toDomain(mongooseDoc: SportDoc): Sport {
-        if (!mongooseDoc) {
-            throw new Error("Cannot map null document to domain entity");
+    static toDomain(data: SportData): Sport {
+        if (!data) {
+            throw new Error("Cannot map null data to domain entity");
         }
 
         return new Sport({
-            id: mongooseDoc._id.toString(),
-            title: mongooseDoc.title,
-            type: mongooseDoc.type,
-            category: mongooseDoc.category,
-            organizer: mongooseDoc.organizer,
-            organizerType: mongooseDoc.organizerType,
-            icon: mongooseDoc.icon,
-            color: mongooseDoc.color,
-            division: mongooseDoc.division,
-            headCoach: mongooseDoc.headCoach,
-            homeGames: mongooseDoc.homeGames,
-            record: mongooseDoc.record,
-            upcomingGames: mongooseDoc.upcomingGames,
-            participants: mongooseDoc.participants,
-            status: mongooseDoc.status,
-            createdAt: mongooseDoc.createdAt,
-            updatedAt: mongooseDoc.updatedAt,
-            logo: mongooseDoc.logo,
+            id: data.id,
+            title: data.title,
+            type: data.type,
+            category: data.category,
+            organizer: data.organizer,
+            organizerType: data.organizerType,
+            icon: data.icon,
+            color: data.color,
+            division: data.division,
+            headCoach: data.headCoach,
+            homeGames: data.homeGames,
+            record: data.record,
+            upcomingGames: data.upcomingGames,
+            participants: data.participants,
+            status: data.status,
+            createdAt: data.createdAt,
+            updatedAt: data.updatedAt,
+            logo: data.logo,
         });
     }
 
-    static toDomainList(mongooseDocs: LegacySportDoc[], requests: unknown[] = [], userId?: string): Sport[] {
-        return mongooseDocs.map(doc => {
-            // Flexible mapping for legacy RawSport data
+    static toDomainList(dataList: any[], requests: unknown[] = [], userId?: string): Sport[] {
+        return dataList.map(doc => {
+            // Flexible mapping for legacy/mixed data
+            const id = doc.id || doc._id?.toString();
             return new Sport({
-                id: doc._id?.toString(),
+                id,
                 title: doc.title,
                 type: doc.type,
                 category: doc.category || "",
@@ -100,56 +80,56 @@ export class SportMapper {
         };
     }
 
-    static toRepositoryDTO(mongooseDoc: SportDoc): RepositorySportData {
-        if (!mongooseDoc) {
-            throw new Error("Cannot map null document to Repository DTO");
+    static toRepositoryDTO(data: SportData): RepositorySportData {
+        if (!data) {
+            throw new Error("Cannot map null data to Repository DTO");
         }
 
         return {
-            _id: mongooseDoc._id.toString(),
-            title: mongooseDoc.title,
-            type: mongooseDoc.type,
-            category: mongooseDoc.category,
-            organizer: mongooseDoc.organizer,
-            organizerType: mongooseDoc.organizerType,
-            icon: mongooseDoc.icon,
-            color: mongooseDoc.color,
-            division: mongooseDoc.division,
-            headCoach: mongooseDoc.headCoach,
-            homeGames: mongooseDoc.homeGames,
-            record: mongooseDoc.record,
-            upcomingGames: mongooseDoc.upcomingGames,
-            participants: mongooseDoc.participants,
-            status: mongooseDoc.status,
-            createdAt: mongooseDoc.createdAt,
-            updatedAt: mongooseDoc.updatedAt,
-            logo: mongooseDoc.logo,
+            id: data.id,
+            title: data.title,
+            type: data.type,
+            category: data.category,
+            organizer: data.organizer,
+            organizerType: data.organizerType,
+            icon: data.icon,
+            color: data.color,
+            division: data.division,
+            headCoach: data.headCoach,
+            homeGames: data.homeGames,
+            record: data.record,
+            upcomingGames: data.upcomingGames,
+            participants: data.participants,
+            status: data.status,
+            createdAt: data.createdAt,
+            updatedAt: data.updatedAt,
+            logo: data.logo,
         };
     }
 
-    static toSummaryDTO(mongooseDoc: SportDoc): SportSummaryDTO {
-        if (!mongooseDoc) {
-            throw new Error("Cannot map null document to Summary DTO");
+    static toSummaryDTO(data: SportData | Sport): SportSummaryDTO {
+        if (!data) {
+            throw new Error("Cannot map null data to Summary DTO");
         }
 
         return {
-            id: mongooseDoc._id.toString(),
-            title: mongooseDoc.title,
-            type: mongooseDoc.type,
-            headCoach: mongooseDoc.headCoach,
-            playerCount: mongooseDoc.participants || 0,
-            status: mongooseDoc.status,
-            formedOn: mongooseDoc.createdAt ? mongooseDoc.createdAt.toISOString() : undefined,
-            logo: mongooseDoc.logo || "",
-            division: mongooseDoc.division || "",
-            participants: mongooseDoc.participants || 0,
-            icon: mongooseDoc.icon,
-            color: mongooseDoc.color,
-            createdAt: mongooseDoc.createdAt ? mongooseDoc.createdAt.toISOString() : undefined
+            id: data.id || "",
+            title: data.title,
+            type: data.type,
+            headCoach: data.headCoach,
+            playerCount: data.participants || 0,
+            status: data.status,
+            formedOn: data.createdAt ? data.createdAt.toISOString() : undefined,
+            logo: data.logo || "",
+            division: data.division || "",
+            participants: data.participants || 0,
+            icon: data.icon,
+            color: data.color,
+            createdAt: data.createdAt ? data.createdAt.toISOString() : undefined
         };
     }
 
-    static toSummaryDTOList(mongooseDocs: SportDoc[]): SportSummaryDTO[] {
-        return mongooseDocs.map((doc) => this.toSummaryDTO(doc));
+    static toSummaryDTOList(dataList: (SportData | Sport)[]): SportSummaryDTO[] {
+        return dataList.map((data) => this.toSummaryDTO(data));
     }
 }

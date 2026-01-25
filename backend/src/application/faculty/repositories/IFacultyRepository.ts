@@ -20,4 +20,5 @@ export interface IFacultyRepository {
     deleteFaculty(id: string): Promise<boolean>;
     saveFaculty(faculty: Faculty): Promise<Faculty>;
     blockFaculty(id: string): Promise<boolean>;
+    createFacultyAccount(data: { firstName: string; lastName: string; email: string; password?: string }): Promise<void>;
 }

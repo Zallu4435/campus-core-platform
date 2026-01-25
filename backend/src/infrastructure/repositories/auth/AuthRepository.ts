@@ -9,8 +9,8 @@ import {
 import { RefreshSession } from '../../database/mongoose/auth/refreshToken.model';
 
 import { IAuthRepository } from "../../../application/auth/repositories/IAuthRepository";
-import { User } from "../../../domain/auth/entities/Auth";
 import { RegisterRequestDTO, RegisterFacultyRequestDTO } from "../../../application/auth/dtos/AuthRequestDTOs";
+import { UserDTO, UserDTOWithPassword, FacultyDTO } from "../../../application/auth/dtos/UserDTO";
 
 import { Register } from "../../database/mongoose/auth/register.model";
 import { Admin } from "../../database/mongoose/auth/admin.model";
@@ -18,30 +18,28 @@ import { User as UserModel } from "../../database/mongoose/auth/user.model";
 import { FacultyUserModel as FacultyModel } from "../../database/mongoose/faculty/faculty.model";
 import { FacultyRegisterModel as FacultyRegister } from "../../database/mongoose/faculty/facultyRegister.model";
 import { Admission } from "../../database/mongoose/admission/AdmissionModel";
-import { UserMapper } from "./mappers/UserMapper";
-import { FacultyMapper } from "./mappers/FacultyMapper";
 import { RefreshSessionData, UserCollection, RegisterFacultyResult } from "../../../application/auth/repositories/types/AuthRepositoryTypes";
 import { AuthCollection, AUTH_MESSAGES } from "../../../application/auth/constants/AuthConstants";
-import { Document } from "mongoose";
+import { IAuthUserSource, IFacultySource, IRegisterSource, IUserSource } from "./infraTypes";
 
 
 export class AuthRepository implements IAuthRepository {
 
     private async findUserByEmailAcrossCollections(
         email: string
-    ): Promise<{ user: Document; collection: AuthCollection } | null> {
-        let user: Document | null;
+    ): Promise<{ user: IAuthUserSource; collection: AuthCollection } | null> {
+        let user: IAuthUserSource | null;
 
-        user = await Admin.findOne({ email });
+        user = await Admin.findOne({ email }).lean() as unknown as IAuthUserSource;
         if (user) return { user, collection: AuthCollection.ADMIN };
 
-        user = await UserModel.findOne({ email });
+        user = await UserModel.findOne({ email }).lean() as unknown as IAuthUserSource;
         if (user) return { user, collection: AuthCollection.USER };
 
-        user = await FacultyModel.findOne({ email });
+        user = await FacultyModel.findOne({ email }).lean() as unknown as IAuthUserSource;
         if (user) return { user, collection: AuthCollection.FACULTY };
 
-        user = await Register.findOne({ email });
+        user = await Register.findOne({ email }).lean() as unknown as IAuthUserSource;
         if (user) return { user, collection: AuthCollection.REGISTER };
 
         return null;
@@ -50,20 +48,20 @@ export class AuthRepository implements IAuthRepository {
     private async findUserByIdAcrossCollections(
         userId: string,
         collectionType: AuthCollection
-    ): Promise<{ user: Document; collection: AuthCollection } | null> {
-        let user: Document | null;
+    ): Promise<{ user: IAuthUserSource; collection: AuthCollection } | null> {
+        let user: IAuthUserSource | null;
         switch (collectionType) {
             case AuthCollection.REGISTER:
-                user = await Register.findById(userId);
+                user = await Register.findById(userId).lean() as unknown as IAuthUserSource;
                 break;
             case AuthCollection.ADMIN:
-                user = await Admin.findById(userId);
+                user = await Admin.findById(userId).lean() as unknown as IAuthUserSource;
                 break;
             case AuthCollection.USER:
-                user = await UserModel.findById(userId);
+                user = await UserModel.findById(userId).lean() as unknown as IAuthUserSource;
                 break;
             case AuthCollection.FACULTY:
-                user = await FacultyModel.findById(userId);
+                user = await FacultyModel.findById(userId).lean() as unknown as IAuthUserSource;
                 break;
             default:
                 return null;
@@ -86,12 +84,13 @@ export class AuthRepository implements IAuthRepository {
             pending: true,
         });
 
-        await user.save();
+        const savedUser = await user.save();
+        // Convert to source manually or cast
+        const source = savedUser.toObject() as unknown as IRegisterSource;
 
-        // Use Mapper to return consistent DTO
         return {
             message: AUTH_MESSAGES.REGISTRATION_SUCCESS,
-            user: UserMapper.toDTO(user)
+            user: this.toUserDTO(source)
         };
     }
 
@@ -109,7 +108,7 @@ export class AuthRepository implements IAuthRepository {
         const { user, collection } = userResult;
 
         return {
-            user: UserMapper.toDTOWithPassword(user),
+            user: this.toUserDTOWithPassword(user),
             collection,
         };
     }
@@ -136,7 +135,7 @@ export class AuthRepository implements IAuthRepository {
         const { user, collection: userCollection } = userResult;
 
         return {
-            user: UserMapper.toDTO(user),
+            user: this.toUserDTO(user),
             collection: userCollection,
         };
     }
@@ -159,10 +158,11 @@ export class AuthRepository implements IAuthRepository {
             certificatesUrl: params.certificatesUrl,
         });
 
-        await faculty.save();
+        const saved = await faculty.save();
+        const source = saved.toObject() as unknown as IFacultySource;
 
         return {
-            user: FacultyMapper.toDTO(faculty),
+            user: this.toFacultyDTO(source),
             collection: AuthCollection.FACULTY,
         };
     }
@@ -196,44 +196,25 @@ export class AuthRepository implements IAuthRepository {
 
         await Model.updateOne({ email: email }, { password: newPassword });
 
-        // Use findUserAggregate to return proper entity if needed, but for legacy support:
-        // We really should return void or the entity.
-        // Given internal usage, sticking to Mapper is safe as long as password is not leaked.
-        // UserMapper.toDTO does NOT include password.
         return {
-            user: UserMapper.toDTO(user),
+            user: this.toUserDTO(user),
             collection,
         };
     }
 
-    /**
-     * DOMAIN AGGREGATE METHOD (Phase 3)
-     * Returns a full User Aggregate Root (Entity) instead of a DTO
-     * This allows us to use domain methods and events
-     */
-    async findUserAggregateByEmail(email: string): Promise<{ user: User; collection: string } | null> {
+    async confirmRegistration(email: string): Promise<{ message: string }> {
         const userResult = await this.findUserByEmailAcrossCollections(email);
 
         if (!userResult) {
-            return null;
+            throw new UserNotFoundError("User for confirmation not found.");
         }
 
         const { user, collection } = userResult;
 
-        // Use Mapper to reconstitute the Entity from the Mongoose Document
-        const userEntity = UserMapper.toDomain(user);
+        if (!(user as unknown as IUserSource).pending) {
+            throw new AlreadyConfirmedError(AUTH_MESSAGES.ALREADY_CONFIRMED);
+        }
 
-        return {
-            user: userEntity,
-            collection,
-        };
-    }
-
-    /**
-     * DOMAIN AGGREGATE METHOD (Phase 3)
-     * Persists changes made to a User Aggregate Root
-     */
-    async save(user: User, collection: string): Promise<void> {
         let Model;
         switch (collection) {
             case AuthCollection.ADMIN: Model = Admin; break;
@@ -243,35 +224,7 @@ export class AuthRepository implements IAuthRepository {
             default: throw new Error("Invalid user collection type.");
         }
 
-        const persistenceObject = UserMapper.toPersistence(user);
-
-        // Determine the ID to update
-        const id = user.id; // Assuming ID is available on the entity
-
-        if (id) {
-            await Model.findByIdAndUpdate(id, persistenceObject);
-        } else {
-            // New user (should be handled by register, but fine to support)
-            await new Model(persistenceObject).save();
-        }
-    }
-
-    async confirmRegistration(email: string): Promise<{ message: string }> {
-        const aggregate = await this.findUserAggregateByEmail(email);
-
-        if (!aggregate) {
-            throw new UserNotFoundError("User for confirmation not found.");
-        }
-
-        const { user, collection } = aggregate;
-
-        if (!user.isPending()) {
-            throw new AlreadyConfirmedError(AUTH_MESSAGES.ALREADY_CONFIRMED);
-        }
-
-        user.confirm();
-
-        await this.save(user, collection);
+        await Model.updateOne({ email: user.email }, { pending: false });
 
         return { message: AUTH_MESSAGES.EMAIL_CONFIRMED };
     }
@@ -309,13 +262,55 @@ export class AuthRepository implements IAuthRepository {
         return await RefreshSession.find({});
     }
 
-    async findUsersByIds(ids: string[]): Promise<User[]> {
-        const docs = await UserModel.find({ _id: { $in: ids } });
-        return docs.map(doc => UserMapper.toDomain(doc));
+    async findUsersByIds(ids: string[]): Promise<UserDTO[]> {
+        const docs = await UserModel.find({ _id: { $in: ids } }).lean() as unknown as IUserSource[];
+        return docs.map(doc => this.toUserDTO(doc));
+    }
+
+    // Helper methods to convert Mongoose documents to DTOs
+    // Accepted generic source
+    private toUserDTO(source: IAuthUserSource): UserDTO {
+        return {
+            id: source._id.toString(),
+            firstName: (source as IUserSource).firstName || (source as IFacultySource).fullName?.split(' ')[0] || '',
+            lastName: (source as IUserSource).lastName || (source as IFacultySource).fullName?.split(' ').slice(1).join(' ') || '',
+            email: source.email,
+            profilePicture: (source as IUserSource).profilePicture || undefined,
+            blocked: (source as IUserSource).blocked || false,
+            pending: (source as IUserSource).pending || false
+        };
+    }
+
+    private toUserDTOWithPassword(source: IAuthUserSource): UserDTOWithPassword {
+        return {
+            id: source._id.toString(),
+            firstName: (source as IUserSource).firstName || (source as IFacultySource).fullName?.split(' ')[0] || '',
+            lastName: (source as IUserSource).lastName || (source as IFacultySource).fullName?.split(' ').slice(1).join(' ') || '',
+            email: source.email || '',
+            profilePicture: (source as IUserSource).profilePicture || '',
+            password: source.password || '',
+            blocked: (source as IUserSource).blocked || false,
+            pending: (source as IUserSource).pending || false
+        };
+    }
+
+    private toFacultyDTO(source: IFacultySource): FacultyDTO {
+        return {
+            id: source._id.toString(),
+            fullName: source.fullName || '',
+            email: source.email,
+            phone: source.phone,
+            department: source.department,
+            qualification: source.qualification,
+            experience: source.experience,
+            aboutMe: source.aboutMe,
+            cvUrl: source.cvUrl,
+            certificatesUrl: source.certificatesUrl as unknown as string[]
+        };
     }
 
     async findTokensByUserId(userId: string): Promise<string[]> {
-        const user = await UserModel.findById(userId).select("fcmTokens").lean();
+        const user = await UserModel.findById(userId).select("fcmTokens").lean() as unknown as IUserSource;
         return user?.fcmTokens || [];
     }
 
@@ -325,7 +320,7 @@ export class AuthRepository implements IAuthRepository {
         else if (collection === "faculty") Model = FacultyModel;
         else return [];
 
-        const users = await Model.find().select("fcmTokens").lean();
+        const users = await Model.find().select("fcmTokens").lean() as unknown as (IUserSource | IFacultySource)[];
         return users.flatMap(u => u.fcmTokens || []);
     }
 

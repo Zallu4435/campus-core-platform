@@ -7,12 +7,11 @@ import { Assignment } from '../../../domain/assignments/entities/Assignment';
 import { Submission } from '../../../domain/assignments/entities/Submission';
 import mongoose from 'mongoose';
 
-import { IAssignmentDocument } from '../../database/mongoose/assignment/AssignmentModel';
-import { ISubmissionDocument } from '../../database/mongoose/assignment/SubmissionModel';
+import { IAssignmentSource, ISubmissionSource } from './infraTypes';
 
 export class UserAssignmentRepository implements IUserAssignmentRepository {
   async getAssignments(subject?: string, status?: string, page: number = 1, limit: number = 10, search?: string, studentId?: string, sortBy?: string): Promise<{ assignments: Assignment[]; page: number; limit: number; total: number }> {
-    const query: mongoose.FilterQuery<IAssignmentDocument> = { status: 'published' };
+    const query: mongoose.FilterQuery<IAssignmentSource> = { status: 'published' };
 
     if (subject && subject !== 'all') {
       query.subject = subject;
@@ -33,7 +32,7 @@ export class UserAssignmentRepository implements IUserAssignmentRepository {
     const skip = (page - 1) * limit;
 
     const [docs, total] = await Promise.all([
-      AssignmentModel.find(query).sort(sort).skip(skip).limit(limit),
+      AssignmentModel.find(query).sort(sort).skip(skip).limit(limit).lean() as unknown as IAssignmentSource[],
       AssignmentModel.countDocuments(query)
     ]);
 
@@ -47,8 +46,8 @@ export class UserAssignmentRepository implements IUserAssignmentRepository {
 
   async getAssignmentById(id: string, studentId: string): Promise<{ assignment: Assignment | null; submission: Submission | null }> {
     const [assignmentDoc, submissionDoc] = await Promise.all([
-      AssignmentModel.findOne({ _id: id, status: 'published' }),
-      SubmissionModel.findOne({ assignmentId: id, studentId }).lean()
+      AssignmentModel.findOne({ _id: id, status: 'published' }).lean() as unknown as IAssignmentSource,
+      SubmissionModel.findOne({ assignmentId: id, studentId }).lean() as unknown as ISubmissionSource
     ]);
 
     return {
@@ -79,18 +78,18 @@ export class UserAssignmentRepository implements IUserAssignmentRepository {
       { assignmentId, studentId },
       { $set: submissionData },
       { new: true, upsert: true }
-    );
+    ).lean() as unknown as ISubmissionSource;
 
     return AssignmentMapper.submissionToDomain(doc);
   }
 
   async getAssignmentStatus(assignmentId: string, studentId: string): Promise<Submission | null> {
-    const doc = await SubmissionModel.findOne({ studentId, assignmentId });
+    const doc = await SubmissionModel.findOne({ studentId, assignmentId }).lean() as unknown as ISubmissionSource;
     return doc ? AssignmentMapper.submissionToDomain(doc) : null;
   }
 
   async getAssignmentFeedback(assignmentId: string, studentId: string): Promise<Submission | null> {
-    const doc = await SubmissionModel.findOne({ studentId, assignmentId, status: 'reviewed' });
+    const doc = await SubmissionModel.findOne({ studentId, assignmentId, status: 'reviewed' }).lean() as unknown as ISubmissionSource;
     return doc ? AssignmentMapper.submissionToDomain(doc) : null;
   }
 }

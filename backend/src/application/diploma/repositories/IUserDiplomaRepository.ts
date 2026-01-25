@@ -1,4 +1,4 @@
-import { DiplomaCourse, Chapter } from "../../../domain/diploma/types";
+import { DiplomaCourse, Chapter } from "../../../domain/diploma/types/DiplomaTypes";
 import { GetUserDiplomasRequestDTO } from "../dtos/UserDiplomaRequestDTOs";
 import { GetUserDiplomasResponseDTO } from "../dtos/UserDiplomaResponseDTOs";
 

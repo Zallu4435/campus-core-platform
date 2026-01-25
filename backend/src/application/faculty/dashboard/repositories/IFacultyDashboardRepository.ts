@@ -5,7 +5,7 @@ import {
   AssignmentPerformance,
   SessionDistribution,
   RecentActivity
-} from "../../../../domain/faculty/dashboard/entities/FacultyDashboardEntities";
+} from "../../dtos/FacultyDashboardDTOs";
 
 export interface IFacultyDashboardRepository {
   getDashboardStats(facultyId: string): Promise<DashboardStats>;

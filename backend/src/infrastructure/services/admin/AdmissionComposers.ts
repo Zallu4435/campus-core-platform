@@ -42,7 +42,7 @@ export function getAdminAdmissionsComposer(): IAdminAdmissionController {
     // Use Cases
     const getAdmissionsUseCase: IGetAdmissionsUseCase = new GetAdmissionsUseCase(repository, mapper, userService);
     const getAdmissionByIdUseCase: IGetAdmissionByIdUseCase = new GetAdmissionByIdUseCase(repository, mapper, userService);
-    const getAdmissionByTokenUseCase: IGetAdmissionByTokenUseCase = new GetAdmissionByTokenUseCase(repository, mapper);
+    const getAdmissionByTokenUseCase: IGetAdmissionByTokenUseCase = new GetAdmissionByTokenUseCase(repository);
     const approveAdmissionUseCase: IApproveAdmissionUseCase = new ApproveAdmissionUseCase(repository, emailService, config);
     const rejectAdmissionUseCase: IRejectAdmissionUseCase = new RejectAdmissionUseCase(repository);
     const deleteAdmissionUseCase: IDeleteAdmissionUseCase = new DeleteAdmissionUseCase(repository);

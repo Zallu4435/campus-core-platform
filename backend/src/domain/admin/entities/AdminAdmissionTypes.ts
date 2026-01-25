@@ -27,7 +27,6 @@ export interface AdminAdmissionDocumentItem {
   fileName: string;
   fileType?: string;
   url?: string;
-  cloudinaryUrl?: string;
   path?: string;
   uploadedAt?: Date;
 }
@@ -69,16 +68,4 @@ export interface AdminAdmission {
   updatedAt?: Date;
 }
 
-/**
- * Extended type for full admission details
- * Used when all fields are needed (e.g., detail views)
- */
 export interface FullAdmissionDetails extends AdminAdmission { }
-
-/**
- * Persistence type for database operations
- * Includes _id for MongoDB compatibility
- */
-export interface AdminAdmissionPersistence extends Omit<AdminAdmission, 'id'> {
-  _id?: string;
-}

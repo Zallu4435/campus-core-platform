@@ -1,7 +1,7 @@
 import { UserRole, MessageStatus } from '../enums/CommunicationEnums';
 
 export interface UserInfo {
-  _id: string;
+  id: string;
   name: string;
   email: string;
   role: UserRole;
@@ -19,7 +19,7 @@ export interface Attachment {
 
 export class Message {
   constructor(
-    public readonly _id: string,
+    public readonly id: string,
     public readonly subject: string,
     public readonly content: string,
     public readonly sender: UserInfo,
@@ -31,18 +31,18 @@ export class Message {
   ) { }
 
   markAsRead(userId: string): void {
-    const recipient = this.recipients.find(r => r._id.toString() === userId);
+    const recipient = this.recipients.find(r => r.id === userId);
     if (recipient) {
       recipient.status = MessageStatus.Read;
     }
   }
 
   isRecipient(userId: string): boolean {
-    return this.recipients.some(r => r._id.toString() === userId);
+    return this.recipients.some(r => r.id === userId);
   }
 
   isSender(userId: string): boolean {
-    return this.sender._id.toString() === userId;
+    return this.sender.id === userId;
   }
 
   canAccess(userId: string): boolean {

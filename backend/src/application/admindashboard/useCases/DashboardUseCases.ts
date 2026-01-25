@@ -1,13 +1,4 @@
-import {
-  GetDashboardDataRequestDTO,
-  GetDashboardMetricsRequestDTO,
-  GetUserGrowthDataRequestDTO,
-  GetRevenueDataRequestDTO,
-  GetPerformanceDataRequestDTO,
-  GetRecentActivitiesRequestDTO,
-  GetSystemAlertsRequestDTO,
-  RefreshDashboardRequestDTO,
-} from "../dtos/DashboardRequestDTOs";
+
 import {
   GetDashboardDataResponseDTO,
   GetDashboardMetricsResponseDTO,
@@ -15,12 +6,12 @@ import {
   GetRevenueDataResponseDTO,
   GetRecentActivitiesResponseDTO,
   GetSystemAlertsResponseDTO,
+  PerformanceData,
 } from "../dtos/DashboardResponseDTOs";
 import { IDashboardRepository } from "../repositories/IDashboardRepository";
 import {
-  PerformanceData,
   DashboardDataRaw,
-} from '../../../domain/admindashboard/entities/AdminDashboardTypes';
+} from '../types/DashboardRepositoryTypes';
 import {
   DashboardDataNotFoundError,
   DashboardMetricsError,
@@ -52,20 +43,13 @@ export class GetDashboardDataUseCase implements IGetDashboardDataUseCase {
       throw new DashboardDataNotFoundError();
     }
 
-    const metrics = DashboardMapper.toDashboardMetrics(raw.metricsRaw);
-    const userGrowth = DashboardMapper.toUserGrowthDataPoints(raw.userGrowthRaw);
-    const revenue = DashboardMapper.toRevenueDataPoints(raw.revenueRaw);
-    const performance = DashboardMapper.toPerformanceMetrics(raw.performanceRaw);
-    const activities = DashboardMapper.toActivityItems(raw.activitiesRaw);
-    const alerts = DashboardMapper.toSystemAlerts(raw.alertsRaw);
-
     return {
-      metrics: metrics.toJSON(),
-      userGrowth: userGrowth.map(u => u.toJSON()),
-      revenue: revenue.map(r => r.toJSON()),
-      performance: performance.map(p => p.toJSON()),
-      activities: activities.map(a => a.toJSON()),
-      alerts: alerts.map(a => a.toJSON()),
+      metrics: DashboardMapper.toDashboardMetrics(raw.metricsRaw),
+      userGrowth: DashboardMapper.toUserGrowthDataPoints(raw.userGrowthRaw),
+      revenue: DashboardMapper.toRevenueDataPoints(raw.revenueRaw),
+      performance: DashboardMapper.toPerformanceMetrics(raw.performanceRaw),
+      activities: DashboardMapper.toActivityItems(raw.activitiesRaw),
+      alerts: DashboardMapper.toSystemAlerts(raw.alertsRaw),
     };
   }
 }
@@ -78,8 +62,7 @@ export class GetDashboardMetricsUseCase implements IGetDashboardMetricsUseCase {
     if (!raw || !Array.isArray(raw.completedPayments)) {
       throw new DashboardMetricsError();
     }
-    const metrics = DashboardMapper.toDashboardMetrics(raw);
-    return metrics.toJSON();
+    return DashboardMapper.toDashboardMetrics(raw);
   }
 }
 
@@ -91,8 +74,7 @@ export class GetUserGrowthDataUseCase implements IGetUserGrowthDataUseCase {
     if (!raw || raw.length === 0) {
       throw new DashboardUserGrowthError();
     }
-    const userGrowth = DashboardMapper.toUserGrowthDataPoints(raw);
-    return userGrowth.map(u => u.toJSON());
+    return DashboardMapper.toUserGrowthDataPoints(raw);
   }
 }
 
@@ -104,8 +86,7 @@ export class GetRevenueDataUseCase implements IGetRevenueDataUseCase {
     if (!raw || raw.length === 0) {
       throw new DashboardRevenueError();
     }
-    const revenue = DashboardMapper.toRevenueDataPoints(raw);
-    return revenue.map(r => r.toJSON());
+    return DashboardMapper.toRevenueDataPoints(raw);
   }
 }
 
@@ -117,8 +98,7 @@ export class GetPerformanceDataUseCase implements IGetPerformanceDataUseCase {
     if (!raw) {
       throw new DashboardPerformanceError();
     }
-    const performance = DashboardMapper.toPerformanceMetrics(raw);
-    return performance.map(p => p.toJSON());
+    return DashboardMapper.toPerformanceMetrics(raw);
   }
 }
 
@@ -130,8 +110,7 @@ export class GetRecentActivitiesUseCase implements IGetRecentActivitiesUseCase {
     if (!raw || !raw.recentAdmissions || !raw.recentPayments || !raw.recentEnquiries || !raw.recentNotifications) {
       throw new DashboardActivitiesError();
     }
-    const activities = DashboardMapper.toActivityItems(raw);
-    return activities.map(a => a.toJSON());
+    return DashboardMapper.toActivityItems(raw);
   }
 }
 
@@ -143,8 +122,7 @@ export class GetSystemAlertsUseCase implements IGetSystemAlertsUseCase {
     if (!raw) {
       throw new DashboardAlertsError();
     }
-    const alerts = DashboardMapper.toSystemAlerts(raw);
-    return alerts.map(a => a.toJSON());
+    return DashboardMapper.toSystemAlerts(raw);
   }
 }
 

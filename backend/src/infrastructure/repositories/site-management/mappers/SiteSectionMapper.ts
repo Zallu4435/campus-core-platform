@@ -1,5 +1,6 @@
 import { SiteSectionDTO } from "../../../../application/site-management/dtos/SiteSectionDTOs";
 import { ISiteSectionDocument, ISiteSection, SiteSectionKey } from "../../../../domain/site-management/entities/SiteSectionTypes";
+import { ISiteSectionSource } from "../infraTypes";
 
 /**
  * Site Section Mapper
@@ -9,27 +10,31 @@ export class SiteSectionMapper {
     /**
      * Convert persistence document to domain entity
      */
-    static toDomain(doc: ISiteSectionDocument): ISiteSection {
-        const docObj = doc.toObject ? doc.toObject() : doc;
+    static toDomain(doc: ISiteSectionSource): ISiteSection {
+        const docObj = (doc as any).toObject ? (doc as any).toObject() : doc;
         return {
             ...docObj,
-            id: doc._id.toString(),
-            sectionKey: doc.sectionKey as SiteSectionKey,
-            image: doc.image || '',
-            link: doc.link || '',
-        } as unknown as ISiteSection;
+            id: (docObj._id || docObj.id || '').toString(),
+            sectionKey: docObj.sectionKey as SiteSectionKey,
+            image: docObj.image || '',
+            link: docObj.link || '',
+            title: docObj.title || '',
+            description: docObj.description || '',
+            createdAt: docObj.createdAt instanceof Date ? docObj.createdAt : new Date(docObj.createdAt || Date.now()),
+            updatedAt: docObj.updatedAt instanceof Date ? docObj.updatedAt : new Date(docObj.updatedAt || Date.now()),
+        } as ISiteSection;
     }
 
     /**
      * Convert domain entity to persistence format
      */
-    static toPersistence(domain: Partial<ISiteSection>): Partial<ISiteSectionDocument> {
+    static toPersistence(domain: Partial<ISiteSection>): Record<string, unknown> {
         const persistence: Record<string, unknown> = { ...domain };
         if (domain.id) {
             persistence._id = domain.id;
             delete persistence.id;
         }
-        return persistence as Partial<ISiteSectionDocument>;
+        return persistence;
     }
 
     /**
@@ -49,7 +54,7 @@ export class SiteSectionMapper {
     /**
      * Directly convert document to DTO
      */
-    static docToDTO(doc: ISiteSectionDocument): SiteSectionDTO {
+    static docToDTO(doc: ISiteSectionSource): SiteSectionDTO {
         return this.toDTO(this.toDomain(doc));
     }
 }

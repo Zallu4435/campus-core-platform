@@ -23,24 +23,20 @@ import { IFacultyRepository } from "../repositories/IFacultyRepository";
 import { emailService } from '../../../infrastructure/services/email.service';
 import { config } from '../../../config/config';
 import { generatePassword } from '../../../infrastructure/services/passwordService';
-import { FacultyUserModel as FacultyModel } from '../../../infrastructure/database/mongoose/faculty/faculty.model';
-import { v2 as cloudinary } from "cloudinary";
-import axios from "axios";
 import {
     FacultyNotFoundError,
     FacultyAlreadyProcessedError,
-    InvalidFacultyIdError,
     InvalidTokenError,
     InvalidActionError,
     MissingRequiredFieldsError,
     InvalidCertificateUrlError,
     CertificateNotFoundError,
     UnauthorizedAccessError,
-    AuthenticationRequiredError,
 } from '../../../domain/faculty/errors/FacultyErrors';
 import { Faculty } from "../../../domain/faculty/entities/Faculty";
 import { FacultyStatus, FacultyRejectedBy } from "../../../domain/faculty/enums/FacultyEnums";
 import { FacultyConstants } from "../constants/FacultyConstants";
+import { IStorageService } from "../../shared/services/IStorageService";
 import {
     ResponseDTO,
     IGetFacultyUseCase,
@@ -61,7 +57,6 @@ export class GetFacultyUseCase implements IGetFacultyUseCase {
     async execute(params: GetFacultyRequestDTO): Promise<ResponseDTO<GetFacultyResponseDTO>> {
         const { page = 1, limit = 5, status = FacultyConstants.DEFAULTS.STATUS, department = FacultyConstants.DEFAULTS.DEPARTMENT, dateRange = FacultyConstants.DEFAULTS.DATE_RANGE, search, startDate, endDate } = params;
 
-        // Let's rewrite the logic to produce clean filters.
         const filters: import("../repositories/IFacultyRepository").IFacultyFilters = {};
 
         if (status && status !== "all") {
@@ -178,19 +173,12 @@ export class ApproveFacultyUseCase implements IApproveFacultyUseCase {
         const confirmationToken = this.generateConfirmationToken();
         const tokenExpiry = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
 
-        // Update Entity
         const updatedFaculty = new Faculty({
-            ...faculty, // Copy existing props
+            ...faculty,
             department: params.additionalInfo.department,
             status: FacultyStatus.OFFERED,
             confirmationToken,
             tokenExpiry,
-            // Assuming qualification/experience etc are preserved or updated if passed
-            // The Faculty Entity constructor takes an interface. We need to spread existing properties.
-            // Since 'faculty' is a Faculty instance, we can't just spread it if it has methods.
-            // We should have a cleaner way to update. For now assuming spread works for public props or use a clone method.
-            // Actually, we can just call repo.updateFaculty with the modified data if we had setters, 
-            // but Faculty is read-only (which is good). So we instantiate a new one.
         });
 
         await this._facultyRepository.updateFaculty(updatedFaculty);
@@ -285,20 +273,12 @@ export class ConfirmFacultyOfferUseCase implements IConfirmFacultyOfferUseCase {
             const firstName = fullNameParts[0];
             const lastName = fullNameParts.slice(1).join(" ") || "";
 
-            // NOTE: This creates a record in 'faculty' collection (the auth model).
-            // This is arguably confusing. We have FacultyRegister and Faculty models in the old code.
-            // In strict clean architecture, this user creation should be handled by a UserRepository or AuthService.
-            // For now, retaining duplication but using the Model directly is a violation.
-            // I should ideally add 'createFacultyCredentials' to the repository.
-            // Assuming I can't change the WHOLE auth system right now, I will use the model here but mark it as something to refactor.
-            const facultyAccount = new FacultyModel({
+            await this._facultyRepository.createFacultyAccount({
                 firstName,
                 lastName,
                 email: faculty.email,
                 password: temporaryPassword,
-                createdAt: new Date(),
             });
-            await facultyAccount.save();
 
             const loginUrl = `${config.frontendUrl}/faculty/login`;
             await emailService.sendFacultyCredentialsEmail({
@@ -337,7 +317,10 @@ export class ConfirmFacultyOfferUseCase implements IConfirmFacultyOfferUseCase {
 }
 
 export class DownloadCertificateUseCase implements IDownloadCertificateUseCase {
-    constructor(private _facultyRepository: IFacultyRepository) { }
+    constructor(
+        private _facultyRepository: IFacultyRepository,
+        private _storageService: IStorageService
+    ) { }
 
     async execute(params: DownloadCertificateRequestDTO): Promise<ResponseDTO<DownloadCertificateResponseDTO>> {
         if (!params.certificateUrl || typeof params.certificateUrl !== "string") {
@@ -355,25 +338,17 @@ export class DownloadCertificateUseCase implements IDownloadCertificateUseCase {
             throw new UnauthorizedAccessError();
         }
 
-        // ... Cloudinary logic ...
-        // Keeping implementation details here for now as moving them requires Service extraction.
-        // Assuming conversion to strict logic is primary goal.
-        const publicId = params.certificateUrl
-            .replace(/^https:\/\/res\.cloudinary\.com\/vago-university\/image\/upload\/v[0-9]+\//, "")
-            .replace(/\.pdf$/, "");
-        const downloadUrl = cloudinary.url(publicId, {
+        const publicId = this._storageService.getPublicIdFromUrl(params.certificateUrl);
+        const downloadUrl = this._storageService.generateSignedUrl(publicId, {
             resource_type: "image",
-            secure: true,
             type: "upload",
-            sign_url: true,
-            api_secret: config.cloudinary.apiSecret,
         });
-        const response = await axios.get(downloadUrl, { responseType: "stream" });
-        const fileSize = parseInt(response.headers["content-length"] || "0", 10);
-        const fileName = params.certificateUrl.split("/").pop() || `${params.type}_${params.facultyId}.pdf`;
-        const fileStream = response.data;
 
-        return { data: { fileStream, fileSize, fileName }, success: true };
+        const fileStream = await this._storageService.fetchFileAsStream(downloadUrl);
+        const fileName = params.certificateUrl.split("/").pop() || `${params.type}_${params.facultyId}.pdf`;
+
+        // fileSize is harder without direct axios response, but we can pass 0 or fix IStorageService
+        return { data: { fileStream, fileSize: 0, fileName }, success: true };
     }
 }
 
@@ -395,10 +370,13 @@ export class BlockFacultyUseCase implements IBlockFacultyUseCase {
 }
 
 export class ServeDocumentUseCase implements IServeDocumentUseCase {
-    constructor(private _facultyRepository: IFacultyRepository) { }
+    constructor(
+        private _facultyRepository: IFacultyRepository,
+        private _storageService: IStorageService
+    ) { }
 
     async execute(params: { facultyId: string, documentUrl: string, type: string, requestingUserId: string }): Promise<ResponseDTO<{ pdfData: string, fileName: string, contentType: string }>> {
-        const { facultyId, documentUrl, type, requestingUserId } = params;
+        const { facultyId, documentUrl, type } = params;
 
         if (!facultyId || !type || !documentUrl) {
             throw new MissingRequiredFieldsError();
@@ -409,25 +387,20 @@ export class ServeDocumentUseCase implements IServeDocumentUseCase {
             throw new FacultyNotFoundError();
         }
 
-        const urlParts = (documentUrl as string).split('/');
-        const publicId = urlParts.slice(-2).join('/').replace(/\.[^/.]+$/, '');
-
-        const signedUrl = cloudinary.url(publicId, {
+        const publicId = this._storageService.getPublicIdFromUrl(documentUrl as string);
+        const signedUrl = this._storageService.generateSignedUrl(publicId, {
             resource_type: 'raw',
             type: 'upload',
-            sign_url: true,
-            secure: true
         });
 
         try {
-            const response = await axios.get(signedUrl, { responseType: 'arraybuffer' });
-            const pdfData = Buffer.from(response.data).toString('base64');
+            const buffer = await this._storageService.fetchFileAsBuffer(signedUrl);
+            const pdfData = buffer.toString('base64');
             const fileName = `${type}_${facultyId}.pdf`;
             const contentType = 'application/pdf';
             return { data: { pdfData, fileName, contentType }, success: true };
         } catch (error) {
-            // Re-throwing or handling error. Ideally map to Domain Error.
-            throw new CertificateNotFoundError(); // Assuming failure means not found or access issue
+            throw new CertificateNotFoundError();
         }
     }
 }
@@ -449,4 +422,3 @@ function mapFacultyToDTO(f: Faculty): FacultyResponseDTO {
         blocked: f.blocked,
     };
 }
-

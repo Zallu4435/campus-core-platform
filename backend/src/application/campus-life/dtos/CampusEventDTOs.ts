@@ -1,5 +1,5 @@
 import { CampusEvent } from "../../../domain/campus-life/entities/CampusLife";
-import { EventStatus, RequestStatus } from "../../../domain/campus-life/enums/CampusLifeEnums";
+import { RequestStatus } from "../../../domain/campus-life/enums/CampusLifeEnums";
 
 /**
  * Campus Event DTOs

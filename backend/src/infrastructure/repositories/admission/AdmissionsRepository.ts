@@ -16,6 +16,8 @@ import {
 } from "../../../application/admission/dtos/AdmissionResponseDTOs";
 import { Admission, AdmissionDraft } from "../../../domain/admission/entities/Admission";
 import { AdmissionMapper } from "./AdmissionMapper";
+import { IAdmissionDraftSource, IAdmissionSource } from "./infraTypes";
+import { IFile } from "../../../domain/shared/types/FileTypes";
 
 export class AdmissionsRepository implements IAdmissionsRepository {
 
@@ -54,13 +56,13 @@ export class AdmissionsRepository implements IAdmissionsRepository {
     async findDraftByRegisterId(userId: string): Promise<AdmissionDraft | null> {
         const doc = await AdmissionDraftModel.findOne({ registerId: userId }).lean();
         if (!doc) return null;
-        return AdmissionMapper.toDraftDomain(doc);
+        return AdmissionMapper.toDraftDomain(doc as unknown as IAdmissionDraftSource);
     }
 
     async findDraftByApplicationId(applicationId: string): Promise<AdmissionDraft | null> {
         const doc = await AdmissionDraftModel.findOne({ applicationId }).lean();
         if (!doc) return null;
-        return AdmissionMapper.toDraftDomain(doc);
+        return AdmissionMapper.toDraftDomain(doc as unknown as IAdmissionDraftSource);
     }
 
     async saveDraft(draft: AdmissionDraft): Promise<void> {
@@ -200,7 +202,7 @@ export class AdmissionsRepository implements IAdmissionsRepository {
         await AdmissionDraftModel.deleteOne({ applicationId: params.applicationId });
 
         return {
-            admission: AdmissionMapper.toAdmissionDomain(newAdmission.toObject()),
+            admission: AdmissionMapper.toAdmissionDomain(newAdmission.toObject() as unknown as IAdmissionSource),
         };
     }
 
@@ -231,8 +233,8 @@ export class AdmissionsRepository implements IAdmissionsRepository {
         }
     }
 
-    async uploadDocument(params: { file: Express.Multer.File, applicationId: string, documentType: string }): Promise<UploadDocumentResponseDTO> {
-        const uploadResult = await this._documentUploadService.uploadDocument(params.file, params.applicationId, params.documentType);
+    async uploadDocument(params: { file: IFile, applicationId: string, documentType: string }): Promise<UploadDocumentResponseDTO> {
+        const uploadResult = await this._documentUploadService.uploadDocument(params.file as unknown as Express.Multer.File, params.applicationId, params.documentType);
         return {
             success: true,
             message: 'Document uploaded successfully',
@@ -245,8 +247,8 @@ export class AdmissionsRepository implements IAdmissionsRepository {
         };
     }
 
-    async uploadMultipleDocuments(params: { files: Express.Multer.File[], applicationId: string, documentTypes: string[] }): Promise<UploadMultipleDocumentsResponseDTO> {
-        const uploadResults = await this._documentUploadService.uploadMultipleDocuments(params.files, params.applicationId, params.documentTypes);
+    async uploadMultipleDocuments(params: { files: IFile[], applicationId: string, documentTypes: string[] }): Promise<UploadMultipleDocumentsResponseDTO> {
+        const uploadResults = await this._documentUploadService.uploadMultipleDocuments(params.files as unknown as Express.Multer.File[], params.applicationId, params.documentTypes);
         return {
             success: true,
             message: 'Documents uploaded successfully',
@@ -259,15 +261,20 @@ export class AdmissionsRepository implements IAdmissionsRepository {
         };
     }
 
-    async getDocumentByKey(params: { userId: string; documentKey: string }): Promise<{ cloudinaryUrl?: string; fileName?: string; fileType?: string;[key: string]: unknown } | null> {
+    async getDocumentByKey(params: { userId: string; documentKey: string }): Promise<{ url?: string; fileName?: string; fileType?: string;[key: string]: unknown } | null> {
         const draft = await AdmissionDraftModel.findOne({ registerId: params.userId }).lean();
         if (!draft || !draft.documents) {
             return null;
         }
         const docsArray = Array.isArray(draft.documents.documents)
-            ? draft.documents.documents as Array<any>
+            ? draft.documents.documents as Array<Record<string, unknown>>
             : [];
-        const found = docsArray.find((doc) => doc.id === params.documentKey);
-        return found || null;
+        const found = docsArray.find((doc) => doc.id === params.documentKey) as { url?: string; cloudinaryUrl?: string;[key: string]: unknown } | undefined;
+        if (!found) return null;
+
+        return {
+            ...found,
+            url: (found.url || found.cloudinaryUrl) as string | undefined
+        };
     }
 }

@@ -65,8 +65,8 @@ export interface EventProps {
 
 export interface EventRequestProps {
   id?: string;
-  eventId: string | { _id: string; title: string; eventType: string; date: string; organizer: string; location: string; description: string; participants: number };
-  userId: string | { _id: string; firstName: string; lastName: string; email: string };
+  eventId: string | { id: string; title: string; eventType: string; date: string; organizer: string; location: string; description: string; participants: number };
+  userId: string | { id: string; firstName: string; lastName: string; email: string };
   status?: EventRequestStatus;
   whyJoin: string;
   additionalInfo?: string;
@@ -74,8 +74,8 @@ export interface EventRequestProps {
   updatedAt?: Date;
 }
 
-export interface Event {
-  _id: string;
+export interface EventData {
+  id: string;
   title: string;
   organizer: string;
   organizerType: OrganizerType;
@@ -98,17 +98,13 @@ export interface Event {
   updatedAt: Date;
 }
 
-export interface EventDoc extends Event { }
-
-export interface EventRequestDoc {
-  _id: string;
-  eventId: string | { _id: string; title: string; eventType: string; date: string; organizer: string; location: string; description: string; participants: number };
-  userId: string | { _id: string; firstName: string; lastName: string; email: string };
+export interface EventRequestData {
+  id: string;
+  eventId: string | { id: string; title: string; eventType: string; date: string; organizer: string; location: string; description: string; participants: number };
+  userId: string | { id: string; firstName: string; lastName: string; email: string };
   status: EventRequestStatus;
   whyJoin: string;
   additionalInfo: string;
   createdAt: Date;
   updatedAt: Date;
 }
-
-export interface EventRequest extends EventRequestDoc { }

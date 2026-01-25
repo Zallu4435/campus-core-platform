@@ -2,24 +2,24 @@ import { EventErrorType } from "../enums/EventErrorType";
 import { EventRequestProps, EventRequestStatus } from "./EventTypes";
 
 export class EventRequest {
-  private _id?: string;
-  private _eventId: string | { _id: string; title: string; eventType: string; date: string; organizer: string; location: string; description: string };
-  private _userId: string | { _id: string; firstName: string; lastName: string; email: string };
-  private _status: EventRequestStatus;
-  private _whyJoin: string;
-  private _additionalInfo: string;
-  private _createdAt?: Date;
-  private _updatedAt?: Date;
+  private idValue?: string;
+  private eventIdValue: string | { id: string; title: string; eventType: string; date: string; organizer: string; location: string; description: string };
+  private userIdValue: string | { id: string; firstName: string; lastName: string; email: string };
+  private statusValue: EventRequestStatus;
+  private whyJoinValue: string;
+  private additionalInfoValue: string;
+  private createdAtValue?: Date;
+  private updatedAtValue?: Date;
 
   constructor(props: EventRequestProps) {
-    this._id = props.id;
-    this._eventId = props.eventId;
-    this._userId = props.userId;
-    this._status = props.status || EventRequestStatus.Pending;
-    this._whyJoin = props.whyJoin;
-    this._additionalInfo = props.additionalInfo || "";
-    this._createdAt = props.createdAt;
-    this._updatedAt = props.updatedAt;
+    this.idValue = props.id;
+    this.eventIdValue = props.eventId;
+    this.userIdValue = props.userId;
+    this.statusValue = props.status || EventRequestStatus.Pending;
+    this.whyJoinValue = props.whyJoin;
+    this.additionalInfoValue = props.additionalInfo || "";
+    this.createdAtValue = props.createdAt;
+    this.updatedAtValue = props.updatedAt;
   }
 
   static create(props: EventRequestProps): EventRequest {
@@ -35,12 +35,21 @@ export class EventRequest {
     return new EventRequest(props);
   }
 
-  get id(): string | undefined { return this._id; }
-  get eventId(): string | { _id: string; title: string; eventType: string; date: string; organizer: string; location: string; description: string } { return this._eventId; }
-  get userId(): string | { _id: string; firstName: string; lastName: string; email: string } { return this._userId; }
-  get status(): EventRequestStatus { return this._status; }
-  get whyJoin(): string { return this._whyJoin; }
-  get additionalInfo(): string { return this._additionalInfo; }
-  get createdAt(): Date | undefined { return this._createdAt; }
-  get updatedAt(): Date | undefined { return this._updatedAt; }
+  get id(): string | undefined { return this.idValue; }
+  get eventId(): string | { id: string; title: string; eventType: string; date: string; organizer: string; location: string; description: string } { return this.eventIdValue; }
+  get userId(): string | { id: string; firstName: string; lastName: string; email: string } { return this.userIdValue; }
+  get status(): EventRequestStatus { return this.statusValue; }
+  get whyJoin(): string { return this.whyJoinValue; }
+  get additionalInfo(): string { return this.additionalInfoValue; }
+  get createdAt(): Date | undefined { return this.createdAtValue; }
+  get updatedAt(): Date | undefined { return this.updatedAtValue; }
+
+  // Helper methods to get clean IDs
+  get eventIdString(): string {
+    return typeof this.eventIdValue === 'string' ? this.eventIdValue : this.eventIdValue.id;
+  }
+
+  get userIdString(): string {
+    return typeof this.userIdValue === 'string' ? this.userIdValue : this.userIdValue.id;
+  }
 }

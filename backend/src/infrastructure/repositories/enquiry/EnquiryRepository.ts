@@ -3,6 +3,8 @@ import { EnquiryFilter, EnquirySortOptions } from "../../../domain/enquiry/entit
 import { IEnquiryRepository } from "../../../application/enquiry/repositories/IEnquiryRepository";
 import { Enquiry as EnquiryModel } from "../../database/mongoose/enquiry/enquiry.model";
 import { EnquiryMapper } from "./EnquiryMapper";
+import { IEnquirySource } from "./infraTypes";
+import mongoose from 'mongoose';
 
 export class EnquiryRepository implements IEnquiryRepository {
   private buildMongoFilter(filter: EnquiryFilter): Record<string, unknown> {
@@ -36,34 +38,34 @@ export class EnquiryRepository implements IEnquiryRepository {
     const persistenceData = EnquiryMapper.toPersistence(enquiry);
     const model = new EnquiryModel(persistenceData);
     const saved = await model.save();
-    return EnquiryMapper.toDomain(saved.toObject() as unknown as Record<string, unknown>);
+    return EnquiryMapper.toDomain(saved.toObject() as unknown as IEnquirySource);
   }
 
   async find(filter: EnquiryFilter, options: { skip?: number; limit?: number; sort?: EnquirySortOptions } = {}): Promise<Enquiry[]> {
     const mongoFilter = this.buildMongoFilter(filter);
     const results = await EnquiryModel.find(mongoFilter)
-      .sort((options.sort as any) ?? { createdAt: -1 })
+      .sort((options.sort as string | { [key: string]: mongoose.SortOrder }) ?? { createdAt: -1 })
       .skip(options.skip ?? 0)
       .limit(options.limit ?? 10)
-      .lean();
+      .lean() as unknown as IEnquirySource[];
 
-    return results.map(doc => EnquiryMapper.toDomain(doc as unknown as Record<string, unknown>));
+    return results.map(doc => EnquiryMapper.toDomain(doc));
   }
 
   async count(filter: EnquiryFilter): Promise<number> {
     const mongoFilter = this.buildMongoFilter(filter);
-    return EnquiryModel.countDocuments(mongoFilter as any);
+    return EnquiryModel.countDocuments(mongoFilter);
   }
 
   async findById(id: string): Promise<Enquiry | null> {
-    const result = await EnquiryModel.findById(id).lean();
-    return result ? EnquiryMapper.toDomain(result as unknown as Record<string, unknown>) : null;
+    const result = await EnquiryModel.findById(id).lean() as unknown as IEnquirySource;
+    return result ? EnquiryMapper.toDomain(result) : null;
   }
 
   async update(id: string, enquiry: Enquiry): Promise<Enquiry | null> {
     const persistenceData = EnquiryMapper.toPersistence(enquiry);
-    const updated = await EnquiryModel.findByIdAndUpdate(id, persistenceData, { new: true }).lean();
-    return updated ? EnquiryMapper.toDomain(updated as unknown as Record<string, unknown>) : null;
+    const updated = await EnquiryModel.findByIdAndUpdate(id, persistenceData, { new: true }).lean() as unknown as IEnquirySource;
+    return updated ? EnquiryMapper.toDomain(updated) : null;
   }
 
   async delete(id: string): Promise<void> {

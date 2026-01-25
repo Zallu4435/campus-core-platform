@@ -34,8 +34,8 @@ export interface SportProps {
 
 export interface SportRequestProps {
   id?: string;
-  sportId: string | { _id: string; title: string; type: string };
-  userId: string | { _id: string; email: string; firstName?: string; lastName?: string };
+  sportId: string | { id: string; title: string; type: string };
+  userId: string | { id: string; email: string; firstName?: string; lastName?: string };
   status?: SportRequestStatus;
   whyJoin: string;
   additionalInfo?: string;
@@ -43,8 +43,8 @@ export interface SportRequestProps {
   updatedAt?: Date;
 }
 
-export interface Sport {
-  _id: string;
+export interface SportData {
+  id: string;
   title: string;
   type: string;
   category: string;
@@ -64,17 +64,13 @@ export interface Sport {
   logo?: string;
 }
 
-export interface SportDoc extends Sport { }
-
-export interface SportRequestDoc {
-  _id: string;
-  sportId: string | { _id: string; title: string; type: string };
-  userId: string | { _id: string; email: string; firstName?: string; lastName?: string };
+export interface SportRequestData {
+  id: string;
+  sportId: string | { id: string; title: string; type: string };
+  userId: string | { id: string; email: string; firstName?: string; lastName?: string };
   status: SportRequestStatus;
   whyJoin: string;
   additionalInfo: string;
   createdAt: Date;
   updatedAt: Date;
 }
-
-export interface SportRequest extends SportRequestDoc { }

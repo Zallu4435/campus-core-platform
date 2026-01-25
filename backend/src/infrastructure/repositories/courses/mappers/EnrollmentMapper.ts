@@ -28,10 +28,10 @@ export class EnrollmentMapper {
             id: mongooseDoc._id?.toString(),
             studentId: typeof mongooseDoc.studentId === 'string'
                 ? mongooseDoc.studentId
-                : mongooseDoc.studentId._id.toString(),
+                : mongooseDoc.studentId.id,
             courseId: typeof mongooseDoc.courseId === 'string'
                 ? mongooseDoc.courseId
-                : mongooseDoc.courseId._id.toString(),
+                : mongooseDoc.courseId.id,
             status: mongooseDoc.status as any,
             requestedAt: mongooseDoc.requestedAt,
             reason: mongooseDoc.reason,
@@ -67,21 +67,21 @@ export class EnrollmentMapper {
         // Handle populated studentId
         const studentId = typeof mongooseDoc.studentId === 'string'
             ? mongooseDoc.studentId
-            : mongooseDoc.studentId?._id?.toString() || '';
+            : mongooseDoc.studentId?.id || '';
         const studentEmail = typeof mongooseDoc.studentId === 'string'
             ? ''
             : mongooseDoc.studentId?.email || '';
         const studentFirstName = typeof mongooseDoc.studentId === 'string'
             ? ''
-            : (mongooseDoc.studentId as any)?.firstName || '';
+            : mongooseDoc.studentId?.firstName || '';
         const studentLastName = typeof mongooseDoc.studentId === 'string'
             ? ''
-            : (mongooseDoc.studentId as any)?.lastName || '';
+            : mongooseDoc.studentId?.lastName || '';
 
         // Handle populated courseId
         const courseId = typeof mongooseDoc.courseId === 'string'
             ? mongooseDoc.courseId
-            : mongooseDoc.courseId?._id?.toString() || '';
+            : mongooseDoc.courseId?.id || '';
         const courseTitle = typeof mongooseDoc.courseId === 'string'
             ? ''
             : mongooseDoc.courseId?.title || '';
@@ -90,13 +90,13 @@ export class EnrollmentMapper {
             : mongooseDoc.courseId?.specialization;
         const courseTerm = typeof mongooseDoc.courseId === 'string'
             ? undefined
-            : (mongooseDoc.courseId as any)?.term;
+            : mongooseDoc.courseId?.term;
         const courseFaculty = typeof mongooseDoc.courseId === 'string'
             ? undefined
-            : (mongooseDoc.courseId as any)?.faculty;
+            : mongooseDoc.courseId?.faculty;
         const courseCredits = typeof mongooseDoc.courseId === 'string'
             ? undefined
-            : (mongooseDoc.courseId as any)?.credits;
+            : mongooseDoc.courseId?.credits;
 
         return {
             id: mongooseDoc._id?.toString() || '',

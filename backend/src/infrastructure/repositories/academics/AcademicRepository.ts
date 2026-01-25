@@ -1,11 +1,22 @@
 import mongoose from 'mongoose';
 import { IAcademicRepository } from '../../../application/academics/repositories/IAcademicRepository';
 import {
+  IStudentSource,
+  IProgramSource,
+  IEnrollmentSource,
+  IGradeSource,
+  ICourseSource,
+  IAcademicHistorySource,
+  IProgressSource,
+  IRequirementSource,
+  ITranscriptRequestSource
+} from "./infraTypes";
+import {
   StudentInfoResult
 } from "../../../application/academics/repositories/AcademicRepositoryTypes";
-// Imports fixed
 import { Course } from "../../../domain/academics/entities/Course";
-import { Student } from "../../../domain/academics/entities/Student";
+
+
 import { Enrollment } from "../../../domain/academics/entities/Enrollment";
 import { Grade } from "../../../domain/academics/entities/Grade";
 import { AcademicHistory } from "../../../domain/academics/entities/AcademicHistory";
@@ -47,20 +58,20 @@ export class AcademicRepository implements IAcademicRepository {
       status: { $regex: /^pending/i }
     }).lean();
 
-    const student = AcademicMappers.toStudent(userDoc);
-    const program = AcademicMappers.toProgram(programDoc);
-    const pendingEnrollments = enrollmentDocs.map(doc => AcademicMappers.toEnrollment(doc));
+    const student = AcademicMappers.toStudent(userDoc as unknown as IStudentSource);
+    const program = AcademicMappers.toProgram(programDoc as unknown as IProgramSource);
+    const pendingEnrollments = enrollmentDocs.map(doc => AcademicMappers.toEnrollment(doc as unknown as IEnrollmentSource));
 
     return { student, program, pendingEnrollments };
   }
 
   async findGradeByUserId(userId: string): Promise<Grade | null> {
     const doc = await GradeModel.findOne({ studentId: userId }).lean();
-    return doc ? AcademicMappers.toGrade(doc) : null;
+    return doc ? AcademicMappers.toGrade(doc as unknown as IGradeSource) : null;
   }
 
   async findAllCourses(search?: string, page: number = 1, limit: number = 5): Promise<Course[]> {
-    const query: any = {};
+    const query: Record<string, unknown> = {};
     if (search && search.trim()) {
       const searchRegex = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), AcademicConstants.Course.SEARCH_REGEX_FLAGS);
       query.$or = [
@@ -78,11 +89,11 @@ export class AcademicRepository implements IAcademicRepository {
       .limit(limit)
       .lean();
 
-    return docs.map(doc => AcademicMappers.toCourse(doc));
+    return docs.map(doc => AcademicMappers.toCourse(doc as unknown as ICourseSource));
   }
 
   async findAcademicHistory(userId: string, startTerm?: string, endTerm?: string): Promise<AcademicHistory[]> {
-    const query: any = { userId }; // Old code used 'userId' in query. Check Model. 
+    const actualQuery: Record<string, unknown> = { studentId: userId };
     // AcademicHistoryModel 'studentId' (Schema says studentId). Old interface had 'userId'.
     // Old Repo implementation: `const query: AcademicHistoryFilter = { userId };`
     // Wait, the Model schema I viewed earlier (`academicHistory.model.ts`) has `studentId`.
@@ -97,40 +108,40 @@ export class AcademicRepository implements IAcademicRepository {
     // BUT `AcademicHistoryModel` schema has `studentId`.
     // This implies simple mapping mismatch. I will query by `studentId: userId`.
 
-    const actualQuery: any = { studentId: userId };
+
 
     if (startTerm) actualQuery.term = { $gte: startTerm };
     if (endTerm) {
-      if (!actualQuery.term) actualQuery.term = {};
-      actualQuery.term.$lte = endTerm;
+      if (!actualQuery.term) actualQuery.term = {} as Record<string, unknown>;
+      (actualQuery.term as Record<string, unknown>).$lte = endTerm;
     }
 
     // Also strict check if `AcademicHistory` stores `userId` or `studentId`.
     // I noticed `GradeModel` has `studentId` too.
 
     const docs = await AcademicHistoryModel.find(actualQuery).lean();
-    return docs.map(doc => AcademicMappers.toAcademicHistory(doc));
+    return docs.map(doc => AcademicMappers.toAcademicHistory(doc as unknown as IAcademicHistorySource));
   }
 
   async findProgramByUserId(userId: string): Promise<Program | null> {
     const doc = await ProgramModel.findOne({ studentId: userId }).lean();
-    return doc ? AcademicMappers.toProgram(doc) : null;
+    return doc ? AcademicMappers.toProgram(doc as unknown as IProgramSource) : null;
   }
 
   async findProgressByUserId(userId: string): Promise<Progress | null> {
     const doc = await ProgressModel.findOne({ studentId: userId }).lean();
-    return doc ? AcademicMappers.toProgress(doc) : null;
+    return doc ? AcademicMappers.toProgress(doc as unknown as IProgressSource) : null;
   }
 
   async findRequirementsByUserId(userId: string): Promise<Requirement | null> {
     const doc = await RequirementsModel.findOne({ studentId: userId }).lean();
-    return doc ? AcademicMappers.toRequirement(doc) : null;
+    return doc ? AcademicMappers.toRequirement(doc as unknown as IRequirementSource) : null;
   }
 
   async findCourseById(courseId: string): Promise<Course | null> {
     if (!mongoose.isValidObjectId(courseId)) return null;
     const doc = await CourseModel.findById(courseId).lean();
-    return doc ? AcademicMappers.toCourse(doc) : null;
+    return doc ? AcademicMappers.toCourse(doc as unknown as ICourseSource) : null;
   }
 
   async findEnrollment(studentId: string, courseId: string): Promise<Enrollment | null> {
@@ -141,7 +152,7 @@ export class AcademicRepository implements IAcademicRepository {
       status: { $in: ['Pending', 'Approved'] }
     }).lean();
 
-    return doc ? AcademicMappers.toEnrollment(doc) : null;
+    return doc ? AcademicMappers.toEnrollment(doc as unknown as IEnrollmentSource) : null;
   }
 
   async createEnrollment(studentId: string, courseId: string, reason?: string): Promise<Enrollment> {
@@ -155,7 +166,7 @@ export class AcademicRepository implements IAcademicRepository {
     }).save();
 
     // Convert to Object to get simple properties
-    return AcademicMappers.toEnrollment(doc.toObject());
+    return AcademicMappers.toEnrollment(doc.toObject() as unknown as IEnrollmentSource);
   }
 
   async updateCourseEnrollment(courseId: string, increment: number): Promise<Course | null> {
@@ -178,7 +189,7 @@ export class AcademicRepository implements IAcademicRepository {
 
     // If incrementing, check limit
     if (increment > 0 && course.currentEnrollment >= course.maxEnrollment) {
-      return AcademicMappers.toCourse(course.toObject()); // Return unchanged
+      return AcademicMappers.toCourse(course.toObject() as unknown as ICourseSource); // Return unchanged
     }
 
     const updatedDoc = await CourseModel.findOneAndUpdate(
@@ -187,7 +198,7 @@ export class AcademicRepository implements IAcademicRepository {
       { new: true }
     ).lean();
 
-    return updatedDoc ? AcademicMappers.toCourse(updatedDoc) : null;
+    return updatedDoc ? AcademicMappers.toCourse(updatedDoc as unknown as ICourseSource) : null;
   }
 
   async deleteEnrollment(studentId: string, courseId: string): Promise<boolean> {
@@ -212,6 +223,6 @@ export class AcademicRepository implements IAcademicRepository {
       estimatedDelivery: request.estimatedDelivery
     }).save();
 
-    return AcademicMappers.toTranscriptRequest(doc.toObject());
+    return AcademicMappers.toTranscriptRequest(doc.toObject() as unknown as ITranscriptRequestSource);
   }
 }

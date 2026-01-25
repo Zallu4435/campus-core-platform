@@ -1,14 +1,9 @@
-import {
-  CreateSiteSectionRequest,
-  UpdateSiteSectionRequest,
-  DeleteSiteSectionRequest,
-  ISiteSectionDocument
-} from '../../../domain/site-management/entities/SiteSectionTypes';
+import { CreateSiteSectionRequest, UpdateSiteSectionRequest, DeleteSiteSectionRequest, SiteSectionFilter, ISiteSection } from "../../../domain/site-management/entities/SiteSectionTypes";
 
 export interface ISiteSectionRepository {
-  getSections(query): Promise<ISiteSectionDocument[]>;
-  getSectionById(id: string): Promise<ISiteSectionDocument | null>;
-  createSection(params: CreateSiteSectionRequest): Promise<ISiteSectionDocument>;
-  updateSection(params: UpdateSiteSectionRequest): Promise<ISiteSectionDocument | null>;
+  getSections(query: SiteSectionFilter): Promise<ISiteSection[]>;
+  getSectionById(id: string): Promise<ISiteSection | null>;
+  createSection(params: CreateSiteSectionRequest): Promise<ISiteSection>;
+  updateSection(params: UpdateSiteSectionRequest): Promise<ISiteSection | null>;
   deleteSection(params: DeleteSiteSectionRequest): Promise<void>;
 }

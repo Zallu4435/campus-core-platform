@@ -1,47 +1,47 @@
 import { EventRequest } from "../../../../domain/events/entities/EventRequest";
 import { EventRequestDTO } from "../../../../application/events/dtos/EventBaseDTOs";
-import { EventRequestDoc, EventDoc } from "../../../../domain/events/entities/EventTypes";
+import { EventRequestData } from "../../../../domain/events/entities/EventTypes";
 
 interface PopulatedEvent {
-    _id: string;
+    id: string;
     title: string;
     eventType: string;
     date: string;
 }
 
 interface PopulatedUser {
-    _id: string;
+    id: string;
     firstName: string;
     lastName: string;
     email: string;
 }
 
 export class EventRequestMapper {
-    static toDomain(mongooseDoc: EventRequestDoc): EventRequest {
-        if (!mongooseDoc) {
-            throw new Error("Cannot map null document to domain entity");
+    static toDomain(data: EventRequestData): EventRequest {
+        if (!data) {
+            throw new Error("Cannot map null data to domain entity");
         }
 
         return new EventRequest({
-            id: mongooseDoc._id.toString(),
-            eventId: typeof mongooseDoc.eventId === 'string' ? mongooseDoc.eventId : mongooseDoc.eventId._id.toString(),
-            userId: typeof mongooseDoc.userId === 'string' ? mongooseDoc.userId : mongooseDoc.userId._id.toString(),
-            status: mongooseDoc.status,
-            whyJoin: mongooseDoc.whyJoin,
-            additionalInfo: mongooseDoc.additionalInfo,
-            createdAt: mongooseDoc.createdAt,
-            updatedAt: mongooseDoc.updatedAt,
+            id: data.id,
+            eventId: typeof data.eventId === 'string' ? data.eventId : data.eventId.id,
+            userId: typeof data.userId === 'string' ? data.userId : data.userId.id,
+            status: data.status,
+            whyJoin: data.whyJoin,
+            additionalInfo: data.additionalInfo,
+            createdAt: data.createdAt,
+            updatedAt: data.updatedAt,
         });
     }
 
     static toPersistence(domainEntity: EventRequest): Record<string, unknown> {
         const eventId = typeof domainEntity.eventId === 'string'
             ? domainEntity.eventId
-            : (domainEntity.eventId as { _id: string })._id;
+            : (domainEntity.eventId as { id: string }).id;
 
         const userId = typeof domainEntity.userId === 'string'
             ? domainEntity.userId
-            : (domainEntity.userId as { _id: string })._id;
+            : (domainEntity.userId as { id: string }).id;
 
         return {
             eventId,
@@ -52,36 +52,36 @@ export class EventRequestMapper {
         };
     }
 
-    static toDTO(mongooseDoc: EventRequestDoc): EventRequestDTO {
-        if (!mongooseDoc) {
-            throw new Error("Cannot map null document to DTO");
+    static toDTO(data: EventRequestData): EventRequestDTO {
+        if (!data) {
+            throw new Error("Cannot map null data to DTO");
         }
 
-        const event = typeof mongooseDoc.eventId !== 'string'
-            ? mongooseDoc.eventId as unknown as PopulatedEvent
-            : { _id: mongooseDoc.eventId, title: "", eventType: "", date: "" };
+        const event = typeof data.eventId !== 'string'
+            ? data.eventId as unknown as PopulatedEvent
+            : { id: data.eventId, title: "", eventType: "", date: "" };
 
-        const user = typeof mongooseDoc.userId !== 'string'
-            ? mongooseDoc.userId as unknown as PopulatedUser
-            : { _id: mongooseDoc.userId, firstName: "", lastName: "", email: "" };
+        const user = typeof data.userId !== 'string'
+            ? data.userId as unknown as PopulatedUser
+            : { id: data.userId, firstName: "", lastName: "", email: "" };
 
         return {
-            id: mongooseDoc._id.toString(),
-            eventId: event._id.toString(),
+            id: data.id,
+            eventId: event.id || "",
             eventName: event.title || "",
-            userId: user._id.toString(),
+            userId: user.id || "",
             userName: user.firstName ? `${user.firstName} ${user.lastName}` : "",
             userEmail: user.email || "",
-            status: mongooseDoc.status,
-            whyJoin: mongooseDoc.whyJoin,
-            additionalInfo: mongooseDoc.additionalInfo || "",
-            requestedDate: mongooseDoc.createdAt ? mongooseDoc.createdAt.toISOString() : "",
+            status: data.status,
+            whyJoin: data.whyJoin,
+            additionalInfo: data.additionalInfo || "",
+            requestedDate: data.createdAt ? data.createdAt.toISOString() : "",
             proposedDate: event.date ? new Date(event.date).toISOString() : "",
             type: event.eventType || "",
         };
     }
 
-    static toDTOList(mongooseDocs: EventRequestDoc[]): EventRequestDTO[] {
-        return mongooseDocs.map((doc) => this.toDTO(doc));
+    static toDTOList(dataList: EventRequestData[]): EventRequestDTO[] {
+        return dataList.map((data) => this.toDTO(data));
     }
 }

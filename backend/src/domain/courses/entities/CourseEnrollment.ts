@@ -1,10 +1,10 @@
 import { CourseErrorType } from "../enums/CourseErrorType";
-import { EnrollmentProps, EnrollmentStatus } from "../types";
+import { EnrollmentProps, EnrollmentStatus } from "../types/CourseTypes";
 
 export class Enrollment {
   private idValue?: string;
-  private studentIdValue: string | { _id: string; email: string; name?: string };
-  private courseIdValue: string | { _id: string; title: string; specialization?: string };
+  private studentIdValue: string | { id: string; email: string; name?: string };
+  private courseIdValue: string | { id: string; title: string; specialization?: string };
   private statusValue: EnrollmentStatus;
   private requestedAtValue: Date;
   private reasonValue: string;
@@ -29,19 +29,19 @@ export class Enrollment {
   }
 
   get id(): string | undefined { return this.idValue; }
-  get studentId(): string | { _id: string; email: string; name?: string } { return this.studentIdValue; }
-  get courseId(): string | { _id: string; title: string; specialization?: string } { return this.courseIdValue; }
+  get studentId(): string | { id: string; email: string; name?: string } { return this.studentIdValue; }
+  get courseId(): string | { id: string; title: string; specialization?: string } { return this.courseIdValue; }
   get status(): EnrollmentStatus { return this.statusValue; }
   get requestedAt(): Date { return this.requestedAtValue; }
   get reason(): string { return this.reasonValue; }
 
   // Helper methods to get the actual ID values
   get studentIdString(): string {
-    return typeof this.studentIdValue === 'string' ? this.studentIdValue : this.studentIdValue._id;
+    return typeof this.studentIdValue === 'string' ? this.studentIdValue : this.studentIdValue.id;
   }
 
   get courseIdString(): string {
-    return typeof this.courseIdValue === 'string' ? this.courseIdValue : this.courseIdValue._id;
+    return typeof this.courseIdValue === 'string' ? this.courseIdValue : this.courseIdValue.id;
   }
 
   // Helper methods to get display values

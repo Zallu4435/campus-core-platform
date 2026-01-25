@@ -16,19 +16,25 @@ import {
   CampusEventModel,
   EventRequestModel,
 } from "../../../infrastructure/database/mongoose/events/CampusEventModel";
-import { BaseRepository } from "../../../application/repositories/BaseRepository";
-import { Event as EventType, EventDoc, EventRequestDoc, EventRequestStatus } from "../../../domain/events/entities/EventTypes";
+import { BaseRepository } from "../shared/BaseRepository";
+import { EventData, EventRequestData, EventRequestStatus } from "../../../domain/events/entities/EventTypes";
 import { EventMapper } from "./mappers/EventMapper";
 import { EventRequestMapper } from "./mappers/EventRequestMapper";
+import { Model } from "mongoose";
 
-export class EventsRepository extends BaseRepository<EventType, CreateEventRequestDTO, Partial<EventDataDTO>, Record<string, unknown>, EventType> implements IEventsRepository {
+export class EventsRepository extends BaseRepository<EventData, CreateEventRequestDTO, Partial<EventDataDTO>, Record<string, unknown>, EventData> implements IEventsRepository {
   constructor() {
-    super(CampusEventModel);
+    super(CampusEventModel as unknown as Model<EventData>);
+  }
+
+  private mapRawToData<T extends { _id: any }>(raw: T): Omit<T, '_id'> & { id: string } {
+    const { _id, ...rest } = raw;
+    return { id: _id.toString(), ...rest } as Omit<T, '_id'> & { id: string };
   }
 
   async getEvents(params: GetEventsRequestDTO): Promise<GetEventsResponseDTO> {
     const { page, limit, type, status, startDate, endDate, search, organizerType, dateRange } = params;
-    const query: FilterQuery<EventDoc> = {};
+    const query: FilterQuery<any> = {};
 
     if (type && type !== "all") {
       query.eventType = { $regex: `^${type}$`, $options: "i" };
@@ -84,17 +90,18 @@ export class EventsRepository extends BaseRepository<EventType, CreateEventReque
     }
 
     const skip = (page - 1) * limit;
-    const events = await CampusEventModel.find(query)
+    const eventsDocs = await CampusEventModel.find(query)
       .sort({ updatedAt: -1, createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .lean() as EventDoc[];
+      .lean();
 
+    const eventsData = eventsDocs.map(e => this.mapRawToData(e));
     const totalItems = await CampusEventModel.countDocuments(query);
     const totalPages = Math.ceil(totalItems / limit);
 
     return {
-      events: EventMapper.toSummaryDTOList(events),
+      events: EventMapper.toSummaryDTOList(eventsData),
       totalItems,
       totalPages,
       currentPage: page,
@@ -103,13 +110,13 @@ export class EventsRepository extends BaseRepository<EventType, CreateEventReque
 
   async getEventRequests(params: GetEventRequestsRequestDTO): Promise<GetEventRequestsResponseDTO> {
     const { page, limit, status, startDate, endDate, type, search, organizerType, dateRange } = params;
-    const query: FilterQuery<EventRequestDoc> = {};
+    const query: FilterQuery<any> = {};
 
     if (status && status !== "all") {
       query.status = status as EventRequestStatus;
     }
 
-    const eventQuery: FilterQuery<EventDoc> = {};
+    const eventQuery: FilterQuery<any> = {};
 
     if (type && type.toLowerCase() !== "all") {
       eventQuery.eventType = { $regex: `^${type}$`, $options: "i" };
@@ -179,10 +186,12 @@ export class EventsRepository extends BaseRepository<EventType, CreateEventReque
       .sort({ updatedAt: -1, createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .lean() as unknown as EventRequestDoc[];
+      .lean();
+
+    const requestData = rawRequests.map(r => this.mapRawToData(r)) as unknown as EventRequestData[];
 
     return {
-      data: EventRequestMapper.toDTOList(rawRequests),
+      data: EventRequestMapper.toDTOList(requestData),
       totalItems,
       totalPages,
       currentPage: page,
@@ -214,12 +223,14 @@ export class EventsRepository extends BaseRepository<EventType, CreateEventReque
         path: "userId",
         select: "firstName lastName email",
       })
-      .lean() as unknown as EventRequestDoc;
+      .lean();
 
     if (!doc) throw new Error("Event request not found");
 
+    const data = this.mapRawToData(doc);
+
     return {
-      eventRequest: EventRequestMapper.toDTO(doc)
+      eventRequest: EventRequestMapper.toDTO(data as unknown as EventRequestData)
     };
   }
 }

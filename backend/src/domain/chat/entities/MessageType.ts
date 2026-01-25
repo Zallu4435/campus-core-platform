@@ -5,17 +5,15 @@ export enum MessageType {
   Audio = 'audio',
   Video = 'video',
   Location = 'location'
-} 
-
-export type RepositoryObjectIdLike = string | { toString(): string };
+}
 
 export type RepositoryChat = {
-  _id: RepositoryObjectIdLike;
+  id: string;
   type: string;
   name?: string;
   avatar?: string;
   description?: string;
-  participants: RepositoryObjectIdLike[];
+  participants: string[];
   admins?: string[];
   settings?: Record<string, unknown>;
   lastMessage?: {
@@ -61,7 +59,7 @@ export type RepositoryForwardedFrom = {
 };
 
 export type RepositoryMessage = {
-  _id: RepositoryObjectIdLike;
+  id: string;
   chatId: string;
   senderId: string;
   content: string;
@@ -79,7 +77,7 @@ export type RepositoryMessage = {
 };
 
 export type RepositoryUser = {
-  _id: RepositoryObjectIdLike;
+  id: string;
   firstName: string;
   lastName: string;
   email: string;

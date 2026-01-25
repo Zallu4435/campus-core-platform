@@ -1,4 +1,4 @@
-import { EnrollmentProps, EnrollmentStatus, CourseProps } from '../../../domain/courses/types';
+import { EnrollmentProps, EnrollmentStatus, CourseProps } from '../../../domain/courses/types/CourseTypes';
 
 export interface GetEnrollmentsRequestDTO {
   page: number;

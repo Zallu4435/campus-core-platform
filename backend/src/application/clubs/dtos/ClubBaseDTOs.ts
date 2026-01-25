@@ -15,7 +15,7 @@ export type ClubRequestDataDTO = {
 };
 
 export interface RepositoryClubData {
-    _id: string;
+    id: string;
     name: string;
     type: string;
     status: string;

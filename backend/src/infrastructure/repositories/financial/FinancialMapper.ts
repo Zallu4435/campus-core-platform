@@ -4,24 +4,26 @@ import {
     StudentFinancialInfo,
 } from '../../../domain/financial/entities/FinancialEntities';
 
+import { IPaymentSource, IChargeSource, IFinancialInfoAggregated } from "./infraTypes";
+
 export class FinancialMapper {
-    static toPayment(raw: any): Payment {
+    static toPayment(raw: IPaymentSource): Payment {
         return Payment.create({
-            id: raw._id?.toString() || raw.id,
-            studentId: raw.studentId?.toString() || raw.studentId,
-            chargeId: raw.chargeId?.toString() || raw.chargeId || '',
+            id: raw._id.toString(),
+            studentId: raw.studentId.toString(),
+            chargeId: raw.chargeId?.toString() || '',
             amount: raw.amount,
-            status: raw.status,
-            method: raw.method,
-            date: new Date(raw.date || raw.createdAt),
-            orderId: raw.orderId,
-            currency: raw.currency,
+            status: raw.status as 'Completed' | 'Pending' | 'Failed',
+            method: raw.method as 'Credit Card' | 'Bank Transfer' | 'Financial Aid' | 'Razorpay' | 'stripe',
+            date: new Date(raw.date || raw.createdAt || Date.now()),
+            orderId: (raw.metadata?.razorpayOrderId as string) || '',
+            currency: 'INR', // Default or from raw
             description: raw.description,
             metadata: raw.metadata,
         });
     }
 
-    static toCharge(raw: any): Charge {
+    static toCharge(raw: IChargeSource): Charge {
         // Handle applicableFor - can be string or object
         let applicableFor: Record<string, unknown>;
         if (typeof raw.applicableFor === 'string') {
@@ -36,7 +38,7 @@ export class FinancialMapper {
         }
 
         return Charge.create({
-            id: raw._id?.toString() || raw.id,
+            id: raw._id.toString(),
             title: raw.title,
             description: raw.description,
             amount: raw.amount,
@@ -44,21 +46,22 @@ export class FinancialMapper {
             dueDate: new Date(raw.dueDate),
             applicableFor,
             createdBy: raw.createdBy?.toString() || '',
+            status: raw.status,
             createdAt: new Date(raw.createdAt || Date.now()),
             updatedAt: new Date(raw.updatedAt || Date.now()),
         });
     }
 
-    static toStudentFinancialInfo(raw: any): StudentFinancialInfo {
+    static toStudentFinancialInfo(raw: IFinancialInfoAggregated): StudentFinancialInfo {
         return StudentFinancialInfo.create({
-            id: raw._id?.toString() || raw.id,
-            studentId: raw.studentId?.toString() || raw.studentId,
-            chargeId: raw.chargeId?.toString() || raw.chargeId,
-            amount: raw.amount,
-            paymentDueDate: new Date(raw.paymentDueDate),
-            status: raw.status,
-            term: raw.term,
-            issuedAt: new Date(raw.issuedAt),
+            id: raw.id || raw._id?.toString() || '',
+            studentId: raw.studentId?.toString() || '',
+            chargeId: raw.chargeId?.toString() || '',
+            amount: raw.amount || 0,
+            paymentDueDate: new Date(raw.paymentDueDate || Date.now()),
+            status: (raw.status as 'Paid' | 'Pending') || 'Pending',
+            term: raw.term || '',
+            issuedAt: new Date(raw.issuedAt || Date.now()),
             createdAt: new Date(raw.createdAt || Date.now()),
             updatedAt: new Date(raw.updatedAt || Date.now()),
             paidAt: raw.paidAt ? new Date(raw.paidAt) : undefined,
@@ -66,18 +69,6 @@ export class FinancialMapper {
             chargeTitle: raw.chargeTitle,
             chargeDescription: raw.chargeDescription,
         });
-    }
-
-    static toPaymentDTO(payment: Payment) {
-        return payment.toJSON();
-    }
-
-    static toChargeDTO(charge: Charge) {
-        return charge.toJSON();
-    }
-
-    static toStudentFinancialInfoDTO(info: StudentFinancialInfo) {
-        return info.toJSON();
     }
 
     // Helper to convert charge entity back to database format
@@ -90,6 +81,7 @@ export class FinancialMapper {
             dueDate: charge.dueDate,
             applicableFor: JSON.stringify(charge.applicableFor),
             createdBy: charge.createdBy,
+            status: charge.status,
             createdAt: charge.createdAt,
             updatedAt: charge.updatedAt,
         };

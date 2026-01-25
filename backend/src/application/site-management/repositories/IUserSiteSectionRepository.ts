@@ -1,6 +1,7 @@
-import { ISiteSectionDocument } from '../../../domain/site-management/entities/SiteSectionTypes';
+import { ISiteSection } from '../../../domain/site-management/entities/SiteSectionTypes';
+import { SiteSectionFilter } from '../../../domain/site-management/entities/SiteSectionTypes';
 
 export interface IUserSiteSectionRepository {
-  findSectionsRaw(query, skip: number, limit: number): Promise<ISiteSectionDocument[]>;
-  countSectionsRaw(query): Promise<number>;
+  findSectionsRaw(query: SiteSectionFilter, skip: number, limit: number): Promise<ISiteSection[]>;
+  countSectionsRaw(query: SiteSectionFilter): Promise<number>;
 } 

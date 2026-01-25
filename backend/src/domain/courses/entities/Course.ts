@@ -1,5 +1,5 @@
 import { CourseErrorType } from "../enums/CourseErrorType";
-import { CourseProps } from "../types";
+import { CourseProps } from "../types/CourseTypes";
 
 export class Course {
   private readonly props: CourseProps;

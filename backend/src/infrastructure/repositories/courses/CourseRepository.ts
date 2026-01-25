@@ -13,11 +13,13 @@ import {
   UpdateCourseRequestDTO,
   DeleteCourseRequestDTO,
 } from "../../../application/courses/dtos/CourseRequestDTOs";
-import { BaseRepository } from "../../../application/repositories/BaseRepository";
+import { BaseRepository } from "../shared/BaseRepository";
 import { ICourseDocument, CourseFilter, PopulatedEnrollmentDocument } from "./infraTypes";
 import { CourseMapper } from "./mappers/CourseMapper";
 import { EnrollmentMapper } from "./mappers/EnrollmentMapper";
 import { COURSE_FILTERS, COURSE_SORT, ENROLLMENT_STATUS } from "../../../application/courses/constants/CourseConstants";
+
+import { Course } from "../../../domain/courses/entities/Course";
 
 export class CoursesRepository extends BaseRepository<ICourseDocument, CreateCourseRequestDTO, UpdateCourseRequestDTO, Record<string, unknown>, ICourseDocument> implements ICoursesRepository {
   constructor() {
@@ -40,20 +42,24 @@ export class CoursesRepository extends BaseRepository<ICourseDocument, CreateCou
     return { courses, totalItems, page, limit };
   }
 
-  async getCourseById(id: string) {
-    return CourseModel.findById(id).lean<ICourseDocument | null>();
+  async getCourseById(id: string): Promise<Course | null> {
+    const doc = await CourseModel.findById(id).lean<ICourseDocument | null>();
+    return doc ? CourseMapper.toDomain(doc) : null;
   }
 
-  async createCourse(params: CreateCourseRequestDTO) {
-    return CourseModel.create(params);
+  async createCourse(params: CreateCourseRequestDTO): Promise<Course> {
+    const course = await CourseModel.create(params);
+    return CourseMapper.toDomain(course.toObject());
   }
 
-  async updateCourse(params: UpdateCourseRequestDTO) {
-    return CourseModel.findByIdAndUpdate(
-      params.id,
-      { $set: { ...params, updatedAt: new Date() } },
+  async updateCourse(params: UpdateCourseRequestDTO): Promise<Course | null> {
+    const { id, ...updateData } = params;
+    const course = await CourseModel.findByIdAndUpdate(
+      id,
+      { $set: { ...updateData, updatedAt: new Date() } },
       { new: true }
     ).lean<ICourseDocument | null>();
+    return course ? CourseMapper.toDomain(course) : null;
   }
 
   async deleteCourse(params: DeleteCourseRequestDTO) {

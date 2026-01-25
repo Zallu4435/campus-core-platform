@@ -3,6 +3,8 @@ import { MaterialModel } from '../../database/mongoose/material/MaterialModel';
 import { Material } from '../../../domain/materials/entities/Material';
 import { UserMaterialFilter, MaterialSortOptions } from '../../../domain/materials/entities/MaterialTypes';
 import { MaterialMapper } from './MaterialMapper';
+import { FilterQuery } from 'mongoose';
+import { IMaterialSource } from './infraTypes';
 
 export class UserMaterialsRepository implements IUserMaterialsRepository {
   async find(filter: UserMaterialFilter, options: { skip?: number; limit?: number; sort?: MaterialSortOptions } = {}): Promise<Material[]> {
@@ -10,25 +12,26 @@ export class UserMaterialsRepository implements IUserMaterialsRepository {
     const docs = await MaterialModel.find(mongoFilter)
       .sort(options.sort as any ?? { uploadedAt: -1 })
       .skip(options.skip ?? 0)
-      .limit(options.limit ?? 0);
+      .limit(options.limit ?? 0)
+      .lean() as unknown as IMaterialSource[];
 
-    return docs.map(doc => MaterialMapper.toDomain(doc.toObject() as unknown as Record<string, unknown>));
+    return docs.map(doc => MaterialMapper.toDomain(doc));
   }
 
   async count(filter: UserMaterialFilter): Promise<number> {
     const mongoFilter = this._buildMongoFilter(filter);
-    return MaterialModel.countDocuments(mongoFilter as any);
+    return MaterialModel.countDocuments(mongoFilter);
   }
 
   async findById(id: string): Promise<Material | null> {
-    const doc = await MaterialModel.findById(id);
-    return doc ? MaterialMapper.toDomain(doc.toObject() as unknown as Record<string, unknown>) : null;
+    const doc = await MaterialModel.findById(id).lean() as unknown as IMaterialSource;
+    return doc ? MaterialMapper.toDomain(doc) : null;
   }
 
   async update(id: string, material: Material): Promise<Material | null> {
     const persistence = MaterialMapper.toPersistence(material);
-    const doc = await MaterialModel.findByIdAndUpdate(id, persistence, { new: true });
-    return doc ? MaterialMapper.toDomain(doc.toObject() as unknown as Record<string, unknown>) : null;
+    const doc = await MaterialModel.findByIdAndUpdate(id, persistence, { new: true }).lean() as unknown as IMaterialSource;
+    return doc ? MaterialMapper.toDomain(doc) : null;
   }
 
   async toggleBookmark(materialId: string, userId: string): Promise<void> {
@@ -71,8 +74,8 @@ export class UserMaterialsRepository implements IUserMaterialsRepository {
     await MaterialModel.findByIdAndUpdate(materialId, { $inc: { downloads: 1 } });
   }
 
-  private _buildMongoFilter(filter: UserMaterialFilter): Record<string, unknown> {
-    const mongoFilter: Record<string, unknown> = {};
+  private _buildMongoFilter(filter: UserMaterialFilter): FilterQuery<IMaterialSource> {
+    const mongoFilter: FilterQuery<IMaterialSource> = {};
 
     if (filter.subject) mongoFilter.subject = { $regex: filter.subject, $options: 'i' };
     if (filter.course) mongoFilter.course = filter.course;

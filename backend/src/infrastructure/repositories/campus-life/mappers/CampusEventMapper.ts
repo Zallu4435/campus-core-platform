@@ -1,10 +1,10 @@
 import { CampusEvent } from '../../../../domain/campus-life/entities/CampusLife';
-import { RawCampusEvent, RawJoinRequest } from '../../../../domain/campus-life/entities/CampusLifeTypes';
+import { CampusEventData, JoinRequestData } from '../../../../domain/campus-life/entities/CampusLifeTypes';
 import { RequestStatus } from '../../../../domain/campus-life/enums/CampusLifeEnums';
 
 /**
  * Campus Event Mapper
- * Handles transformation between persistence (Raw), domain (CampusEvent), and DTO layers
+ * Handles transformation between persistence (Data), domain (CampusEvent), and DTO layers
  */
 export class CampusEventMapper {
     /**
@@ -13,9 +13,9 @@ export class CampusEventMapper {
      * @param userRequestStatus - Optional user request status to attach
      * @returns Domain CampusEvent entity
      */
-    static toDomain(raw: RawCampusEvent, userRequestStatus?: RequestStatus | null): CampusEvent {
+    static toDomain(raw: CampusEventData, userRequestStatus?: RequestStatus | null): CampusEvent {
         return new CampusEvent(
-            raw._id,
+            raw.id,
             raw.title,
             raw.date,
             raw.time,
@@ -42,8 +42,8 @@ export class CampusEventMapper {
      * @returns Array of domain CampusEvent entities
      */
     static toDomainList(
-        raws: RawCampusEvent[],
-        requests: RawJoinRequest[],
+        raws: CampusEventData[],
+        requests: JoinRequestData[],
         userId?: string
     ): CampusEvent[] {
         return raws.map(raw => {
@@ -51,7 +51,7 @@ export class CampusEventMapper {
 
             if (userId && requests.length > 0) {
                 const userRequest = requests.find(
-                    req => req.eventId === raw._id && req.userId === userId
+                    req => req.eventId === raw.id && req.userId === userId
                 );
                 if (userRequest) {
                     userRequestStatus = userRequest.status as RequestStatus;
@@ -67,7 +67,7 @@ export class CampusEventMapper {
      * @param domain - Domain CampusEvent entity
      * @returns Partial raw event for database
      */
-    static toPersistence(domain: CampusEvent): Partial<RawCampusEvent> {
+    static toPersistence(domain: CampusEvent): Partial<CampusEventData> {
         return {
             title: domain.title,
             date: domain.date,

@@ -9,11 +9,10 @@ import {
 } from "../dtos/EnrollmentRequestDTOs";
 import { ICoursesRepository } from "../repositories/ICoursesRepository";
 import {
-  CourseNotFoundError,
   EnrollmentNotFoundError,
   InvalidEnrollmentIdError,
 } from "../../../domain/courses/errors/CourseErrors";
-import { EnrollmentStatus } from "../../../domain/courses/types";
+import { EnrollmentStatus } from "../../../domain/courses/types/CourseTypes";
 import { EnrollmentDetailsDTO } from "../dtos/EnrollmentRequestDTOs";
 import {
   IGetEnrollmentsUseCase,

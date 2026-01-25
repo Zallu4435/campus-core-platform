@@ -41,7 +41,7 @@ import {
 } from './IAdmissionUseCases';
 import { AdminConstants } from "../constants/AdminConstants";
 import { IAdmissionMapper } from "../interfaces/IAdmissionMapper";
-import { AppConfig } from "../types/RepositoryTypes";
+import { AppConfig, AdmissionFilter } from "../types/RepositoryTypes";
 
 export class GetAdmissionsUseCase implements IGetAdmissionsUseCase {
     constructor(
@@ -51,7 +51,7 @@ export class GetAdmissionsUseCase implements IGetAdmissionsUseCase {
     ) { }
 
     async execute(p: GetAdmissionsRequestDTO): Promise<GetAdmissionsResponseDTO> {
-        const filter: Record<string, any> = {};
+        const filter: AdmissionFilter = {};
 
         if (p.status && p.status !== "all") {
             filter.status = p.status === AdminAdmissionStatus.Approved
@@ -95,7 +95,6 @@ export class GetAdmissionsUseCase implements IGetAdmissionsUseCase {
         const skip = (p.page - 1) * p.limit;
 
         const proj = {
-            _id: 1,
             "personal.fullName": 1,
             "personal.emailAddress": 1,
             createdAt: 1,
@@ -152,8 +151,7 @@ export class GetAdmissionByIdUseCase implements IGetAdmissionByIdUseCase {
 
 export class GetAdmissionByTokenUseCase implements IGetAdmissionByTokenUseCase {
     constructor(
-        private _admissionRepository: IAdmissionRepository,
-        private _mapper: IAdmissionMapper
+        private _admissionRepository: IAdmissionRepository
     ) { }
 
     async execute(params: GetAdmissionByTokenRequestDTO): Promise<GetAdmissionByTokenResponseDTO> {

@@ -1,4 +1,4 @@
-import { DiplomaProps } from '../../../domain/diploma/types';
+import { DiplomaProps } from '../../../domain/diploma/types/DiplomaTypes';
 
 export interface GetDiplomasRequestDTO {
     page: number;

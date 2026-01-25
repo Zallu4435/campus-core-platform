@@ -7,7 +7,7 @@ import {
   PaginatedResponseDTO,
   ReviewSubmissionDTO
 } from '../dtos/AssignmentDTOs';
-import { AssignmentStatus, SubmissionStatus } from '../../../domain/assignments/enums/AssignmentEnums';
+
 import { Assignment } from '../../../domain/assignments/entities/Assignment';
 import { AssignmentMapper } from '../../../infrastructure/repositories/assignments/mappers/AssignmentMapper';
 import {

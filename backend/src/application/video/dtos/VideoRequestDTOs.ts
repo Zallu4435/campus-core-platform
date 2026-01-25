@@ -1,4 +1,5 @@
 import { IVideoBase } from "../../../domain/video/entities/VideoTypes";
+import { IFile } from "../../../domain/shared/types/FileTypes";
 
 export interface GetVideosRequestDTO {
     category?: string;
@@ -16,12 +17,12 @@ export interface GetVideoByIdRequestDTO {
 }
 
 export interface CreateVideoRequestDTO extends Omit<IVideoBase, 'id' | 'uploadedAt'> {
-    videoFile?: Express.Multer.File;
+    videoFile?: IFile;
 }
 
 export interface UpdateVideoRequestDTO extends Partial<Omit<IVideoBase, 'uploadedAt'>> {
     id: string;
-    videoFile?: Express.Multer.File;
+    videoFile?: IFile;
     diplomaId?: string;
 }
 

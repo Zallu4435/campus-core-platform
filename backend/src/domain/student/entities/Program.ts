@@ -1,7 +1,6 @@
-export interface IProgram {
-  _id?: string;
-  id?:string;
-  studentId?: string;
+export interface ProgramData {
+  id?: string;
+  userId?: string;
   degree: string;
   catalogYear: string;
   credits: number;
@@ -17,4 +16,4 @@ export class Program {
     public catalogYear: string,
     public createdAt: string
   ) { }
-} 
+}

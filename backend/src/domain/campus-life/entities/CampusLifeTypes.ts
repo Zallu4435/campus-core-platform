@@ -1,4 +1,5 @@
 import { EventStatus, SportType, ClubStatus, RequestStatus } from '../enums/CampusLifeEnums';
+import { SportStatus } from '../../sports/entities/SportTypes';
 
 /**
  * Campus Life Types
@@ -86,11 +87,11 @@ export class JoinEventRequest {
 }
 
 // ============================================
-// Raw Data Interfaces (from database)
+// Raw Data Interfaces (Standard Domain Representation)
 // ============================================
 
-export interface RawCampusEvent {
-    _id: string;
+export interface CampusEventData {
+    id: string;
     title: string;
     date: string;
     time: string;
@@ -107,13 +108,19 @@ export interface RawCampusEvent {
     updatedAt: Date;
 }
 
-export interface RawSport {
-    _id: string;
+export interface SportData {
+    id: string;
     title: string;
     type: string;
+    category: string;
+    organizer: string;
+    organizerType: string;
     headCoach: string;
+    homeGames: number;
+    record: string;
+    upcomingGames: { date: string; description: string }[];
     playerCount?: number;
-    status: string;
+    status: SportStatus;
     formedOn?: string;
     logo?: string;
     division: string;
@@ -124,8 +131,8 @@ export interface RawSport {
     updatedAt: Date;
 }
 
-export interface RawClub {
-    _id: string;
+export interface ClubData {
+    id: string;
     name: string;
     type: string;
     createdBy: string;
@@ -141,8 +148,8 @@ export interface RawClub {
     updatedAt: Date;
 }
 
-export interface RawJoinRequest {
-    _id: string;
+export interface JoinRequestData {
+    id: string;
     userId: string;
     eventId?: string;
     sportId?: string;
@@ -155,40 +162,26 @@ export interface RawJoinRequest {
 }
 
 // ============================================
-// Filter Interfaces (for queries)
+// Filter Interfaces (Clean Domain Filtering)
 // ============================================
 
 export interface CampusEventFilter {
-    title?: { $regex: string; $options: string };
-    date?: { $gte?: string; $lte?: string };
-    organizer?: { $regex: string; $options: string };
+    searchQuery?: string;
+    startDate?: string;
+    endDate?: string;
+    organizer?: string;
     status?: 'upcoming' | 'past' | string;
-    $or?: Array<{
-        title?: { $regex: string; $options: string };
-        organizer?: { $regex: string; $options: string };
-    }>;
-    [key: string]: unknown;
 }
 
 export interface SportFilter {
-    title?: { $regex: string; $options: string };
+    searchQuery?: string;
     type?: string;
     division?: string;
-    headCoach?: { $regex: string; $options: string };
-    $or?: Array<{
-        title?: { $regex: string; $options: string };
-        headCoach?: { $regex: string; $options: string };
-    }>;
-    [key: string]: unknown;
+    headCoach?: string;
 }
 
 export interface ClubFilter {
-    name?: { $regex: string; $options: string };
-    type?: { $regex: string; $options: string };
+    searchQuery?: string;
+    type?: string;
     status?: string;
-    $or?: Array<{
-        name?: { $regex: string; $options: string };
-        type?: { $regex: string; $options: string };
-    }>;
-    [key: string]: unknown;
 }

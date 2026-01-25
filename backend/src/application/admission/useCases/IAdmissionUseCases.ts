@@ -53,7 +53,7 @@ export interface IUploadMultipleDocumentsUseCase {
 
 export interface IGetDocumentByKeyUseCase {
   execute(params: { userId: string; documentKey: string }): Promise<{
-    cloudinaryUrl?: string;
+    url?: string;
     fileName?: string;
     fileType?: string;
     [key: string]: unknown;
@@ -62,7 +62,7 @@ export interface IGetDocumentByKeyUseCase {
 
 export interface IServeDocumentUseCase {
   execute(params: { userId: string; documentId: string }): Promise<{
-    cloudinaryUrl?: string;
+    url?: string;
     fileName?: string;
     fileType?: string;
     pdfData: string;

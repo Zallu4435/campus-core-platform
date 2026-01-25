@@ -8,8 +8,9 @@ import { IAdmissionsRepository } from "../repositories/IAdmissionsRepository";
 import {
     InvalidUserIdException, InvalidSectionException, PaymentProcessingFailedException, PaymentNotFoundException, AdmissionFinalizationFailedException, DocumentUploadFailedException
 } from "../../../domain/admission/errors/AdmissionErrors";
-import { isValidObjectId } from "mongoose";
 import { AdmissionDTOMapper } from "../mappers/AdmissionDTOMapper";
+import { IValidationService } from "../../shared/services/IValidationService";
+import { IStorageService } from "../../shared/services/IStorageService";
 import {
     ICreateApplicationUseCase,
     IGetApplicationUseCase,
@@ -24,9 +25,12 @@ import {
 } from './IAdmissionUseCases';
 
 export class CreateApplicationUseCase implements ICreateApplicationUseCase {
-    constructor(private _admissionsRepository: IAdmissionsRepository) { }
+    constructor(
+        private _admissionsRepository: IAdmissionsRepository,
+        private _validationService: IValidationService
+    ) { }
     async execute(params: CreateApplicationRequestDTO): Promise<CreateApplicationResponseDTO> {
-        if (!params.userId || !isValidObjectId(params.userId)) {
+        if (!params.userId || !this._validationService.isValidObjectId(params.userId)) {
             throw new InvalidUserIdException();
         }
         return this._admissionsRepository.createApplication(params);
@@ -34,9 +38,12 @@ export class CreateApplicationUseCase implements ICreateApplicationUseCase {
 }
 
 export class GetApplicationUseCase implements IGetApplicationUseCase {
-    constructor(private _admissionsRepository: IAdmissionsRepository) { }
+    constructor(
+        private _admissionsRepository: IAdmissionsRepository,
+        private _validationService: IValidationService
+    ) { }
     async execute(params: GetApplicationRequestDTO): Promise<GetApplicationResponseDTO> {
-        if (!params.userId || !isValidObjectId(params.userId)) {
+        if (!params.userId || !this._validationService.isValidObjectId(params.userId)) {
             throw new InvalidUserIdException();
         }
         const draft = await this._admissionsRepository.findDraftByRegisterId(params.userId);
@@ -139,7 +146,7 @@ export class UploadMultipleDocumentsUseCase implements IUploadMultipleDocumentsU
 export class GetDocumentByKeyUseCase implements IGetDocumentByKeyUseCase {
     constructor(private _admissionsRepository: IAdmissionsRepository) { }
     async execute(params: { userId: string; documentKey: string }): Promise<{
-        cloudinaryUrl?: string;
+        url?: string;
         fileName?: string;
         fileType?: string;
         [key: string]: unknown;
@@ -148,12 +155,14 @@ export class GetDocumentByKeyUseCase implements IGetDocumentByKeyUseCase {
     }
 }
 
-import axios from 'axios';
 
 export class ServeDocumentUseCase implements IServeDocumentUseCase {
-    constructor(private _admissionsRepository: IAdmissionsRepository) { }
+    constructor(
+        private _admissionsRepository: IAdmissionsRepository,
+        private _storageService: IStorageService
+    ) { }
     async execute(params: { userId: string; documentId: string }): Promise<{
-        cloudinaryUrl?: string;
+        url?: string;
         fileName?: string;
         fileType?: string;
         pdfData: string;
@@ -164,11 +173,11 @@ export class ServeDocumentUseCase implements IServeDocumentUseCase {
             documentKey: params.documentId
         });
 
-        if (!document || !document.cloudinaryUrl) return null;
+        if (!document || !document.url) return null;
 
         try {
-            const response = await axios.get(document.cloudinaryUrl, { responseType: 'arraybuffer' });
-            const pdfData = Buffer.from(response.data, 'binary').toString('base64');
+            const buffer = await this._storageService.fetchFileAsBuffer(document.url);
+            const pdfData = buffer.toString('base64');
 
             return {
                 ...document,

@@ -35,7 +35,7 @@ export class ServeAdmissionDocumentUseCase implements IServeAdmissionDocumentUse
             throw new AdminAdmissionNotFoundError();
         }
 
-        const documentUrl = document.cloudinaryUrl || document.url || document.path;
+        const documentUrl = document.url || document.path;
 
         if (!documentUrl) {
             throw new AdminAdmissionNotFoundError();

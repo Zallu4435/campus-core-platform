@@ -2,13 +2,9 @@
 import jwt from "jsonwebtoken";
 import { config } from "../../../config/config";
 import { InvalidTokenError } from "../../../domain/auth/errors/AuthErrors";
+import { IJwtService } from "../../../application/auth/service/IJwtService";
 
-export interface IJwtService {
-    generateToken(payload: object, expiresIn: string): string;
-    generateAccessToken(payload: object): string;
-    generateRefreshToken(payload: object): string;
-    verifyToken<T>(token: string, options?: { isRefreshToken?: boolean; ignoreExpiration?: boolean }): T; // T will be the decoded payload type
-}
+export { IJwtService }; // Re-export if needed, or just remove if unused by others locally
 
 export class JwtService implements IJwtService {
     private readonly secret: jwt.Secret;

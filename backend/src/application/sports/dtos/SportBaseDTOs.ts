@@ -12,7 +12,7 @@ export interface SportRequestDataDTO {
 }
 
 export interface RepositorySportData extends SportDataDTO {
-    _id: string;
+    id: string;
     createdAt: Date;
     updatedAt: Date;
 }

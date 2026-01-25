@@ -11,10 +11,10 @@ import {
 } from "../dtos/EventResponseDTOs";
 import { EventDataDTO } from "../dtos/EventBaseDTOs";
 import { IBaseRepository } from "../../repositories/IBaseRepository";
-import { Event, EventRequestStatus } from "../../../domain/events/entities/EventTypes";
+import { EventData, EventRequestStatus } from "../../../domain/events/entities/EventTypes";
 
 export interface IEventsRepository extends
-  IBaseRepository<Event, CreateEventRequestDTO, Partial<EventDataDTO>, Record<string, unknown>, Event> {
+  IBaseRepository<EventData, CreateEventRequestDTO, Partial<EventDataDTO>, Record<string, unknown>, EventData> {
 
   getEvents(params: GetEventsRequestDTO): Promise<GetEventsResponseDTO>;
   getEventRequests(params: GetEventRequestsRequestDTO): Promise<GetEventRequestsResponseDTO>;

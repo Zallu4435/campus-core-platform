@@ -1,4 +1,5 @@
-import { ChargeProps, PaymentProps } from "../../../domain/financial/financialtypes";
+import { IFile } from "../../../domain/shared/types/FileTypes";
+import { ChargeProps, PaymentProps } from "../../../domain/financial/types/FinancialTypes";
 
 export interface DocumentDTO {
   id: string;
@@ -33,7 +34,7 @@ export type MakePaymentRequestDTO = Pick<PaymentProps, "studentId" | "amount" | 
 };
 
 export interface UploadDocumentRequestDTO {
-  file: Express.Multer.File;
+  file: IFile;
   type: string;
 }
 

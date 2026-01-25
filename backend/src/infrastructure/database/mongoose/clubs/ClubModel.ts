@@ -1,21 +1,25 @@
-import mongoose, { Schema, model, Document } from "mongoose";
-import { 
-  Club, 
-  ClubRequest, 
-  ClubStatus, 
-  ClubRequestStatus 
+import mongoose, { Schema, Document } from "mongoose";
+import {
+  ClubData,
+  ClubRequestData,
+  ClubStatus,
+  ClubRequestStatus
 } from "../../../../domain/clubs/entities/ClubTypes";
 
-const clubSchema = new Schema<Club>({
+export interface IClubDocument extends Omit<ClubData, 'id'>, Document {
+  _id: mongoose.Types.ObjectId;
+}
+
+const clubSchema = new Schema<IClubDocument>({
   name: { type: String, required: true, trim: true },
   type: { type: String, required: true, trim: true },
   members: { type: [String], default: [] },
   icon: { type: String, trim: true, default: "🎓" },
   color: { type: String, trim: true, default: "#8B5CF6" },
-  status: { 
-    type: String, 
-    enum: Object.values(ClubStatus), 
-    default: ClubStatus.Active 
+  status: {
+    type: String,
+    enum: Object.values(ClubStatus),
+    default: ClubStatus.Active
   },
   role: { type: String, required: true, trim: true },
   nextMeeting: { type: String, trim: true, default: "" },
@@ -41,12 +45,13 @@ clubSchema.pre("save", function (next) {
   next();
 });
 
-type ClubRequestDocument = ClubRequest & Document & {
+export interface IClubRequestDocument extends Omit<ClubRequestData, 'id' | 'clubId' | 'userId'>, Document {
+  _id: mongoose.Types.ObjectId;
   clubId: mongoose.Types.ObjectId | { _id: mongoose.Types.ObjectId; name: string; type: string; about: string; nextMeeting: string; enteredMembers: number };
   userId: mongoose.Types.ObjectId | { _id: mongoose.Types.ObjectId; firstName: string; lastName: string; email: string };
-};
+}
 
-const clubRequestSchema = new Schema<ClubRequestDocument>({
+const clubRequestSchema = new Schema<IClubRequestDocument>({
   clubId: { type: Schema.Types.ObjectId, ref: 'Club', required: true },
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   status: {
@@ -64,11 +69,11 @@ const clubRequestSchema = new Schema<ClubRequestDocument>({
 clubRequestSchema.index({ clubId: 1 });
 clubRequestSchema.index({ userId: 1 });
 
-export const ClubModel = mongoose.model<Club>(
-  "Club", 
+export const ClubModel = mongoose.model<IClubDocument>(
+  "Club",
   clubSchema
 );
-export const ClubRequestModel = mongoose.model<ClubRequestDocument>(
-  "ClubRequest", 
+export const ClubRequestModel = mongoose.model<IClubRequestDocument>(
+  "ClubRequest",
   clubRequestSchema
 );

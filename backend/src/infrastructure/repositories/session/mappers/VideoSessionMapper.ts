@@ -1,12 +1,12 @@
 import { VideoSession } from "../../../../domain/session/entities/VideoSession";
-import { VideoSessionDoc } from "../../../database/mongoose/session/session.model";
 import {
     VideoSessionResponseDTO,
     SessionListResponseDTO
 } from "../../../../application/session/dtos/VideoSessionResponseDTOs";
+import { IVideoSessionSource } from "../infraTypes";
 
 export class VideoSessionMapper {
-    static toDomain(mongooseDoc: VideoSessionDoc): VideoSession {
+    static toDomain(mongooseDoc: IVideoSessionSource): VideoSession {
         if (!mongooseDoc) {
             throw new Error("Cannot map null document to domain entity");
         }
@@ -16,27 +16,34 @@ export class VideoSessionMapper {
             title: mongooseDoc.title,
             hostId: mongooseDoc.hostId,
             participants: mongooseDoc.participants,
-            startTime: mongooseDoc.startTime,
-            endTime: mongooseDoc.endTime,
-            status: mongooseDoc.status,
+            startTime: mongooseDoc.startTime instanceof Date ? mongooseDoc.startTime : new Date(mongooseDoc.startTime),
+            endTime: mongooseDoc.endTime ? (mongooseDoc.endTime instanceof Date ? mongooseDoc.endTime : new Date(mongooseDoc.endTime)) : null,
+            status: mongooseDoc.status as any,
             description: mongooseDoc.description,
             instructor: mongooseDoc.instructor,
             course: mongooseDoc.course,
             duration: mongooseDoc.duration,
             maxAttendees: mongooseDoc.maxAttendees,
             tags: mongooseDoc.tags,
-            difficulty: mongooseDoc.difficulty,
+            difficulty: mongooseDoc.difficulty as any,
             isLive: mongooseDoc.isLive,
             hasRecording: mongooseDoc.hasRecording,
             recordingUrl: mongooseDoc.recordingUrl,
             attendees: mongooseDoc.attendees,
             attendeeList: mongooseDoc.attendeeList,
-            attendance: mongooseDoc.attendance,
+            attendance: mongooseDoc.attendance ? mongooseDoc.attendance.map(a => ({
+                userId: a.userId,
+                status: a.status,
+                intervals: a.intervals.map(i => ({
+                    joinedAt: i.joinedAt instanceof Date ? i.joinedAt : new Date(i.joinedAt),
+                    leftAt: i.leftAt ? (i.leftAt instanceof Date ? i.leftAt : new Date(i.leftAt)) : undefined
+                }))
+            })) : undefined,
             joinUrl: mongooseDoc.joinUrl,
         });
     }
 
-    static toPersistence(domainEntity: VideoSession): Record<string, unknown> {
+    static toPersistence(domainEntity: VideoSession): Partial<IVideoSessionSource> {
         return {
             title: domainEntity.title,
             hostId: domainEntity.hostId,
@@ -56,12 +63,12 @@ export class VideoSessionMapper {
             recordingUrl: domainEntity.recordingUrl,
             attendees: domainEntity.attendees,
             attendeeList: domainEntity.attendeeList,
-            attendance: domainEntity.attendance,
+            attendance: domainEntity.attendance as any,
             joinUrl: domainEntity.joinUrl,
         };
     }
 
-    static toDomainList(mongooseDocs: VideoSessionDoc[]): VideoSession[] {
+    static toDomainList(mongooseDocs: IVideoSessionSource[]): VideoSession[] {
         return mongooseDocs.map((doc) => this.toDomain(doc));
     }
 

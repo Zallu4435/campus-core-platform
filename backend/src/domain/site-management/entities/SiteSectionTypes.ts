@@ -1,5 +1,3 @@
-import { Document } from 'mongoose';
-
 export enum SiteSectionKey {
   Highlights = 'highlights',
   VagoNow = 'vagoNow',
@@ -7,51 +5,7 @@ export enum SiteSectionKey {
 }
 
 export interface ISiteSectionBase {
-  id?: string;
-  sectionKey: SiteSectionKey;
-  title?: string;
-  description?: string;
-  content?: string;
-  bio?: string;
-  image?: string;
-  photo?: string;
-  link?: string;
-  position?: string;
-  category?: string;
-  createdAt?: Date;
-  updatedAt?: Date;
-}
-
-export interface IHighlightSection extends ISiteSectionBase {
-  sectionKey: SiteSectionKey.Highlights;
-  title: string;
-  description: string;
-  image?: string;
-  link?: string;
-  category?: string;
-}
-
-export interface IVagoNowSection extends ISiteSectionBase {
-  sectionKey: SiteSectionKey.VagoNow;
-  title: string;
-  content: string;
-  image?: string;
-  link?: string;
-  category?: string;
-  description?: string; // Optional if needed for base compat
-}
-
-export interface ILeadershipSection extends ISiteSectionBase {
-  sectionKey: SiteSectionKey.Leadership;
-  title: string;
-  position: string;
-  bio?: string;
-  photo?: string;
-  link?: string;
-  category?: string;
-}
-
-export interface ISiteSectionDocument extends Document {
+  id: string;
   sectionKey: SiteSectionKey;
   title: string;
   description: string;
@@ -64,26 +18,40 @@ export interface ISiteSectionDocument extends Document {
   updatedAt: Date;
 }
 
+export interface IHighlightSection extends ISiteSectionBase {
+  sectionKey: SiteSectionKey.Highlights;
+}
+
+export interface IVagoNowSection extends ISiteSectionBase {
+  sectionKey: SiteSectionKey.VagoNow;
+  content: string;
+}
+
+export interface ILeadershipSection extends ISiteSectionBase {
+  sectionKey: SiteSectionKey.Leadership;
+  position: string;
+  bio?: string;
+  photo?: string;
+}
+
+export interface ISiteSectionDocument extends ISiteSectionBase {
+  // This is used for mapping. No longer extends Mongoose Document.
+}
+
 export type ISiteSection = IHighlightSection | IVagoNowSection | ILeadershipSection;
 
 export interface SiteSectionFilter {
   sectionKey?: SiteSectionKey;
-  $or?: Array<{
-    title?: { $regex: string; $options: string } | RegExp;
-    description?: { $regex: string; $options: string } | RegExp;
-    category?: { $regex: string; $options: string } | RegExp;
-  }>;
-  category?: string | { $regex: string; $options: string } | RegExp;
+  search?: string;
+  category?: string;
   isActive?: boolean;
-  createdAt?: {
-    $gte?: Date;
-    $lte?: Date;
-  };
-  [key: string]: unknown;
+  startDate?: Date;
+  endDate?: Date;
+  id?: string;
 }
 
 // Request Types
-export type CreateSiteSectionRequest = ISiteSection;
+export type CreateSiteSectionRequest = Omit<ISiteSectionBase, 'id' | 'createdAt' | 'updatedAt'>;
 
 export interface UpdateSiteSectionRequest {
   id: string;

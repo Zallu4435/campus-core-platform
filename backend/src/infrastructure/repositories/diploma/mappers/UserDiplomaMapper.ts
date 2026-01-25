@@ -1,4 +1,4 @@
-import { DiplomaCourse, Chapter } from '../../../../domain/diploma/types';
+import { DiplomaCourse, Chapter } from '../../../../domain/diploma/types/DiplomaTypes';
 import { IDiplomaDocument, IVideoDocument } from '../infraTypes';
 
 export class UserDiplomaMapper {

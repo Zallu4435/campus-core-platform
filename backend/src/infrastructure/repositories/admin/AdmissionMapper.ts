@@ -1,54 +1,55 @@
-// AdmissionMapper.ts
 import { IAdmissionMapper } from "../../../application/admin/interfaces/IAdmissionMapper";
 import { AdminAdmission, FullAdmissionDetails, AdminAdmissionStatus } from "../../../domain/admin/entities/AdminAdmissionTypes";
 import { AdmissionRawData, AdmissionPersistenceData } from "../../../application/admin/types/RepositoryTypes";
+import { AdmissionResponseDTO, GetAdmissionByIdResponseDTO } from "../../../application/admin/dtos/AdmissionResponseDTOs";
+import { IAdmissionSource } from "./infraTypes";
 
 export class AdmissionMapper implements IAdmissionMapper {
     toDomain(raw: AdmissionRawData): AdminAdmission | FullAdmissionDetails {
+        const source = raw as unknown as IAdmissionSource;
         const domain: AdminAdmission = {
-            id: raw._id ? raw._id.toString() : raw.id,
-            registerId: raw.registerId?.toString() || "",
-            applicationId: raw.applicationId || "",
+            id: source._id?.toString() || (source.id as string) || "",
+            registerId: source.registerId ? source.registerId.toString() : "",
+            applicationId: source.applicationId || "",
             personal: {
-                fullName: raw.personal?.fullName || "",
-                emailAddress: raw.personal?.emailAddress || "",
-                phoneNumber: raw.personal?.phoneNumber,
-                dateOfBirth: raw.personal?.dateOfBirth,
-                gender: raw.personal?.gender,
-                nationality: raw.personal?.nationality
+                fullName: source.personal?.fullName || "",
+                emailAddress: source.personal?.emailAddress || "",
+                phoneNumber: source.personal?.phoneNumber,
+                dateOfBirth: source.personal?.dateOfBirth,
+                gender: source.personal?.gender,
+                nationality: source.personal?.nationality
             },
-            choiceOfStudy: Array.isArray(raw.choiceOfStudy) ? raw.choiceOfStudy.map((c) => ({
+            choiceOfStudy: Array.isArray(source.choiceOfStudy) ? source.choiceOfStudy.map((c) => ({
                 programme: c.programme || "",
                 degree: c.degree,
                 catalogYear: c.catalogYear
             })) : [],
-            education: raw.education || {},
-            achievements: raw.achievements || {},
-            otherInformation: raw.otherInformation || {},
+            education: source.education || {},
+            achievements: source.achievements || {},
+            otherInformation: source.otherInformation || {},
             documents: {
-                documents: Array.isArray(raw.documents?.documents) ? raw.documents.documents.map((d) => ({
+                documents: Array.isArray(source.documents?.documents) ? source.documents!.documents!.map((d) => ({
                     id: d.id,
                     fileName: d.fileName,
                     fileType: d.fileType,
-                    url: d.url,
-                    cloudinaryUrl: d.cloudinaryUrl,
+                    url: d.url || d.cloudinaryUrl,
                     path: d.path,
-                    uploadedAt: d.uploadedAt
+                    uploadedAt: d.uploadedAt instanceof Date ? d.uploadedAt : new Date(d.uploadedAt || Date.now())
                 })) : [],
             },
-            declaration: raw.declaration || {},
-            paymentId: raw.paymentId || "",
-            status: (raw.status as AdminAdmissionStatus) || AdminAdmissionStatus.Pending,
-            confirmationToken: raw.confirmationToken,
-            tokenExpiry: raw.tokenExpiry,
-            rejectedBy: raw.rejectedBy,
-            createdAt: raw.createdAt || new Date(),
-            updatedAt: raw.updatedAt
+            declaration: source.declaration || {},
+            paymentId: source.paymentId ? source.paymentId.toString() : "",
+            status: (source.status as AdminAdmissionStatus) || AdminAdmissionStatus.Pending,
+            confirmationToken: source.confirmationToken,
+            tokenExpiry: source.tokenExpiry instanceof Date ? source.tokenExpiry : (source.tokenExpiry ? new Date(source.tokenExpiry) : undefined),
+            rejectedBy: source.rejectedBy,
+            createdAt: source.createdAt instanceof Date ? source.createdAt : new Date(source.createdAt || Date.now()),
+            updatedAt: source.updatedAt instanceof Date ? source.updatedAt : new Date(source.updatedAt || Date.now())
         };
         return domain;
     }
 
-    toDTO(domain: AdminAdmission | FullAdmissionDetails, blocked?: boolean): any {
+    toDTO(domain: AdminAdmission | FullAdmissionDetails, blocked?: boolean): AdmissionResponseDTO | GetAdmissionByIdResponseDTO {
         // For list view (GetAdmissions), return simplified DTO
         const baseDTO = {
             _id: domain.id,
@@ -64,7 +65,7 @@ export class AdmissionMapper implements IAdmissionMapper {
             return {
                 ...domain,
                 _id: domain.id,
-                createdAt: domain.createdAt.toISOString ? domain.createdAt.toISOString() : domain.createdAt.toString(),
+                createdAt: domain.createdAt,
                 ...(blocked !== undefined && { blocked })
             };
         }

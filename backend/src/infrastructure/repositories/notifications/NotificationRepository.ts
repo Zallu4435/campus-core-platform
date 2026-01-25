@@ -25,12 +25,12 @@ export class NotificationRepository implements INotificationRepository {
         await NotificationModel.findByIdAndDelete(id);
     }
 
-    async find(filter: NotificationFilter, options: { skip?: number; limit?: number; sort?: any } = {}): Promise<Notification[]> {
+    async find(filter: NotificationFilter, options: { skip?: number; limit?: number; sort?: Record<string, any> | string } = {}): Promise<Notification[]> {
         const { skip = 0, limit = 0, sort = { createdAt: -1 } } = options;
 
-        let queryFilter: any = { ...filter };
+        let queryFilter: Record<string, unknown> = { ...filter };
         if (queryFilter.search) {
-            const searchRegex = new RegExp(queryFilter.search, 'i');
+            const searchRegex = new RegExp(queryFilter.search as string, 'i');
             queryFilter.$or = [
                 { title: searchRegex },
                 { message: searchRegex }
@@ -48,9 +48,9 @@ export class NotificationRepository implements INotificationRepository {
     }
 
     async count(filter: NotificationFilter): Promise<number> {
-        let queryFilter: any = { ...filter };
+        let queryFilter: Record<string, unknown> = { ...filter };
         if (queryFilter.search) {
-            const searchRegex = new RegExp(queryFilter.search, 'i');
+            const searchRegex = new RegExp(queryFilter.search as string, 'i');
             queryFilter.$or = [
                 { title: searchRegex },
                 { message: searchRegex }
@@ -61,8 +61,9 @@ export class NotificationRepository implements INotificationRepository {
     }
 
     async markAllAsRead(userId: string, filter: NotificationFilter): Promise<number> {
+        const query: Record<string, unknown> = { ...filter, readBy: { $ne: userId } };
         const result = await NotificationModel.updateMany(
-            { ...filter as any, readBy: { $ne: userId } },
+            query,
             { $push: { readBy: userId } }
         );
         return result.modifiedCount;

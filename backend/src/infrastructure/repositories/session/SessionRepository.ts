@@ -1,14 +1,14 @@
 import { FilterQuery } from 'mongoose';
 import { ISessionRepository } from '../../../application/session/repositories/ISessionRepository';
 import { VideoSession } from '../../../domain/session/entities/VideoSession';
-import { VideoSessionModel, VideoSessionDoc } from '../../database/mongoose/session/session.model';
+import { VideoSessionModel } from '../../database/mongoose/session/session.model';
 import { VideoSessionMapper } from './mappers/VideoSessionMapper';
+import { IVideoSessionSource } from './infraTypes';
 
 export class SessionRepository implements ISessionRepository {
   async create(sessionData: Partial<VideoSession>): Promise<VideoSession> {
-    const persistenceData = sessionData as unknown as Record<string, unknown>;
-    const doc = await VideoSessionModel.create(persistenceData);
-    return VideoSessionMapper.toDomain(doc as unknown as VideoSessionDoc);
+    const doc = await VideoSessionModel.create(sessionData);
+    return VideoSessionMapper.toDomain(doc.toObject() as unknown as IVideoSessionSource);
   }
 
   async join(sessionId: string, participantId: string): Promise<VideoSession> {
@@ -19,17 +19,16 @@ export class SessionRepository implements ISessionRepository {
       session.participants.push(participantId);
       await session.save();
     }
-    return VideoSessionMapper.toDomain(session);
+    return VideoSessionMapper.toDomain(session.toObject() as unknown as IVideoSessionSource);
   }
 
   async getById(sessionId: string): Promise<VideoSession | null> {
-    const session = await VideoSessionModel.findById(sessionId).lean() as VideoSessionDoc | null;
+    const session = await VideoSessionModel.findById(sessionId).lean() as unknown as IVideoSessionSource | null;
     return session ? VideoSessionMapper.toDomain(session) : null;
   }
 
   async update(sessionId: string, data: Partial<VideoSession>): Promise<VideoSession | null> {
-    const persistenceData = data as unknown as Record<string, unknown>;
-    const session = await VideoSessionModel.findByIdAndUpdate(sessionId, persistenceData, { new: true }).lean() as VideoSessionDoc | null;
+    const session = await VideoSessionModel.findByIdAndUpdate(sessionId, data, { new: true }).lean() as unknown as IVideoSessionSource | null;
     return session ? VideoSessionMapper.toDomain(session) : null;
   }
 
@@ -38,7 +37,7 @@ export class SessionRepository implements ISessionRepository {
   }
 
   async getAll(params: { search?: string; status?: string; instructor?: string; course?: string } = {}): Promise<VideoSession[]> {
-    const query: FilterQuery<VideoSessionDoc> = {};
+    const query: FilterQuery<IVideoSessionSource> = {};
 
     if (params.status && params.status !== 'all') {
       if (params.status === 'upcoming') {
@@ -79,7 +78,7 @@ export class SessionRepository implements ISessionRepository {
       }
     }
 
-    const sessions = await VideoSessionModel.find(query).sort({ createdAt: -1 }).lean() as VideoSessionDoc[];
+    const sessions = await VideoSessionModel.find(query).sort({ createdAt: -1 }).lean() as unknown as IVideoSessionSource[];
     return VideoSessionMapper.toDomainList(sessions);
   }
 

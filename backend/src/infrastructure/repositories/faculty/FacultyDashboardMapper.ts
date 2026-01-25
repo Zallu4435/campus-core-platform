@@ -6,10 +6,18 @@ import {
     AssignmentPerformance,
     SessionDistribution,
     RecentActivity
-} from "../../../domain/faculty/dashboard/entities/FacultyDashboardEntities";
+} from "../../../application/faculty/dtos/FacultyDashboardDTOs";
+import {
+    IDashboardStatsSource,
+    IWeeklyAttendanceSource,
+    IAssignmentPerformanceSource,
+    ISessionDistributionSource,
+    IRecentActivitySource,
+    IFacultyDashboardDataSource
+} from "./infraTypes";
 
 export class FacultyDashboardMapper {
-    static toStatsDomain(stats: any): DashboardStats {
+    static toStatsDomain(stats: IDashboardStatsSource): DashboardStats {
         return {
             totalSessions: stats.totalSessions || 0,
             totalAssignments: stats.totalAssignments || 0,
@@ -17,14 +25,14 @@ export class FacultyDashboardMapper {
         };
     }
 
-    static toWeeklyAttendanceDomain(data: any[]): WeeklyAttendance[] {
+    static toWeeklyAttendanceDomain(data: IWeeklyAttendanceSource[]): WeeklyAttendance[] {
         return data.map(item => ({
             day: item.day,
             attendance: item.attendance
         }));
     }
 
-    static toAssignmentPerformanceDomain(data: any[]): AssignmentPerformance[] {
+    static toAssignmentPerformanceDomain(data: IAssignmentPerformanceSource[]): AssignmentPerformance[] {
         return data.map(item => ({
             assignment: item.assignment,
             score: item.score,
@@ -32,7 +40,7 @@ export class FacultyDashboardMapper {
         }));
     }
 
-    static toSessionDistributionDomain(data: any[]): SessionDistribution[] {
+    static toSessionDistributionDomain(data: ISessionDistributionSource[]): SessionDistribution[] {
         return data.map(item => ({
             name: item.name,
             value: item.value,
@@ -40,16 +48,16 @@ export class FacultyDashboardMapper {
         }));
     }
 
-    static toRecentActivityDomain(data: any[]): RecentActivity[] {
+    static toRecentActivityDomain(data: IRecentActivitySource[]): RecentActivity[] {
         return data.map(item => ({
             id: item.id,
-            type: item.type,
+            type: item.type as any,
             message: item.message,
             time: item.time
         }));
     }
 
-    static toDashboardDataDomain(data: any): FacultyDashboardData {
+    static toDashboardDataDomain(data: IFacultyDashboardDataSource): FacultyDashboardData {
         return {
             stats: this.toStatsDomain(data.stats),
             weeklyAttendance: this.toWeeklyAttendanceDomain(data.weeklyAttendance),

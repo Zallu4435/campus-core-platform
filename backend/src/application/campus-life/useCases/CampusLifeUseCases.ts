@@ -28,7 +28,7 @@ import {
 } from "../dtos/ClubDTOs";
 import { ResponseDTO } from "../dtos/ResponseDTO";
 import { CampusEvent, Sport as CampusLifeSport, Club } from "../../../domain/campus-life/entities/CampusLife";
-import { EventsRequest, SportsRequest, ClubsRequest, JoinClubRequest, JoinSportRequest, JoinEventRequest } from "../../../domain/campus-life/entities/CampusLifeTypes";
+import { EventsRequest, SportsRequest, ClubsRequest, JoinSportRequest } from "../../../domain/campus-life/entities/CampusLifeTypes";
 import { EventStatus, SportType, ClubStatus, RequestStatus } from "../../../domain/campus-life/enums/CampusLifeEnums";
 import { CampusEventMapper } from "../../../infrastructure/repositories/campus-life/mappers/CampusEventMapper";
 import { SportMapper } from "../../../infrastructure/repositories/sports/mappers/SportMapper";
@@ -141,7 +141,7 @@ export class GetEventByIdUseCase implements IGetEventByIdUseCase {
       success: true,
       data: {
         event: new CampusEvent(
-          rawEvent._id.toString(),
+          rawEvent.id,
           rawEvent.title,
           rawEvent.date,
           rawEvent.time,
@@ -154,8 +154,8 @@ export class GetEventByIdUseCase implements IGetEventByIdUseCase {
           String(rawEvent.fullTime),
           rawEvent.additionalInfo,
           rawEvent.requirements,
-          rawEvent.createdAt.toString(),
-          rawEvent.updatedAt.toString()
+          rawEvent.createdAt.toISOString(),
+          rawEvent.updatedAt.toISOString()
         )
       }
     };
@@ -186,7 +186,7 @@ export class GetSportsUseCase implements IGetSportsUseCase {
     return {
       success: true,
       data: {
-        data: SportMapper.toSummaryDTOList(sports as never),
+        data: SportMapper.toSummaryDTOList(sports),
         totalItems,
         totalPages: Math.ceil(totalItems / 10),
         currentPage: 1
@@ -205,29 +205,27 @@ export class GetSportByIdUseCase implements IGetSportByIdUseCase {
       throw new SportNotFoundError(sportId);
     }
 
-    const legacyData = sport as unknown as LegacySportData;
-
     return {
       success: true,
       data: {
         sport: {
-          _id: sport._id.toString(),
+          id: sport.id || '',
           title: sport.title,
           type: sport.type,
           headCoach: sport.headCoach,
-          status: (legacyData.status || sport.status) as SportStatus,
+          status: sport.status,
           division: sport.division,
           participants: sport.participants,
           icon: sport.icon,
           color: sport.color,
           createdAt: sport.createdAt,
           updatedAt: sport.updatedAt,
-          category: legacyData.category || "",
-          organizer: legacyData.organizer || "",
-          organizerType: legacyData.organizerType || "",
-          homeGames: legacyData.homeGames || 0,
-          record: legacyData.record || "",
-          upcomingGames: legacyData.upcomingGames || []
+          category: sport.category || "",
+          organizer: sport.organizer || "",
+          organizerType: sport.organizerType || "",
+          homeGames: sport.homeGames || 0,
+          record: sport.record || "",
+          upcomingGames: sport.upcomingGames || []
         } as RepositorySportData
       }
     };
@@ -276,7 +274,7 @@ export class GetClubByIdUseCase implements IGetClubByIdUseCase {
       success: true,
       data: {
         club: new Club(
-          club._id.toString(),
+          club.id,
           club.name,
           club.type,
           Array.isArray(club.members) ? club.members.length : 0,
@@ -287,8 +285,8 @@ export class GetClubByIdUseCase implements IGetClubByIdUseCase {
           club.nextMeeting,
           club.about || "",
           club.upcomingEvents || [],
-          club.createdAt.toString(),
-          club.updatedAt.toString()
+          club.createdAt.toISOString(),
+          club.updatedAt.toISOString()
         )
       }
     };
@@ -300,13 +298,13 @@ export class JoinClubUseCase implements IJoinClubUseCase {
 
   async execute(params: JoinClubRequestDTO): Promise<ResponseDTO<JoinClubResponseDTO>> {
     if (!params.reason) {
-      return { success: false, data: { error: "Reason is required" } };
+      throw new InvalidJoinRequestError("Reason is required");
     }
     const newRequest = await this._campusLifeRepository.joinClub(params);
     return {
       success: true,
       data: {
-        requestId: newRequest._id.toString(),
+        requestId: newRequest.id,
         status: newRequest.status as RequestStatus,
         message: "Join request submitted successfully"
       }
@@ -320,7 +318,7 @@ export class JoinSportUseCase implements IJoinSportUseCase {
   async execute(params: JoinSportRequestDTO): Promise<ResponseDTO<JoinSportResponseDTO>> {
     const reason = params.reason || params.whyJoin;
     if (!reason) {
-      return { success: false, data: { error: "Reason is required" } };
+      throw new InvalidJoinRequestError("Reason is required");
     }
 
     const legacyParams = new JoinSportRequest(
@@ -334,7 +332,7 @@ export class JoinSportUseCase implements IJoinSportUseCase {
     return {
       success: true,
       data: {
-        requestId: newRequest._id.toString(),
+        requestId: newRequest.id,
         status: newRequest.status as RequestStatus,
         message: "Join request submitted successfully"
       }
@@ -347,13 +345,13 @@ export class JoinEventUseCase implements IJoinEventUseCase {
 
   async execute(params: JoinEventRequestDTO): Promise<ResponseDTO<JoinEventResponseDTO>> {
     if (!params.reason) {
-      return { success: false, data: { error: "Reason is required" } };
+      throw new InvalidJoinRequestError("Reason is required");
     }
     const newRequest = await this._campusLifeRepository.joinEvent(params);
     return {
       success: true,
       data: {
-        requestId: newRequest._id.toString(),
+        requestId: newRequest.id,
         status: newRequest.status as RequestStatus,
         message: "Join request submitted successfully"
       }

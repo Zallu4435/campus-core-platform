@@ -11,7 +11,8 @@ import {
   AssignmentPerformance,
   SessionDistribution,
   RecentActivity
-} from "../../../domain/faculty/dashboard/entities/FacultyDashboardEntities";
+} from "../../../application/faculty/dtos/FacultyDashboardDTOs";
+import { IRecentActivitySource } from "./infraTypes";
 
 export class FacultyDashboardRepository implements IFacultyDashboardRepository {
   async getDashboardStats(facultyId: string): Promise<DashboardStats> {
@@ -256,7 +257,7 @@ export class FacultyDashboardRepository implements IFacultyDashboardRepository {
       throw new Error("Invalid faculty ID");
     }
 
-    const recentActivitiesRaw: any[] = [];
+    const recentActivitiesRaw: IRecentActivitySource[] = [];
 
     const recentSessions = await VideoSessionModel.find({ hostId: facultyId })
       .sort({ createdAt: -1 })

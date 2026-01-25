@@ -32,28 +32,23 @@ export class GetSiteSectionsUseCase implements IGetSiteSectionsUseCase {
       status
     } = params;
 
-    const query: SiteSectionFilter = {};
+    const filter: SiteSectionFilter = {};
 
-    if (sectionKey) query.sectionKey = sectionKey;
+    if (sectionKey) filter.sectionKey = sectionKey;
 
     if (search && search.trim()) {
-      const searchRegex = { $regex: search.trim(), $options: 'i' };
-      query.$or = [
-        { title: searchRegex },
-        { description: searchRegex },
-        { category: searchRegex },
-      ];
+      filter.search = search.trim();
     }
 
     if (category && category !== SITE_MANAGEMENT_CONSTANTS.DEFAULT_QUERY_PARAMS.CATEGORY && category !== 'All Categories') {
-      query.category = { $regex: `^${category}$`, $options: 'i' };
+      filter.category = category;
     }
 
     if (status && status !== SITE_MANAGEMENT_CONSTANTS.DEFAULT_QUERY_PARAMS.STATUS) {
       if (status === 'active') {
-        query.isActive = true;
+        filter.isActive = true;
       } else if (status === 'inactive') {
-        query.isActive = false;
+        filter.isActive = false;
       }
     }
 
@@ -90,14 +85,12 @@ export class GetSiteSectionsUseCase implements IGetSiteSectionsUseCase {
           endDateFilter = now;
       }
 
-      query.createdAt = {
-        $gte: startDateFilter,
-        $lte: endDateFilter
-      };
+      filter.startDate = startDateFilter;
+      filter.endDate = endDateFilter;
     }
 
     const skip = (page - 1) * limit;
-    const allDocs = await this._siteSectionRepository.getSections(query);
+    const allDocs = await this._siteSectionRepository.getSections(filter);
 
     const sortedDocs = allDocs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
@@ -107,7 +100,7 @@ export class GetSiteSectionsUseCase implements IGetSiteSectionsUseCase {
     return {
       success: true,
       data: {
-        sections: pagedDocs.map((doc) => SiteSectionMapper.docToDTO(doc)),
+        sections: pagedDocs.map((doc) => SiteSectionMapper.toDTO(doc)),
         total,
         page,
         limit,
@@ -127,7 +120,7 @@ export class GetSiteSectionByIdUseCase implements IGetSiteSectionByIdUseCase {
     }
     return {
       success: true,
-      data: { section: SiteSectionMapper.docToDTO(doc) }
+      data: { section: SiteSectionMapper.toDTO(doc) }
     };
   }
 }
@@ -149,7 +142,7 @@ export class CreateSiteSectionUseCase implements ICreateSiteSectionUseCase {
     }
 
     const doc = await this.siteSectionRepository.createSection(params);
-    return { success: true, data: { section: SiteSectionMapper.docToDTO(doc) } };
+    return { success: true, data: { section: SiteSectionMapper.toDTO(doc) } };
   }
 }
 
@@ -163,7 +156,7 @@ export class UpdateSiteSectionUseCase implements IUpdateSiteSectionUseCase {
     }
     return {
       success: true,
-      data: { section: SiteSectionMapper.docToDTO(doc) }
+      data: { section: SiteSectionMapper.toDTO(doc) }
     };
   }
 }

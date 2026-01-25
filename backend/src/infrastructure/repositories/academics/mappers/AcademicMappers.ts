@@ -12,26 +12,32 @@ import { EnrollmentStatus } from "../../../../domain/academics/enums/AcademicEnu
 import { AcademicConstants } from "../../../../application/academics/constants/AcademicConstants";
 
 // Source Interfaces (mirroring Mongoose Documents as loosely as needed for mapping)
-interface IMongooseDocument {
-    _id: any;
-    createdAt?: any;
-    updatedAt?: any;
-}
+import {
+    IStudentSource,
+    ICourseSource,
+    IEnrollmentSource,
+    IGradeSource,
+    IAcademicHistorySource,
+    IProgramSource,
+    IProgressSource,
+    IRequirementSource,
+    ITranscriptRequestSource
+} from "../infraTypes";
 
 export class AcademicMappers {
-    static toStudent(userDoc: any, programDoc?: any): Student {
+    static toStudent(userDoc: IStudentSource, programDoc?: any): Student {
         const id = userDoc._id.toString();
         return new Student(
             id,
             userDoc.firstName,
             userDoc.lastName,
             userDoc.email,
-            userDoc.phone,
+            userDoc.phone || "",
             userDoc.profilePicture
         );
     }
 
-    static toCourse(doc: any): Course {
+    static toCourse(doc: ICourseSource): Course {
         return new Course(
             doc._id.toString(),
             doc.title,
@@ -41,58 +47,60 @@ export class AcademicMappers {
             doc.term || AcademicConstants.Grade.UNKNOWN_TERM,
             doc.maxEnrollment,
             doc.currentEnrollment || 0,
-            new Date(doc.createdAt),
+            doc.createdAt ? new Date(doc.createdAt) : new Date(),
             doc.schedule,
-            doc.description,
+            doc.description || "",
             doc.prerequisites
         );
     }
 
-    static toEnrollment(doc: any): Enrollment {
+    static toEnrollment(doc: IEnrollmentSource): Enrollment {
         // Map status string to Enum
         const statusStr = doc.status;
         let status = EnrollmentStatus.Pending;
-        if (Object.values(EnrollmentStatus).includes(statusStr)) {
+        if (Object.values(EnrollmentStatus).includes(statusStr as EnrollmentStatus)) {
             status = statusStr as EnrollmentStatus;
         }
+
+        const courseIdVal = doc.courseId
+            ? ((typeof doc.courseId === 'object' && '_id' in doc.courseId)
+                ? (doc.courseId as { _id: Types.ObjectId | string })._id.toString()
+                : doc.courseId.toString())
+            : "";
 
         return new Enrollment(
             doc._id.toString(),
             doc.studentId.toString(),
-            doc.courseId?._id ? doc.courseId._id.toString() : doc.courseId?.toString(), // Handle populated or not
+            courseIdVal,
             status,
-            new Date(doc.requestedAt),
+            doc.requestedAt ? new Date(doc.requestedAt) : new Date(),
             doc.reason
         );
     }
 
-    static toGrade(doc: any): Grade {
+    static toGrade(doc: IGradeSource): Grade {
         return new Grade(
             doc._id.toString(),
             doc.studentId.toString(),
-            doc.cumulativeGPA,
-            doc.termGPA,
+            doc.cumulativeGPA.toString(),
+            doc.termGPA.toString(),
             doc.termName,
-            doc.creditsEarned,
-            doc.creditsInProgress
+            doc.creditsEarned.toString(),
+            doc.creditsInProgress.toString()
         );
     }
 
-    static toAcademicHistory(doc: any): AcademicHistory {
+    static toAcademicHistory(doc: IAcademicHistorySource): AcademicHistory {
         return new AcademicHistory(
-            doc._id.toString(), // Entity has string ID, doc has _id (ObjectId) OR id (number). 
-            // The entity def I made has `id: string`. 
-            // The Model has `id: Number` field AND `_id: ObjectId`. 
-            // Logic Check: Previous Use Case mapped `record.id` (number).
-            // I will use `doc.id` if present, else `doc._id`.
+            doc._id.toString(),
             doc.studentId ? doc.studentId.toString() : '',
             doc.term,
-            doc.credits,
-            doc.gpa
+            doc.credits.toString(),
+            doc.gpa.toString()
         );
     }
 
-    static toProgram(doc: any): Program {
+    static toProgram(doc: IProgramSource): Program {
         return new Program(
             doc._id.toString(),
             doc.studentId.toString(),
@@ -102,7 +110,7 @@ export class AcademicMappers {
         );
     }
 
-    static toProgress(doc: any): Progress {
+    static toProgress(doc: IProgressSource): Progress {
         return new Progress(
             doc._id.toString(),
             doc.studentId.toString(),
@@ -114,7 +122,7 @@ export class AcademicMappers {
         );
     }
 
-    static toRequirement(doc: any): Requirement {
+    static toRequirement(doc: IRequirementSource): Requirement {
         return new Requirement(
             doc._id.toString(),
             doc.studentId.toString(),
@@ -124,13 +132,13 @@ export class AcademicMappers {
         );
     }
 
-    static toTranscriptRequest(doc: any): TranscriptRequest {
+    static toTranscriptRequest(doc: ITranscriptRequestSource): TranscriptRequest {
         return new TranscriptRequest(
             doc._id.toString(),
             doc.studentId.toString(),
             doc.deliveryMethod,
-            new Date(doc.requestedAt),
-            new Date(doc.estimatedDelivery),
+            doc.requestedAt ? new Date(doc.requestedAt) : new Date(),
+            doc.estimatedDelivery ? new Date(doc.estimatedDelivery) : new Date(),
             doc.requestId,
             doc.address,
             doc.email

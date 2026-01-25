@@ -119,4 +119,37 @@ export class CourseMapper {
     static toSummaryDTOList(mongooseDocs: ICourseDocument[]): CourseSummaryDTO[] {
         return mongooseDocs.map(doc => this.toSummaryDTO(doc));
     }
+
+    /**
+     * Map Domain Entity to DTO
+     * Used when the application layer works with Entities but needs to return DTOs
+     */
+    static entityToDTO(course: Course): CourseDetailsDTO {
+        return {
+            id: course.id || '',
+            title: course.title,
+            specialization: course.specialization,
+            faculty: course.faculty,
+            credits: course.credits,
+            schedule: course.schedule,
+            maxEnrollment: course.maxEnrollment,
+            currentEnrollment: course.currentEnrollment || 0,
+            description: course.description,
+            term: course.term,
+            prerequisites: course.prerequisites,
+        };
+    }
+
+    static entityToSummaryDTO(course: Course): CourseSummaryDTO {
+        return {
+            id: course.id || '',
+            title: course.title,
+            specialization: course.specialization,
+            faculty: course.faculty,
+            term: course.term || '',
+            credits: course.credits,
+            currentEnrollment: course.currentEnrollment || 0,
+            maxEnrollment: course.maxEnrollment || 0,
+        };
+    }
 }

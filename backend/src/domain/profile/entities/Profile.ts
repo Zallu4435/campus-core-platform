@@ -1,5 +1,4 @@
 // src/domain/profile/entities/Profile.ts
-import { AggregateRoot } from "../../shared/AggregateRoot";
 import { ProfileRole } from "./ProfileTypes";
 import { ValidationError } from "../errors/ProfileErrors";
 
@@ -16,8 +15,8 @@ export interface ProfileProps {
     updatedAt?: Date;
 }
 
-export class Profile extends AggregateRoot {
-    private _id: string;
+export class Profile {
+    private idValue: string;
     private _firstName: string;
     private _lastName?: string;
     private _email: string;
@@ -29,8 +28,7 @@ export class Profile extends AggregateRoot {
     private _updatedAt?: Date;
 
     private constructor(props: ProfileProps) {
-        super();
-        this._id = props.id;
+        this.idValue = props.id;
         this._firstName = props.firstName;
         this._lastName = props.lastName;
         this._email = props.email;
@@ -50,7 +48,7 @@ export class Profile extends AggregateRoot {
     }
 
     // Getters
-    get id(): string { return this._id; }
+    get id(): string { return this.idValue; }
     get firstName(): string { return this._firstName; }
     get lastName(): string | undefined { return this._lastName; }
     get email(): string { return this._email; }

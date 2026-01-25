@@ -1,6 +1,6 @@
 import { IDiplomaDocument } from '../infraTypes';
 import { DiplomaSummaryDTO, DiplomaDetailsDTO } from '../../../../application/diploma/dtos/DiplomaResponseDTOs';
-import { DiplomaProps } from '../../../../domain/diploma/types';
+import { DiplomaProps } from '../../../../domain/diploma/types/DiplomaTypes';
 
 export class DiplomaMapper {
     static toDomain(doc: IDiplomaDocument): DiplomaProps {

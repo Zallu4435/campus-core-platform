@@ -1,4 +1,4 @@
-import { IVideoRepository, RepoDiplomaInfo } from '../repositories/IVideoRepository';
+import { IVideoRepository } from '../repositories/IVideoRepository';
 import { IVideoStorageService } from '../services/IVideoStorageService';
 import { Video, VideoFilter } from '../../../domain/video/entities/Video';
 import {
@@ -73,59 +73,45 @@ export class GetVideosUseCase implements IGetVideosUseCase {
             if (!diploma) {
                 throw new InvalidDiplomaIdError();
             }
-            query.diplomaId = diploma._id;
+            query.diplomaId = diploma.id;
         }
 
         if (status && status !== 'all') {
             query.status = status;
         }
 
-        if (dateRange && dateRange !== 'all' && dateRange !== VideoConstants.DateRanges.CUSTOM) {
-            query.uploadedAt = this.buildDateRangeQuery(dateRange, startDate, endDate);
-        } else if (dateRange === VideoConstants.DateRanges.CUSTOM) {
-            query.uploadedAt = this.buildDateRangeQuery(dateRange, startDate, endDate);
+        if (dateRange && dateRange !== 'all') {
+            const now = new Date();
+            let start: Date | undefined;
+            let end: Date | undefined;
+
+            switch (dateRange) {
+                case VideoConstants.DateRanges.LAST_WEEK:
+                    start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                    break;
+                case VideoConstants.DateRanges.LAST_MONTH:
+                    start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                    break;
+                case VideoConstants.DateRanges.LAST_3_MONTHS:
+                    start = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+                    break;
+                case VideoConstants.DateRanges.CUSTOM:
+                    if (startDate && endDate) {
+                        start = new Date(startDate);
+                        end = new Date(endDate);
+                        end.setHours(23, 59, 59, 999);
+                    }
+                    break;
+            }
+            if (start) query.startDate = start;
+            if (end) query.endDate = end;
         }
 
         if (search && search.trim()) {
-            query.$or = [
-                { title: { $regex: search.trim(), $options: 'i' } },
-                { description: { $regex: search.trim(), $options: 'i' } }
-            ];
+            query.search = search.trim();
         }
 
         return query;
-    }
-
-    private buildDateRangeQuery(dateRange: string, startDate?: string, endDate?: string) {
-        const now = new Date();
-
-        switch (dateRange) {
-            case VideoConstants.DateRanges.LAST_WEEK:
-                return {
-                    $gte: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000),
-                };
-            case VideoConstants.DateRanges.LAST_MONTH:
-                return {
-                    $gte: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000),
-                };
-            case VideoConstants.DateRanges.LAST_3_MONTHS:
-                return {
-                    $gte: new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000),
-                };
-            case VideoConstants.DateRanges.CUSTOM:
-                if (startDate && endDate) {
-                    const startDateTime = new Date(startDate);
-                    const endDateTime = new Date(endDate);
-                    endDateTime.setHours(23, 59, 59, 999);
-
-                    return {
-                        $gte: startDateTime,
-                        $lte: endDateTime,
-                    };
-                }
-                break;
-        }
-        return undefined;
     }
 
     private mapVideosToDTO(videos: Video[]) {
@@ -167,7 +153,7 @@ export class GetVideoByIdUseCase implements IGetVideoByIdUseCase {
             const diploma = await this._videoRepository.findDiplomaById(video.diplomaId);
             if (diploma) {
                 diplomaInfo = {
-                    id: diploma._id!.toString(),
+                    id: diploma.id!.toString(),
                     title: diploma.title,
                     category: diploma.category
                 };
@@ -206,12 +192,14 @@ export class CreateVideoUseCase implements ICreateVideoUseCase {
             module: params.module,
             status: params.status,
             description: params.description,
-            diplomaId: diploma._id,
+            diplomaId: diploma.id,
             uploadedAt: new Date(),
             videoUrl
         };
         const created = await this._videoRepository.createVideo(videoData);
-        await this._videoRepository.addVideoToDiploma(diploma._id!, created.id);
+        if (diploma.id) {
+            await this._videoRepository.addVideoToDiploma(diploma.id, created.id);
+        }
 
         return { data: { video: created }, success: true };
     }
@@ -244,7 +232,7 @@ export class UpdateVideoUseCase implements IUpdateVideoUseCase {
             if (!newDiploma) {
                 throw new InvalidDiplomaIdError();
             }
-            newDiplomaId = newDiploma._id!;
+            newDiplomaId = newDiploma.id;
             if (newDiplomaId && newDiplomaId !== oldDiplomaId) {
                 categoryChanged = true;
             }

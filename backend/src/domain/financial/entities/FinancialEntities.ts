@@ -70,6 +70,7 @@ export class Charge {
         public readonly dueDate: Date,
         public readonly applicableFor: Record<string, unknown>,
         public readonly createdBy: string,
+        public readonly status: string,
         public readonly createdAt: Date,
         public readonly updatedAt: Date
     ) { }
@@ -83,6 +84,7 @@ export class Charge {
         dueDate: Date;
         applicableFor: Record<string, unknown>;
         createdBy: string;
+        status?: string;
         createdAt: Date;
         updatedAt: Date;
     }): Charge {
@@ -95,6 +97,7 @@ export class Charge {
             props.dueDate,
             props.applicableFor,
             props.createdBy,
+            props.status || 'Active',
             props.createdAt,
             props.updatedAt
         );

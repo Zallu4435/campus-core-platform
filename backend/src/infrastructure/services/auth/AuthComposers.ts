@@ -29,14 +29,15 @@ import { AuthRepository } from '../../../infrastructure/repositories/auth/AuthRe
 import { AuthController } from '../../../presentation/http/auth/AuthController';
 import { IAuthController } from '../../../presentation/http/IHttp';
 
-import { IJwtService, JwtService } from '../../services/auth/JwtService';
-import { IOtpService, OtpService } from '../../services/auth/OtpService';
+import { IJwtService } from '../../../application/auth/service/IJwtService';
+import { JwtService } from '../../services/auth/JwtService';
+import { IOtpService } from '../../../application/auth/service/IOtpService';
+import { OtpService } from '../../services/auth/OtpService';
 import { passwordService } from '../../services/auth/PasswordService';
 import { idGeneratorService } from '../../services/auth/IdGeneratorService';
 import { emailService } from '../../services/email.service';
 import { otpStorage } from "../../services/otpStorage";
 import { config } from '../../../config/config';
-import { DomainEventDispatcher } from '../../events/EventDispatcher';
 
 export function getAuthComposer(): IAuthController {
     const repository: AuthRepository = new AuthRepository();
@@ -75,8 +76,7 @@ export function getAuthComposer(): IAuthController {
     const resetPasswordUseCase: IResetPasswordUseCase = new ResetPasswordUseCase(
         repository,
         jwtService,
-        passwordSvc,
-        DomainEventDispatcher.getInstance()
+        passwordSvc
     );
     const confirmRegistrationUseCase: IConfirmRegistrationUseCase = new ConfirmRegistrationUseCase(repository, jwtService);
     const logoutAllUseCase: LogoutAllUseCase = new LogoutAllUseCase(repository, jwtService);

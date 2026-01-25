@@ -1,54 +1,54 @@
 import { SportRequest } from "../../../../domain/sports/entities/SportRequest";
 import { SportRequestDTO } from "../../../../application/sports/dtos/SportBaseDTOs";
-import { SportRequestDoc } from "../../../../domain/sports/entities/SportTypes";
+import { SportRequestData } from "../../../../domain/sports/entities/SportTypes";
 
 interface PopulatedSport {
-    _id: string;
+    id: string;
     title: string;
     type: string;
 }
 
 interface PopulatedUser {
-    _id: string;
+    id: string;
     firstName?: string;
     lastName?: string;
     email: string;
 }
 
 export class SportRequestMapper {
-    static toDomain(mongooseDoc: SportRequestDoc): SportRequest {
-        if (!mongooseDoc) {
-            throw new Error("Cannot map null document to domain entity");
+    static toDomain(data: SportRequestData): SportRequest {
+        if (!data) {
+            throw new Error("Cannot map null data to domain entity");
         }
 
-        const sportId = typeof mongooseDoc.sportId === 'string'
-            ? mongooseDoc.sportId
-            : mongooseDoc.sportId._id.toString();
+        const sportId = typeof data.sportId === 'string'
+            ? data.sportId
+            : data.sportId.id;
 
-        const userId = typeof mongooseDoc.userId === 'string'
-            ? mongooseDoc.userId
-            : mongooseDoc.userId._id.toString();
+        const userId = typeof data.userId === 'string'
+            ? data.userId
+            : data.userId.id;
 
         return new SportRequest({
-            id: mongooseDoc._id.toString(),
+            id: data.id,
             sportId,
             userId,
-            status: mongooseDoc.status,
-            whyJoin: mongooseDoc.whyJoin,
-            additionalInfo: mongooseDoc.additionalInfo,
-            createdAt: mongooseDoc.createdAt,
-            updatedAt: mongooseDoc.updatedAt,
+            status: data.status,
+            whyJoin: data.whyJoin,
+            additionalInfo: data.additionalInfo,
+            createdAt: data.createdAt,
+            updatedAt: data.updatedAt,
         });
     }
 
     static toPersistence(domainEntity: SportRequest): Record<string, unknown> {
         const sportId = typeof domainEntity.sportId === 'string'
             ? domainEntity.sportId
-            : (domainEntity.sportId as { _id: string })._id;
+            : (domainEntity.sportId as { id: string }).id;
 
         const userId = typeof domainEntity.userId === 'string'
             ? domainEntity.userId
-            : (domainEntity.userId as { _id: string })._id;
+            : (domainEntity.userId as { id: string }).id;
 
         return {
             sportId,
@@ -59,35 +59,35 @@ export class SportRequestMapper {
         };
     }
 
-    static toDTO(mongooseDoc: SportRequestDoc): SportRequestDTO {
-        if (!mongooseDoc) {
-            throw new Error("Cannot map null document to DTO");
+    static toDTO(data: SportRequestData): SportRequestDTO {
+        if (!data) {
+            throw new Error("Cannot map null data to DTO");
         }
 
-        const sport = typeof mongooseDoc.sportId !== 'string'
-            ? mongooseDoc.sportId as unknown as PopulatedSport
-            : { _id: mongooseDoc.sportId, title: "", type: "" };
+        const sport = typeof data.sportId !== 'string'
+            ? data.sportId as unknown as PopulatedSport
+            : { id: data.sportId, title: "", type: "" };
 
-        const user = typeof mongooseDoc.userId !== 'string'
-            ? mongooseDoc.userId as unknown as PopulatedUser
-            : { _id: mongooseDoc.userId, email: "" };
+        const user = typeof data.userId !== 'string'
+            ? data.userId as unknown as PopulatedUser
+            : { id: data.userId, email: "" };
 
         return {
-            id: mongooseDoc._id.toString(),
-            sportId: sport._id.toString(),
+            id: data.id,
+            sportId: sport.id || "",
             sportTitle: sport.title || "",
-            userId: user._id.toString(),
+            userId: user.id || "",
             userName: user.firstName ? `${user.firstName} ${user.lastName}` : "",
             userEmail: user.email || "",
-            status: mongooseDoc.status,
-            whyJoin: mongooseDoc.whyJoin,
-            additionalInfo: mongooseDoc.additionalInfo || "",
-            requestedDate: mongooseDoc.createdAt ? mongooseDoc.createdAt.toISOString() : "",
+            status: data.status,
+            whyJoin: data.whyJoin,
+            additionalInfo: data.additionalInfo || "",
+            requestedDate: data.createdAt ? data.createdAt.toISOString() : "",
             type: sport.type || "",
         };
     }
 
-    static toDTOList(mongooseDocs: SportRequestDoc[]): SportRequestDTO[] {
-        return mongooseDocs.map((doc) => this.toDTO(doc));
+    static toDTOList(dataList: SportRequestData[]): SportRequestDTO[] {
+        return dataList.map((data) => this.toDTO(data));
     }
 }

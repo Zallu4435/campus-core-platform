@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document } from "mongoose";
 import { ICourseDocument, IEnrollmentDocument } from "../../../repositories/courses/infraTypes";
 
-const CourseSchema = new Schema(
+const CourseSchema = new Schema<ICourseDocument>(
   {
     title: { type: String, required: true, trim: true },
     specialization: { type: String, required: true, trim: true, index: true },

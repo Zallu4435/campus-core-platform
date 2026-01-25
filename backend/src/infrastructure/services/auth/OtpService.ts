@@ -1,15 +1,9 @@
 import { otpStorage } from "../../services/otpStorage";
 import { InvalidOtpError } from "../../../domain/auth/errors/AuthErrors";
-
-export interface IOtpService {
-    generateOtp(): string;
-    storeOtp(email: string, otp: string): void;
-    verifyOtp(email: string, otp: string): boolean;
-    clearOtp(email: string): void;
-}
+import { IOtpService } from "../../../application/auth/service/IOtpService";
 
 export class OtpService implements IOtpService {
-    constructor(private readonly otpStore: typeof otpStorage) {}
+    constructor(private readonly otpStore: typeof otpStorage) { }
 
     generateOtp(): string {
         return Math.floor(100000 + Math.random() * 900000).toString();

@@ -41,7 +41,7 @@ export class GetEventByIdUseCase implements IGetEventByIdUseCase {
 
     const eventData: RepositoryEventData = {
       ...event,
-      _id: event._id.toString()
+      id: event.id
     };
 
     return { event: eventData };
@@ -81,7 +81,7 @@ export class CreateEventUseCase implements ICreateEventUseCase {
     return {
       event: {
         ...newEvent,
-        _id: newEvent._id.toString()
+        id: newEvent.id
       }
     };
   }
@@ -105,7 +105,7 @@ export class UpdateEventUseCase implements IUpdateEventUseCase {
     return {
       event: {
         ...updatedEvent,
-        _id: updatedEvent._id.toString()
+        id: updatedEvent.id
       }
     };
   }

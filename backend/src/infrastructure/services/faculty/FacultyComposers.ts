@@ -24,6 +24,7 @@ import {
   IServeDocumentUseCase,
 } from '../../../application/faculty/useCases/IFacultyUseCases';
 import { FacultyRepository } from '../../repositories/faculty/FacultyRepository';
+import { storageService } from '../shared/CloudinaryStorageService';
 import { FacultyController } from '../../../presentation/http/faculty/FacultyController';
 import { IFacultyController } from '../../../presentation/http/IHttp';
 
@@ -36,9 +37,9 @@ export function getFacultyComposer(): IFacultyController {
   const rejectFacultyUseCase: IRejectFacultyUseCase = new RejectFacultyUseCase(repository);
   const deleteFacultyUseCase: IDeleteFacultyUseCase = new DeleteFacultyUseCase(repository);
   const confirmFacultyOfferUseCase: IConfirmFacultyOfferUseCase = new ConfirmFacultyOfferUseCase(repository);
-  const downloadCertificateUseCase: IDownloadCertificateUseCase = new DownloadCertificateUseCase(repository);
+  const downloadCertificateUseCase: IDownloadCertificateUseCase = new DownloadCertificateUseCase(repository, storageService);
   const blockFacultyUseCase: IBlockFacultyUseCase = new BlockFacultyUseCase(repository);
-  const serveDocumentUseCase: IServeDocumentUseCase = new ServeDocumentUseCase(repository);
+  const serveDocumentUseCase: IServeDocumentUseCase = new ServeDocumentUseCase(repository, storageService);
   return new FacultyController(
     getFacultyUseCase,
     getFacultyByIdUseCase,

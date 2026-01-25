@@ -11,10 +11,10 @@ import {
 } from "../dtos/SportResponseDTOs";
 import { SportDataDTO, SportRequestDataDTO } from "../dtos/SportBaseDTOs";
 import { IBaseRepository } from "../../repositories/IBaseRepository";
-import { Sport, SportRequestStatus } from "../../../domain/sports/entities/SportTypes";
+import { SportData, SportRequestStatus } from "../../../domain/sports/entities/SportTypes";
 
 export interface ISportsRepository extends
-  IBaseRepository<Sport, CreateSportRequestDTO, Partial<SportDataDTO>, Record<string, unknown>, Sport> {
+  IBaseRepository<SportData, CreateSportRequestDTO, Partial<SportDataDTO>, Record<string, unknown>, SportData> {
 
   getSports(params: GetSportsRequestDTO): Promise<GetSportsResponseDTO>;
   getSportRequests(params: GetSportRequestsRequestDTO): Promise<GetSportRequestsResponseDTO>;

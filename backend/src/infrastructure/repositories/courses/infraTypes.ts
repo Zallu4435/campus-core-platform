@@ -22,8 +22,8 @@ export interface ICourseDocument extends Document {
  * Mongoose Document interface for Enrollment
  */
 export interface IEnrollmentDocument extends Document {
-    studentId: string | { _id: string; email: string; name?: string };
-    courseId: string | { _id: string; title: string; specialization?: string };
+    studentId: string | { id: string; email: string; name?: string };
+    courseId: string | { id: string; title: string; specialization?: string };
     status: "Pending" | "Approved" | "Rejected";
     requestedAt: Date;
     reason?: string;
@@ -36,13 +36,13 @@ export interface IEnrollmentDocument extends Document {
  */
 export interface PopulatedEnrollmentDocument extends Omit<IEnrollmentDocument, 'studentId' | 'courseId'> {
     studentId: {
-        _id: string;
+        id: string;
         email: string;
         firstName: string;
         lastName: string;
     };
     courseId: {
-        _id: string;
+        id: string;
         title: string;
         specialization: string;
         term: string;

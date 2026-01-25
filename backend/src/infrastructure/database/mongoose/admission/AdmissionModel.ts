@@ -1,22 +1,30 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
-import { IAdmission } from "../../../../domain/admission/entities/AdmissionTypes";
+import { IAdmission, AdmissionStatus, RejectedBy } from "../../../../domain/admission/entities/AdmissionTypes";
 
-interface IAdmissionDocument extends Omit<IAdmission, 'id'>, Document {}
+interface IAdmissionDocument extends Omit<IAdmission, 'id'>, Document { }
 
-const AdmissionSchema: Schema = new Schema(
+const AdmissionSchema = new Schema<IAdmissionDocument>(
   {
     applicationId: { type: String, required: true, unique: true },
-    registerId: { type: Schema.Types.ObjectId, required: true, ref: "Register" },
+    registerId: { type: String, required: true, ref: "Register" },
     personal: { type: Object, default: {} },
-    choiceOfStudy: { type: [Schema.Types.Mixed], default: [] },
+    choiceOfStudy: { type: [Object], default: [] },
     education: { type: Object, default: {} },
     achievements: { type: Object, default: {} },
     otherInformation: { type: Object, default: {} },
     documents: { type: Object, default: {} },
     declaration: { type: Object, default: {} },
     paymentId: { type: String, required: true },
-    rejectedBy: { type: String, enum: ["admin", "user", null], default: null },
-    status: { type: String, enum: ["pending", "offered", "approved", "rejected"], default: "pending" },
+    rejectedBy: {
+      type: String,
+      enum: [...Object.values(RejectedBy), null],
+      default: null
+    },
+    status: {
+      type: String,
+      enum: Object.values(AdmissionStatus),
+      default: AdmissionStatus.PENDING
+    },
     confirmationToken: { type: String, default: null },
     tokenExpiry: { type: Date, default: null },
   },

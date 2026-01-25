@@ -32,7 +32,7 @@ import {
 import { CommunicationConstants } from '../constants/CommunicationConstants';
 import { CommunicationDTOMapper } from '../dtos/CommunicationDTOMapper';
 import { Message, Attachment } from '../../../domain/communication/entities/Communication';
-import { CommunicationError, MessageNotFoundError, InvalidRecipientError, SenderNotFoundError } from '../../../domain/communication/errors/CommunicationErrors';
+import { CommunicationError, MessageNotFoundError } from '../../../domain/communication/errors/CommunicationErrors';
 
 export class GetInboxMessagesUseCase implements IGetInboxMessagesUseCase {
   constructor(private readonly _repository: ICommunicationRepository) { }
@@ -135,12 +135,8 @@ export class SendMessageUseCase implements ISendMessageUseCase {
         );
       }
 
-      // We assume sendUserMessage/sendMessage throws infrastructure errors if any.
-      // If not, we should catch inside repository or let bubble.
-
       const mappedMessage = CommunicationDTOMapper.toMessageDetailsDTO(sentMessage);
 
-      // Cast because SendMessageResponseDTO is subset/similar to GetMessageDetailsResponseDTO returning from mapper
       return mappedMessage as unknown as SendMessageResponseDTO;
 
     } catch (error) {
@@ -228,7 +224,7 @@ export class FetchUsersUseCase implements IFetchUsersUseCase {
   async execute(params: FetchUsersRequestDTO): Promise<FetchUsersResponseDTO> {
     const users = await this._repository.fetchUsers(params.type, params.search);
     const mappedUsers = users.map((user) => ({
-      id: user._id,
+      id: user.id,
       email: user.email,
       name: user.name
     }));

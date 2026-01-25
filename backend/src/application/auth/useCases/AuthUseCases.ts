@@ -1,4 +1,3 @@
-import { IEventDispatcher } from '../../../domain/shared/IEventDispatcher';
 import {
   RegisterRequestDTO, LoginRequestDTO,
   RegisterFacultyRequestDTO, SendEmailOtpRequestDTO, VerifyEmailOtpRequestDTO, ResetPasswordRequestDTO,
@@ -13,8 +12,8 @@ import { AuthCollection, TokenType, AUTH_MESSAGES, AUTH_EXPIRIES } from "../cons
 import { IAuthRepository } from '../repositories/IAuthRepository';
 import { SessionService } from '../../../domain/auth/services/SessionService';
 
-import { IJwtService } from "../../../infrastructure/services/auth/JwtService";
-import { IOtpService } from '../../../infrastructure/services/auth/OtpService';
+import { IJwtService } from "../service/IJwtService";
+import { IOtpService } from '../service/IOtpService';
 import { IEmailService } from "../service/IEmailService";
 import { IPasswordService } from "../service/IPasswordService";
 import { IIdGeneratorService } from "../service/IIdGeneratorService";
@@ -379,8 +378,7 @@ export class ResetPasswordUseCase implements IResetPasswordUseCase {
   constructor(
     private _authRepository: IAuthRepository,
     private _jwtService: IJwtService,
-    private _passwordService: IPasswordService,
-    private _eventDispatcher: IEventDispatcher
+    private _passwordService: IPasswordService
   ) { }
 
   async execute(params: ResetPasswordRequestDTO): Promise<ResetPasswordResponseDTO> {
@@ -391,47 +389,27 @@ export class ResetPasswordUseCase implements IResetPasswordUseCase {
       throw new InvalidTokenError("Invalid token type for password reset.");
     }
 
-    // 1. Get Domain User (Aggregate Root)
-    const aggregateResult = await this._authRepository.findUserAggregateByEmail(payload.email);
-    if (!aggregateResult) {
-      throw new InvalidTokenError("User not found");
-    }
+    // Hash the new password
+    const hashedPassword = await this._passwordService.hash(params.newPassword);
 
-    const { user, collection } = aggregateResult;
-
-    // 2. Execute Domain Logic
-    // IMPORTANT: Security Note - We are hashing here because the User Entity expects a "new password".
-    // In a pure implementation, User.changePassword() might validate complexity, and the Repo hashes on save.
-    // Given current architecture, we will update the password directly or hash it if needed.
-    // Since User.changePassword(str) sets a Password VO, and Password VO expects plain text for validation usually...
-    // We pass plain text params.newPassword.
-    // We rely on Mongoose Pre-save hooks or specific Mapper logic to hash it, OR we accept that stored password is plain for this specific file refactor
-    // (Actual production code would ensure hashing in the Repo save() method or Pre-Save hook).
-
-    user.changePassword(params.newPassword);
-
-    // 3. Persist State
-    await this._authRepository.save(user, collection);
-
-    // 4. Dispatch Side Effects
-    await this._eventDispatcher.dispatchAll(user.domainEvents);
-    user.clearEvents();
+    // Update password in repository
+    const result = await this._authRepository.resetPassword(payload.email, hashedPassword);
 
     const token = this._jwtService.generateToken(
-      { userId: user.id as string, email: user.email, collection },
+      { userId: result.user.id, email: result.user.email, collection: result.collection },
       "1h"
     );
 
     return {
       token,
       user: {
-        id: user.id as string,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        profilePicture: user.profilePicture
+        id: result.user.id,
+        firstName: result.user.firstName,
+        lastName: result.user.lastName,
+        email: result.user.email,
+        profilePicture: result.user.profilePicture
       },
-      collection: collection as AuthCollection,
+      collection: result.collection as AuthCollection,
     };
   }
 }

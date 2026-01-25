@@ -1,5 +1,3 @@
-import { PerformanceData } from '../../../domain/admindashboard/entities/AdminDashboardTypes';
-
 export interface DashboardMetrics {
   totalUsers: number;
   totalRevenue: number;
@@ -20,13 +18,19 @@ export interface RevenueData {
   other: number;
 }
 
+export interface PerformanceData {
+  name: string;
+  value: number;
+  color: string;
+}
+
 export interface ActivityItem {
   id: string;
   action: string;
   user: string;
   time: string;
   avatar: string;
-  type: 'success' | 'warning' | 'info' | 'error';
+  type: 'success' | 'warning' | 'info' | 'error' | 'default';
   isRead: boolean;
 }
 

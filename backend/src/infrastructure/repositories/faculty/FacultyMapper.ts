@@ -1,10 +1,10 @@
 import { Faculty } from "../../../domain/faculty/entities/Faculty";
-import { FacultyRegisterDocument } from "../../database/mongoose/faculty/facultyRegister.model";
-import { FacultyUserDocument } from "../../database/mongoose/faculty/faculty.model";
 import { FacultyStatus } from "../../../domain/faculty/enums/FacultyEnums";
 
+import { IFacultySource } from "./infraTypes";
+
 export class FacultyMapper {
-    static toDomain(raw: FacultyRegisterDocument): Faculty {
+    static toDomain(raw: IFacultySource): Faculty {
         const fullNameParts = raw.fullName.split(" ");
         const firstName = fullNameParts[0] || "";
         const lastName = fullNameParts.slice(1).join(" ") || "";
@@ -17,23 +17,23 @@ export class FacultyMapper {
             phone: raw.phone,
             department: raw.department,
             qualification: raw.qualification,
-            experience: raw.experience,
+            experience: String(raw.experience),
             aboutMe: raw.aboutMe,
             cvUrl: raw.cvUrl,
-            certificatesUrl: raw.certificatesUrl,
+            certificatesUrl: raw.certificatesUrl || [],
             status: raw.status as FacultyStatus,
             rejectedBy: raw.rejectedBy as any,
             confirmationToken: raw.confirmationToken,
-            tokenExpiry: raw.tokenExpiry,
+            tokenExpiry: raw.tokenExpiry ? new Date(raw.tokenExpiry as string | Date) : undefined,
             blocked: raw.blocked,
-            createdAt: raw.createdAt,
-            updatedAt: raw.updatedAt,
+            createdAt: raw.createdAt ? new Date(raw.createdAt as string | Date) : new Date(),
+            updatedAt: raw.updatedAt ? new Date(raw.updatedAt as string | Date) : new Date(),
             // password is usually not in Register doc, but if it is:
             password: raw.password
         });
     }
 
-    static toPersistence(entity: Faculty): any {
+    static toPersistence(entity: Faculty): Partial<IFacultySource> {
         return {
             fullName: entity.firstName + " " + entity.lastName, // Combine names for persistence if schema uses fullName
             email: entity.email,

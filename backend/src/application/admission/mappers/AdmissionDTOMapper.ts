@@ -37,7 +37,7 @@ export class AdmissionDTOMapper {
             updatedAt: admission.getUpdatedAt(),
             paymentId: admission.getPaymentId(),
             status: admission.getStatus(),
-            rejectedBy: admission.getRejectedBy(),
+            rejectedBy: admission.rejectedBy,
             confirmationToken: admission.getConfirmationToken(),
             tokenExpiry: admission.getTokenExpiry(),
         };

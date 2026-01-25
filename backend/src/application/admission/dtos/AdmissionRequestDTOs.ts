@@ -1,4 +1,5 @@
 import { PaymentMethod, IAdmission } from "../../../domain/admission/entities/AdmissionTypes";
+import { IFile } from "../../../domain/shared/types/FileTypes";
 
 export interface CreateApplicationRequestDTO {
   userId: string;
@@ -17,12 +18,12 @@ export interface SaveSectionRequestDTO {
 export interface UploadDocumentRequestDTO {
   applicationId: string;
   documentType: string;
-  file: Express.Multer.File;
+  file: IFile;
 }
 
 export interface UploadMultipleDocumentsRequestDTO {
   applicationId: string;
-  files: Express.Multer.File[];
+  files: IFile[];
   documentTypes: string[];
 }
 

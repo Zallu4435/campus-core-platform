@@ -1,5 +1,5 @@
 import { VideoSession } from '../../../domain/session/entities/VideoSession';
-import { VideoSessionStatus } from '../../../domain/session/enums/VideoSessionStatus';
+
 
 export interface ISessionRepository {
   create(sessionData: Partial<VideoSession>): Promise<VideoSession>;

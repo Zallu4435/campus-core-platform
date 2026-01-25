@@ -5,15 +5,13 @@ import { Assignment } from '../../../domain/assignments/entities/Assignment';
 import { Submission } from '../../../domain/assignments/entities/Submission';
 import { AssignmentMapper } from './mappers/AssignmentMapper';
 import { AnalyticsData } from '../../../application/assignments/dtos/AnalyticsDTOs';
-import mongoose from 'mongoose';
+import mongoose, { FilterQuery } from 'mongoose';
 
-import { IAssignmentDocument } from '../../database/mongoose/assignment/AssignmentModel';
-import { ISubmissionDocument } from '../../database/mongoose/assignment/SubmissionModel';
-import { FilterQuery } from 'mongoose';
+import { IAssignmentSource, ISubmissionSource } from './infraTypes';
 
 export class AssignmentRepository implements IAssignmentRepository {
   async getAssignments(subject?: string, status?: string, page: number = 1, limit: number = 10, search?: string) {
-    const query: FilterQuery<IAssignmentDocument> = {};
+    const query: FilterQuery<IAssignmentSource> = {};
     if (subject) query.subject = subject;
     if (status) query.status = status;
     if (search && search.trim() !== '') {
@@ -27,7 +25,8 @@ export class AssignmentRepository implements IAssignmentRepository {
       AssignmentModel.find(query)
         .skip(skip)
         .limit(limit)
-        .sort({ createdAt: -1 }),
+        .sort({ createdAt: -1 })
+        .lean() as unknown as IAssignmentSource[],
       AssignmentModel.countDocuments(query)
     ]);
 
@@ -40,7 +39,7 @@ export class AssignmentRepository implements IAssignmentRepository {
   }
 
   async getAssignmentById(id: string): Promise<Assignment | null> {
-    const doc = await AssignmentModel.findById(id);
+    const doc = await AssignmentModel.findById(id).lean() as unknown as IAssignmentSource;
     return doc ? AssignmentMapper.toDomain(doc) : null;
   }
 
@@ -70,7 +69,7 @@ export class AssignmentRepository implements IAssignmentRepository {
   async createAssignment(assignment: Assignment): Promise<Assignment> {
     const persistence = AssignmentMapper.toPersistence(assignment);
     const doc = await AssignmentModel.create(persistence);
-    return AssignmentMapper.toDomain(doc);
+    return AssignmentMapper.toDomain(doc.toObject() as unknown as IAssignmentSource);
   }
 
   async updateAssignment(id: string, assignment: Partial<Assignment>): Promise<Assignment | null> {
@@ -78,7 +77,7 @@ export class AssignmentRepository implements IAssignmentRepository {
       id,
       { $set: assignment },
       { new: true }
-    );
+    ).lean() as unknown as IAssignmentSource;
     return doc ? AssignmentMapper.toDomain(doc) : null;
   }
 
@@ -89,7 +88,7 @@ export class AssignmentRepository implements IAssignmentRepository {
 
   async getSubmissions(assignmentId: string, page: number = 1, limit: number = 10, search?: string, status?: string) {
     const skip = (page - 1) * limit;
-    const filterQuery: FilterQuery<ISubmissionDocument> = { assignmentId: new mongoose.Types.ObjectId(assignmentId) };
+    const filterQuery: FilterQuery<ISubmissionSource> = { assignmentId: new mongoose.Types.ObjectId(assignmentId) };
 
     if (status) {
       filterQuery.status = status;
@@ -108,7 +107,8 @@ export class AssignmentRepository implements IAssignmentRepository {
       SubmissionModel.find(filterQuery)
         .skip(skip)
         .limit(limit)
-        .sort({ submittedDate: -1 }),
+        .sort({ submittedDate: -1 })
+        .lean() as unknown as ISubmissionSource[],
       SubmissionModel.countDocuments(filterQuery)
     ]);
 
@@ -124,7 +124,7 @@ export class AssignmentRepository implements IAssignmentRepository {
     const doc = await SubmissionModel.findOne({
       _id: submissionId,
       assignmentId
-    });
+    }).lean() as unknown as ISubmissionSource;
     return doc ? AssignmentMapper.submissionToDomain(doc) : null;
   }
 
@@ -141,7 +141,7 @@ export class AssignmentRepository implements IAssignmentRepository {
         }
       },
       { new: true, runValidators: true }
-    );
+    ).lean() as unknown as ISubmissionSource;
 
     return doc ? AssignmentMapper.submissionToDomain(doc) : null;
   }
@@ -152,13 +152,13 @@ export class AssignmentRepository implements IAssignmentRepository {
     const submissionRate = totalAssignments > 0 ? Math.min(totalSubmissions / totalAssignments, 1) : 0;
 
     const [submissions, assignments] = await Promise.all([
-      SubmissionModel.find().lean(),
-      AssignmentModel.find().lean()
+      SubmissionModel.find().lean() as unknown as ISubmissionSource[],
+      AssignmentModel.find().lean() as unknown as IAssignmentSource[]
     ]);
 
     let totalHours = 0;
     let countWithTime = 0;
-    const assignmentMap = new Map<string, IAssignmentDocument>(assignments.map(a => [a._id.toString(), a]));
+    const assignmentMap = new Map<string, IAssignmentSource>(assignments.map(a => [a._id.toString(), a]));
 
     for (const sub of submissions) {
       const assignment = assignmentMap.get(sub.assignmentId.toString());
@@ -180,11 +180,11 @@ export class AssignmentRepository implements IAssignmentRepository {
       statusDistribution[s.status] = (statusDistribution[s.status] || 0) + 1;
     }
 
-    const recentSubmissionsDocs = await SubmissionModel.find().sort({ submittedDate: -1 }).limit(5).lean<ISubmissionDocument[]>();
+    const recentSubmissionsDocs = await SubmissionModel.find().sort({ submittedDate: -1 }).limit(5).lean() as unknown as ISubmissionSource[];
     const recentSubmissions = recentSubmissionsDocs.map(s => ({
       assignmentTitle: assignmentMap.get(s.assignmentId.toString())?.title || '',
       studentName: s.studentName,
-      submittedAt: s.submittedDate,
+      submittedAt: s.submittedDate instanceof Date ? s.submittedDate : new Date(s.submittedDate),
       score: s.marks || 0
     }));
 

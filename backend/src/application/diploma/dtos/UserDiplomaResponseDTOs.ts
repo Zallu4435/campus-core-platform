@@ -1,4 +1,4 @@
-import { DiplomaCourse, Chapter } from '../../../domain/diploma/types';
+import { DiplomaCourse, Chapter } from '../../../domain/diploma/types/DiplomaTypes';
 
 export interface GetUserDiplomasResponseDTO {
     data: DiplomaCourse[];

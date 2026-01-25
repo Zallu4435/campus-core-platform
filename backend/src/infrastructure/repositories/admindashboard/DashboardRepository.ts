@@ -13,7 +13,18 @@ import { TeamModel } from '../../database/mongoose/sport/sports.model';
 import { Diploma } from '../../database/mongoose/diploma/diploma.model';
 import { CampusEventModel } from '../../database/mongoose/events/CampusEventModel';
 import { ClubModel } from '../../database/mongoose/clubs/ClubModel';
-import { PerformanceRawData, RecentAdmissionRaw, RecentPaymentRaw, RecentEnquiryRaw, RecentNotificationRaw } from '../../../domain/admindashboard/entities/AdminDashboardTypes';
+import {
+  IDashboardMetricsSource,
+  IUserGrowthDataSource,
+  IRevenueDataSource,
+  IPerformanceDataSource,
+  IActivityItemSource,
+  ISystemAlertSource,
+  // Also need generic raw types for lean generic
+  // Actually infraTypes exports aliases.
+} from './infraTypes';
+// We need the Raw types for lean generics.
+import { RecentAdmissionRaw, RecentPaymentRaw, RecentEnquiryRaw, RecentNotificationRaw } from '../../../application/admindashboard/types/DashboardRepositoryTypes';
 
 type WithStringId<T> = Omit<T, "_id"> & { _id: string };
 type WithStringIdArray<T> = WithStringId<T>[];
@@ -116,7 +127,7 @@ export class DashboardRepository implements IDashboardRepository {
     return revenueRaw;
   }
 
-  async getPerformanceData(): Promise<PerformanceRawData> {
+  async getPerformanceData(): Promise<IPerformanceDataSource> {
     const [
       userCount,
       facultyCount,

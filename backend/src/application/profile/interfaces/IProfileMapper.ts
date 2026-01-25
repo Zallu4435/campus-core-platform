@@ -1,15 +1,14 @@
-// IProfileMapper.ts
-import { Profile } from "../../../domain/profile/entities/Profile";
-import { UserProfilePersistence } from "../../../domain/profile/entities/ProfileTypes";
+import { Profile, UserProfileData } from "../../../domain/profile/entities";
 
 export interface IProfileMapper {
     /**
-     * Converts a raw database document/object to a pure Domain Entity
+     * Map raw data (usually from database) to domain entity
      */
-    toDomain(raw: any, isFaculty?: boolean): Profile;
+    toDomain(raw: unknown, isFaculty?: boolean): Profile;
 
     /**
-     * Converts a Domain Entity to a Persistence object (for saving)
+     * Map domain entity to persistence-ready data
      */
-    toPersistence(domain: Profile): UserProfilePersistence;
+    toPersistence(domain: Profile): UserProfileData;
 }
+// Verification Comment: Barrel export should resolve indexing issues.

@@ -1,5 +1,5 @@
 import { Club } from "../../../domain/campus-life/entities/CampusLife";
-import { ClubStatus, RequestStatus } from "../../../domain/campus-life/enums/CampusLifeEnums";
+import { RequestStatus } from "../../../domain/campus-life/enums/CampusLifeEnums";
 
 /**
  * Club DTOs

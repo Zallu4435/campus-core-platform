@@ -12,7 +12,7 @@ export interface EventRequestDataDTO {
 }
 
 export interface RepositoryEventData {
-    _id: string;
+    id: string;
     title: string;
     organizer: string;
     organizerType: string;

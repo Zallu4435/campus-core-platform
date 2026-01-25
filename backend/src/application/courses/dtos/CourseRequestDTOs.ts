@@ -1,4 +1,4 @@
-import { CourseProps } from '../../../domain/courses/types';
+import { CourseProps } from '../../../domain/courses/types/CourseTypes';
 
 export interface GetCoursesRequestDTO {
   page: number;

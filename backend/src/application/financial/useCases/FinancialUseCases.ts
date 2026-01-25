@@ -24,7 +24,8 @@ import {
     DeleteChargeResponseDTO,
 } from "../dtos/FinancialResponseDTOs";
 import { IFinancialRepository } from "../repositories/IFinancialRepository";
-import { CreateChargeParams, UploadDocumentParams } from "../../../domain/financial/entities/FinancialTypes";
+import { CreateChargeParams, UploadDocumentParams, PaymentFilter, ChargeFilter } from "../../../domain/financial/types/FinancialTypes";
+import { Charge } from "../../../domain/financial/entities/FinancialEntities";
 import {
     IGetStudentFinancialInfoUseCase,
     IGetAllPaymentsUseCase,
@@ -57,7 +58,13 @@ export class GetAllPaymentsUseCase implements IGetAllPaymentsUseCase {
     constructor(private _financialRepository: IFinancialRepository) { }
 
     async execute(params: GetAllPaymentsRequestDTO): Promise<GetAllPaymentsResponseDTO> {
-        const result = await this._financialRepository.getAllPayments(params.startDate, params.endDate, params.status, params.studentId, params.page, params.limit);
+        const filter: PaymentFilter = {
+            startDate: params.startDate ? new Date(params.startDate) : undefined,
+            endDate: params.endDate ? new Date(params.endDate) : undefined,
+            status: params.status,
+            studentId: params.studentId
+        };
+        const result = await this._financialRepository.getAllPayments(filter, params.page, params.limit);
         return result;
     }
 }
@@ -147,16 +154,42 @@ export class UpdateChargeUseCase implements IUpdateChargeUseCase {
         if (!params.id) {
             throw new FinancialValidationError(FinancialErrorType.InvalidChargeId);
         }
-        if (params.data.amount <= 0) {
+        if (params.data.amount && params.data.amount <= 0) {
             throw new FinancialValidationError(FinancialErrorType.InvalidAmount);
         }
-        if (!params.data.title || !params.data.description || !params.data.term || !params.data.applicableFor) {
-            throw new FinancialValidationError(FinancialErrorType.MissingRequiredFields);
+
+        const updateData = params.data;
+
+        let parsedApplicableFor: Record<string, unknown> | undefined;
+        if (updateData.applicableFor !== undefined) {
+            if (typeof updateData.applicableFor === 'string') {
+                try {
+                    parsedApplicableFor = JSON.parse(updateData.applicableFor);
+                } catch {
+                    parsedApplicableFor = { type: updateData.applicableFor };
+                }
+            } else {
+                parsedApplicableFor = updateData.applicableFor as Record<string, unknown>;
+            }
         }
-        const updateFields: Record<string, unknown> = { ...params.data as unknown as Record<string, unknown> };
-        if (updateFields.dueDate) {
-            updateFields.dueDate = new Date(updateFields.dueDate as string);
-        }
+
+        const updateFields: Partial<Charge> = {
+            title: updateData.title,
+            description: updateData.description,
+            amount: updateData.amount,
+            term: updateData.term,
+            applicableFor: parsedApplicableFor,
+            status: updateData.status,
+            dueDate: updateData.dueDate ? new Date(updateData.dueDate) : undefined
+        };
+
+        // Remove undefined keys to avoid overwriting with undefined
+        Object.keys(updateFields).forEach(key => {
+            if (updateFields[key as keyof Partial<Charge>] === undefined) {
+                delete updateFields[key as keyof Partial<Charge>];
+            }
+        });
+
         const result = await this._financialRepository.updateCharge(params.id, updateFields);
         if (!result) throw new FinancialNotFoundError(FinancialErrorType.InvalidChargeId);
         return result;
@@ -179,7 +212,12 @@ export class GetAllChargesUseCase implements IGetAllChargesUseCase {
     constructor(private _financialRepository: IFinancialRepository) { }
 
     async execute(params: GetAllChargesRequestDTO): Promise<GetAllChargesResponseDTO> {
-        const result = await this._financialRepository.getAllCharges(params.term, params.status, params.search, params.page, params.limit);
+        const filter: ChargeFilter = {
+            term: params.term === 'All Terms' ? undefined : params.term,
+            status: params.status === 'All Statuses' ? undefined : params.status,
+            searchQuery: params.search
+        };
+        const result = await this._financialRepository.getAllCharges(filter, params.page, params.limit);
         return result;
     }
 }

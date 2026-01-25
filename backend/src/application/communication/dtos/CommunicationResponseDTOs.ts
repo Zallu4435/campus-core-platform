@@ -2,7 +2,7 @@ import { UserInfo } from "../../../domain/communication/entities/Communication";
 import { UserRole, MessageStatus } from "../../../domain/communication/enums/CommunicationEnums";
 
 export interface MessageSummaryDTO {
-  _id: string;
+  id: string;
   subject: string;
   content: string;
   sender: UserInfo;
@@ -42,7 +42,7 @@ export interface GetSentMessagesResponseDTO {
 }
 
 export interface SendMessageResponseDTO {
-  _id: string;
+  id: string;
   subject: string;
   content: string;
   sender: UserInfo;
@@ -70,7 +70,7 @@ export interface DeleteMessageResponseDTO {
 }
 
 export interface GetMessageDetailsResponseDTO {
-  _id: string;
+  id: string;
   subject: string;
   content: string;
   sender: UserInfo;
@@ -88,7 +88,7 @@ export interface GetMessageDetailsResponseDTO {
 }
 
 export interface AdminSentMessageResponseDTO {
-  _id: string;
+  id: string;
   subject: string;
   content: string;
   recipients: string;
@@ -115,5 +115,3 @@ export interface FetchUsersResponseDTO {
     name: string;
   }>;
 }
-
-

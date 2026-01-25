@@ -70,7 +70,7 @@ export interface AdmissionProps extends AdmissionDraftProps {
 }
 
 // Shared admission model types (refactored to pure TypeScript)
-export interface IAdmissionDraft extends IAdmissionDraftBase {}
+export interface IAdmissionDraft extends IAdmissionDraftBase { }
 
 export interface IAdmission extends IAdmissionDraftBase {
   paymentId: string;
@@ -78,20 +78,6 @@ export interface IAdmission extends IAdmissionDraftBase {
   rejectedBy: RejectedBy | null;
   confirmationToken: string | null;
   tokenExpiry: Date | null;
-}
-
-// Payment-related types
-export interface IPayment {
-  id?: string;
-  paymentId: string;
-  applicationId: string;
-  amount: number;
-  currency: string;
-  method: PaymentMethod;
-  status: PaymentStatus;
-  stripePaymentIntentId?: string;
-  createdAt: Date;
-  updatedAt: Date;
 }
 
 // Document types

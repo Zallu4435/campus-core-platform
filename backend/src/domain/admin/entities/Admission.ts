@@ -9,7 +9,7 @@ import {
 export interface AdmissionProps extends AdminAdmission { }
 
 export class Admission {
-  private _id?: string;
+  private idValue?: string;
   private _registerId: string;
   private _applicationId: string;
   private _personal: AdminAdmissionPersonal;
@@ -21,7 +21,7 @@ export class Admission {
   private _createdAt?: Date;
 
   constructor(props: AdmissionProps) {
-    this._id = props.id;
+    this.idValue = props.id;
     this._registerId = props.registerId;
     this._applicationId = props.applicationId;
     this._personal = props.personal;
@@ -40,7 +40,7 @@ export class Admission {
     return new Admission(props);
   }
 
-  get id(): string | undefined { return this._id; }
+  get id(): string | undefined { return this.idValue; }
   get registerId(): string { return this._registerId; }
   get applicationId(): string { return this._applicationId; }
   get personal(): AdminAdmissionPersonal { return this._personal; }

@@ -44,12 +44,12 @@ export class GetCourseByIdUseCase implements IGetCourseByIdUseCase {
     if (!params.id) {
       throw new InvalidCourseIdError();
     }
-    const courseDoc = await this._courseRepository.getCourseById(params.id);
-    if (!courseDoc) {
+    const course = await this._courseRepository.getCourseById(params.id);
+    if (!course) {
       throw new CourseNotFoundError(params.id);
     }
     return {
-      course: CourseMapper.toDTO(courseDoc)
+      course: CourseMapper.entityToDTO(course)
     };
   }
 }
@@ -58,9 +58,9 @@ export class CreateCourseUseCase implements ICreateCourseUseCase {
   constructor(private readonly _courseRepository: ICoursesRepository) { }
 
   async execute(params: CreateCourseRequestDTO): Promise<CreateCourseResponseDTO> {
-    const newCourseDoc = await this._courseRepository.createCourse(params);
+    const newCourse = await this._courseRepository.createCourse(params);
     return {
-      course: CourseMapper.toDTO(newCourseDoc)
+      course: CourseMapper.entityToDTO(newCourse)
     };
   }
 }
@@ -72,12 +72,12 @@ export class UpdateCourseUseCase implements IUpdateCourseUseCase {
     if (!params.id) {
       throw new InvalidCourseIdError();
     }
-    const updatedCourseDoc = await this._courseRepository.updateCourse(params);
-    if (!updatedCourseDoc) {
+    const updatedCourse = await this._courseRepository.updateCourse(params);
+    if (!updatedCourse) {
       throw new CourseNotFoundError(params.id);
     }
     return {
-      course: CourseMapper.toDTO(updatedCourseDoc)
+      course: CourseMapper.entityToDTO(updatedCourse)
     };
   }
 }

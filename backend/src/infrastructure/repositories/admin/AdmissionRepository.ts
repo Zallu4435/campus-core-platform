@@ -2,10 +2,13 @@ import { IAdmissionRepository } from "../../../application/admin/repositories/IA
 import { Admission as AdmissionModel } from '../../database/mongoose/admission/AdmissionModel';
 import { Register as RegisterModel } from "../../database/mongoose/auth/register.model";
 import { AdminAdmission, FullAdmissionDetails } from "../../../domain/admin/entities/AdminAdmissionTypes";
+import { AdmissionRawData } from "../../../application/admin/types/RepositoryTypes";
 import { AdminAdmissionNotFoundError, AdminAdmissionAlreadyProcessedError } from "../../../domain/admin/errors/AdminAdmissionErrors";
 import { IAdmissionMapper } from "../../../application/admin/interfaces/IAdmissionMapper";
 import { AdmissionStatus } from "../../../domain/admission/entities/AdmissionTypes";
 import { AdmissionFilter, AdmissionProjection } from "../../../application/admin/types/RepositoryTypes";
+
+import { IAdmissionSource } from "./infraTypes";
 
 export class AdmissionRepository implements IAdmissionRepository {
     constructor(private _mapper: IAdmissionMapper) { }
@@ -16,9 +19,9 @@ export class AdmissionRepository implements IAdmissionRepository {
             .sort({ updatedAt: -1, createdAt: -1 })
             .skip(skip)
             .limit(limit)
-            .lean({ getters: true });
+            .lean({ getters: true }) as unknown as IAdmissionSource[];
 
-        return results.map(r => this._mapper.toDomain(r) as AdminAdmission);
+        return results.map(r => this._mapper.toDomain(r as unknown as AdmissionRawData) as AdminAdmission);
     }
 
     async count(filter: AdmissionFilter): Promise<number> {
@@ -26,24 +29,24 @@ export class AdmissionRepository implements IAdmissionRepository {
     }
 
     async getAdmissionById(id: string): Promise<FullAdmissionDetails | null> {
-        const admission = await AdmissionModel.findById(id).lean();
+        const admission = await AdmissionModel.findById(id).lean() as unknown as IAdmissionSource;
         if (!admission) return null;
-        return this._mapper.toDomain(admission) as FullAdmissionDetails;
+        return this._mapper.toDomain(admission as unknown as AdmissionRawData) as FullAdmissionDetails;
     }
 
     async getAdmissionByToken(admissionId: string, token: string): Promise<FullAdmissionDetails | null> {
         const admission = await AdmissionModel.findById(admissionId)
             .select("personal choiceOfStudy status confirmationToken tokenExpiry")
-            .lean();
+            .lean() as unknown as IAdmissionSource;
 
         if (!admission) return null;
-        return this._mapper.toDomain(admission) as FullAdmissionDetails;
+        return this._mapper.toDomain(admission as unknown as AdmissionRawData) as FullAdmissionDetails;
     }
 
     async findAdmissionById(id: string): Promise<FullAdmissionDetails | null> {
-        const admission = await AdmissionModel.findById(id).lean();
+        const admission = await AdmissionModel.findById(id).lean() as unknown as IAdmissionSource;
         if (!admission) return null;
-        return this._mapper.toDomain(admission) as FullAdmissionDetails;
+        return this._mapper.toDomain(admission as unknown as AdmissionRawData) as FullAdmissionDetails;
     }
 
     async saveAdmission(admission: AdminAdmission): Promise<AdminAdmission> {
@@ -54,7 +57,7 @@ export class AdmissionRepository implements IAdmissionRepository {
         ).lean();
 
         if (!updated) throw new AdminAdmissionNotFoundError();
-        return this._mapper.toDomain(updated) as AdminAdmission;
+        return this._mapper.toDomain(updated as unknown as AdmissionRawData) as AdminAdmission;
     }
 
     async findRegisterUserById(registerId: string): Promise<{ password: string } | null> {

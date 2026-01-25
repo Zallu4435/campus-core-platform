@@ -3,37 +3,37 @@ import {
     RepositoryEventData,
     EventSummaryDTO
 } from "../../../../application/events/dtos/EventBaseDTOs";
-import { EventDoc } from "../../../../domain/events/entities/EventTypes";
+import { EventData } from "../../../../domain/events/entities/EventTypes";
 import { EVENT_CONSTANTS } from "../../../../application/events/constants/EventsConstants";
 
 export class EventMapper {
-    static toDomain(mongooseDoc: EventDoc): Event {
-        if (!mongooseDoc) {
-            throw new Error("Cannot map null document to domain entity");
+    static toDomain(data: EventData): Event {
+        if (!data) {
+            throw new Error("Cannot map null data to domain entity");
         }
 
         return new Event({
-            id: mongooseDoc._id.toString(),
-            title: mongooseDoc.title,
-            organizer: mongooseDoc.organizer,
-            organizerType: mongooseDoc.organizerType,
-            eventType: mongooseDoc.eventType,
-            date: mongooseDoc.date,
-            time: mongooseDoc.time,
-            location: mongooseDoc.location,
-            timeframe: mongooseDoc.timeframe,
-            status: mongooseDoc.status,
-            icon: mongooseDoc.icon,
-            color: mongooseDoc.color,
-            description: mongooseDoc.description,
-            fullTime: mongooseDoc.fullTime,
-            additionalInfo: mongooseDoc.additionalInfo,
-            requirements: mongooseDoc.requirements,
-            maxParticipants: mongooseDoc.maxParticipants,
-            registrationRequired: mongooseDoc.registrationRequired,
-            participants: mongooseDoc.participants,
-            createdAt: mongooseDoc.createdAt,
-            updatedAt: mongooseDoc.updatedAt,
+            id: data.id,
+            title: data.title,
+            organizer: data.organizer,
+            organizerType: data.organizerType,
+            eventType: data.eventType,
+            date: data.date,
+            time: data.time,
+            location: data.location,
+            timeframe: data.timeframe,
+            status: data.status,
+            icon: data.icon,
+            color: data.color,
+            description: data.description,
+            fullTime: data.fullTime,
+            additionalInfo: data.additionalInfo,
+            requirements: data.requirements,
+            maxParticipants: data.maxParticipants,
+            registrationRequired: data.registrationRequired,
+            participants: data.participants,
+            createdAt: data.createdAt,
+            updatedAt: data.updatedAt,
         });
     }
 
@@ -60,53 +60,53 @@ export class EventMapper {
         };
     }
 
-    static toRepositoryDTO(mongooseDoc: EventDoc): RepositoryEventData {
-        if (!mongooseDoc) {
-            throw new Error("Cannot map null document to Repository DTO");
+    static toRepositoryDTO(data: EventData): RepositoryEventData {
+        if (!data) {
+            throw new Error("Cannot map null data to Repository DTO");
         }
 
         return {
-            _id: mongooseDoc._id.toString(),
-            title: mongooseDoc.title,
-            organizer: mongooseDoc.organizer,
-            organizerType: mongooseDoc.organizerType.toString(),
-            eventType: mongooseDoc.eventType.toString(),
-            date: mongooseDoc.date,
-            time: mongooseDoc.time,
-            location: mongooseDoc.location,
-            timeframe: mongooseDoc.timeframe.toString(),
-            icon: mongooseDoc.icon,
-            color: mongooseDoc.color,
-            description: mongooseDoc.description,
-            fullTime: mongooseDoc.fullTime,
-            additionalInfo: mongooseDoc.additionalInfo,
-            requirements: mongooseDoc.requirements,
-            status: mongooseDoc.status.toString(),
-            maxParticipants: mongooseDoc.maxParticipants,
-            registrationRequired: mongooseDoc.registrationRequired,
-            participants: mongooseDoc.participants,
-            createdAt: mongooseDoc.createdAt,
-            updatedAt: mongooseDoc.updatedAt,
+            id: data.id,
+            title: data.title,
+            organizer: data.organizer,
+            organizerType: data.organizerType.toString(),
+            eventType: data.eventType.toString(),
+            date: data.date,
+            time: data.time,
+            location: data.location,
+            timeframe: data.timeframe.toString(),
+            icon: data.icon,
+            color: data.color,
+            description: data.description,
+            fullTime: data.fullTime,
+            additionalInfo: data.additionalInfo,
+            requirements: data.requirements,
+            status: data.status.toString(),
+            maxParticipants: data.maxParticipants,
+            registrationRequired: data.registrationRequired,
+            participants: data.participants,
+            createdAt: data.createdAt,
+            updatedAt: data.updatedAt,
         };
     }
 
-    static toSummaryDTO(mongooseDoc: EventDoc): EventSummaryDTO {
-        if (!mongooseDoc) {
-            throw new Error("Cannot map null document to Summary DTO");
+    static toSummaryDTO(data: EventData): EventSummaryDTO {
+        if (!data) {
+            throw new Error("Cannot map null data to Summary DTO");
         }
 
         return {
-            id: mongooseDoc._id.toString(),
-            title: mongooseDoc.title,
-            organizerType: mongooseDoc.organizerType,
-            eventType: mongooseDoc.eventType,
-            location: mongooseDoc.location,
-            timeframe: mongooseDoc.timeframe,
-            status: mongooseDoc.status,
+            id: data.id,
+            title: data.title,
+            organizerType: data.organizerType,
+            eventType: data.eventType,
+            location: data.location,
+            timeframe: data.timeframe,
+            status: data.status,
         };
     }
 
-    static toSummaryDTOList(mongooseDocs: EventDoc[]): EventSummaryDTO[] {
-        return mongooseDocs.map((doc) => this.toSummaryDTO(doc));
+    static toSummaryDTOList(dataList: EventData[]): EventSummaryDTO[] {
+        return dataList.map((data) => this.toSummaryDTO(data));
     }
 }

@@ -1,12 +1,16 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, { Schema, Document } from "mongoose";
 import {
   SportStatus,
   SportRequestStatus,
-  SportDoc,
-  SportRequestDoc
+  SportData,
+  SportRequestData
 } from "../../../../domain/sports/entities/SportTypes";
 
-const teamSchema = new Schema<SportDoc>(
+export interface ISportDocument extends Omit<SportData, 'id'>, Document {
+  _id: mongoose.Types.ObjectId;
+}
+
+const teamSchema = new Schema<ISportDocument>(
   {
     title: { type: String, required: true },
     type: { type: String, required: true },
@@ -36,7 +40,13 @@ const teamSchema = new Schema<SportDoc>(
   { timestamps: true }
 );
 
-const sportRequestSchema = new Schema<SportRequestDoc>(
+export interface ISportRequestDocument extends Omit<SportRequestData, 'id' | 'sportId' | 'userId'>, Document {
+  _id: mongoose.Types.ObjectId;
+  sportId: mongoose.Types.ObjectId | { _id: mongoose.Types.ObjectId; title: string; type: string };
+  userId: mongoose.Types.ObjectId | { _id: mongoose.Types.ObjectId; email: string; firstName?: string; lastName?: string };
+}
+
+const sportRequestSchema = new Schema<ISportRequestDocument>(
   {
     sportId: { type: Schema.Types.ObjectId, ref: "Team", required: true },
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
@@ -51,8 +61,8 @@ const sportRequestSchema = new Schema<SportRequestDoc>(
   { timestamps: true }
 );
 
-export const TeamModel = mongoose.model<SportDoc>("Team", teamSchema);
-export const SportRequestModel = mongoose.model<SportRequestDoc>(
+export const TeamModel = mongoose.model<ISportDocument>("Team", teamSchema);
+export const SportRequestModel = mongoose.model<ISportRequestDocument>(
   "SportRequest",
   sportRequestSchema
 );

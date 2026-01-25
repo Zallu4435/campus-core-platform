@@ -48,10 +48,9 @@ export class GetClubByIdUseCase implements IGetClubByIdUseCase {
       throw new Error("Club not found!");
     }
 
-    // Convert Mongo object to RepositoryClubData
     const clubData: RepositoryClubData = {
       ...club,
-      _id: club._id.toString()
+      id: club.id
     };
 
     return { club: clubData };
@@ -66,7 +65,7 @@ export class CreateClubUseCase implements ICreateClubUseCase {
 
     const clubData: RepositoryClubData = {
       ...newClub,
-      _id: newClub._id.toString()
+      id: newClub.id
     };
 
     return { club: clubData };
@@ -88,7 +87,7 @@ export class UpdateClubUseCase implements IUpdateClubUseCase {
 
     const clubData: RepositoryClubData = {
       ...updatedClub,
-      _id: updatedClub._id.toString()
+      id: updatedClub.id
     };
 
     return { club: clubData };

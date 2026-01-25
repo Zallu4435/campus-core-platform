@@ -1,24 +1,24 @@
 import { SportRequestProps, SportRequestStatus } from "./SportTypes";
 
 export class SportRequest {
-  private _id?: string;
-  private _sportId: string | { _id: string; title: string; type: string };
-  private _userId: string | { _id: string; email: string; firstName?: string; lastName?: string };
-  private _status: SportRequestStatus;
-  private _whyJoin: string;
-  private _additionalInfo: string;
-  private _createdAt?: Date;
-  private _updatedAt?: Date;
+  private idValue?: string;
+  private sportIdValue: string | { id: string; title: string; type: string };
+  private userIdValue: string | { id: string; email: string; firstName?: string; lastName?: string };
+  private statusValue: SportRequestStatus;
+  private whyJoinValue: string;
+  private additionalInfoValue: string;
+  private createdAtValue?: Date;
+  private updatedAtValue?: Date;
 
   constructor(props: SportRequestProps) {
-    this._id = props.id;
-    this._sportId = props.sportId;
-    this._userId = props.userId;
-    this._status = props.status || SportRequestStatus.Pending;
-    this._whyJoin = props.whyJoin;
-    this._additionalInfo = props.additionalInfo || "";
-    this._createdAt = props.createdAt;
-    this._updatedAt = props.updatedAt;
+    this.idValue = props.id;
+    this.sportIdValue = props.sportId;
+    this.userIdValue = props.userId;
+    this.statusValue = props.status || SportRequestStatus.Pending;
+    this.whyJoinValue = props.whyJoin;
+    this.additionalInfoValue = props.additionalInfo || "";
+    this.createdAtValue = props.createdAt;
+    this.updatedAtValue = props.updatedAt;
   }
 
   static create(props: SportRequestProps): SportRequest {
@@ -34,12 +34,21 @@ export class SportRequest {
     return new SportRequest(props);
   }
 
-  get id(): string | undefined { return this._id; }
-  get sportId(): string | { _id: string; title: string; type: string } { return this._sportId; }
-  get userId(): string | { _id: string; email: string; firstName?: string; lastName?: string } { return this._userId; }
-  get status(): SportRequestStatus { return this._status; }
-  get whyJoin(): string { return this._whyJoin; }
-  get additionalInfo(): string { return this._additionalInfo; }
-  get createdAt(): Date | undefined { return this._createdAt; }
-  get updatedAt(): Date | undefined { return this._updatedAt; }
+  get id(): string | undefined { return this.idValue; }
+  get sportId(): string | { id: string; title: string; type: string } { return this.sportIdValue; }
+  get userId(): string | { id: string; email: string; firstName?: string; lastName?: string } { return this.userIdValue; }
+  get status(): SportRequestStatus { return this.statusValue; }
+  get whyJoin(): string { return this.whyJoinValue; }
+  get additionalInfo(): string { return this.additionalInfoValue; }
+  get createdAt(): Date | undefined { return this.createdAtValue; }
+  get updatedAt(): Date | undefined { return this.updatedAtValue; }
+
+  // Helper methods to get clean IDs
+  get sportIdString(): string {
+    return typeof this.sportIdValue === 'string' ? this.sportIdValue : this.sportIdValue.id;
+  }
+
+  get userIdString(): string {
+    return typeof this.userIdValue === 'string' ? this.userIdValue : this.userIdValue.id;
+  }
 }

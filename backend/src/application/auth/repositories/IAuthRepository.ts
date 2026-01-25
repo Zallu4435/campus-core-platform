@@ -10,7 +10,7 @@ import {
   RefreshSessionData,
   UserCollection
 } from "./types/AuthRepositoryTypes";
-import { User } from "../../../domain/auth/entities/Auth";
+import { UserDTO } from "../dtos/UserDTO";
 import { AuthCollection } from "../constants/AuthConstants";
 
 export interface IAuthRepository {
@@ -28,10 +28,6 @@ export interface IAuthRepository {
 
   resetPassword(email: string, newPassword: string): Promise<UserWithCollection>;
 
-  // Domain Aggregate Methods (Phase 3)
-  findUserAggregateByEmail(email: string): Promise<{ user: User; collection: string } | null>;
-  save(user: User, collection: string): Promise<void>;
-
   confirmRegistration(email: string): Promise<{ message: string }>;
 
   createRefreshSession(params: RefreshSessionData): Promise<void>;
@@ -43,7 +39,7 @@ export interface IAuthRepository {
   deleteSessionBySessionId(sessionId: string): Promise<void>;
   deleteAllSessionsByUserId(userId: string): Promise<void>;
   getAllSessions(): Promise<RefreshSessionData[]>;
-  findUsersByIds(ids: string[]): Promise<User[]>;
+  findUsersByIds(ids: string[]): Promise<UserDTO[]>;
   findTokensByUserId(userId: string): Promise<string[]>;
   findTokensByCollection(collection: string): Promise<string[]>;
   removeFcmToken(token: string): Promise<void>;

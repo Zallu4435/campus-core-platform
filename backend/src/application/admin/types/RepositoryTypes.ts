@@ -50,9 +50,9 @@ export interface AdmissionProjection {
  * Raw data from database (before mapping to domain)
  */
 export interface AdmissionRawData {
-    _id?: unknown;
+    _id?: any;
     id?: string;
-    registerId?: unknown;
+    registerId?: any;
     applicationId?: string;
     personal?: {
         fullName?: string;

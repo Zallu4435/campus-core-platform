@@ -178,20 +178,13 @@ export class Chat {
   }
 }
 
-
 export interface ChatFilter {
-  participants?: string[] | { $in: string[] };
+  participants?: string[];
   type?: ChatType;
   name?: string;
   avatar?: string;
-  lastMessage?: Partial<Message>;
-  $or?: Array<{
-    name?: { $regex: string; $options: string };
-    "lastMessage.content"?: { $regex: string; $options: string };
-    deletedFor?: { $exists?: boolean; $ne?: string };
-  }>;
-  $in?: string[];
+  lastMessageContent?: string;
   chatId?: string;
-  deletedFor?: { $exists?: boolean; $ne?: string };
-  [key: string]: unknown;
+  excludeDeletedFor?: string;
+  id?: string;
 }
