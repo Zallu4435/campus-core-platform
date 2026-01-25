@@ -29,7 +29,10 @@ export function getProfileComposer(): IProfileController {
     const getProfileUseCase: IGetProfileUseCase = new GetProfileUseCase(repository);
     const updateProfileUseCase: IUpdateProfileUseCase = new UpdateProfileUseCase(repository);
     const changePasswordUseCase: IChangePasswordUseCase = new ChangePasswordUseCase(repository, passwordService);
-    const updateProfilePictureUseCase: IUpdateProfilePictureUseCase = new UpdateProfilePictureUseCase(repository);
+
+    /* Storage Service for Cleanup */
+    const { storageService } = require('../../shared/CloudinaryStorageService');
+    const updateProfilePictureUseCase: IUpdateProfilePictureUseCase = new UpdateProfilePictureUseCase(repository, storageService);
 
     // Controller
     return new ProfileController(

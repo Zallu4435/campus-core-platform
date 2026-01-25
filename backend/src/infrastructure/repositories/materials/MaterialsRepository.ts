@@ -10,7 +10,7 @@ export class MaterialsRepository implements IMaterialsRepository {
   async find(filter: MaterialFilter, options: { skip?: number; limit?: number; sort?: MaterialSortOptions } = {}): Promise<Material[]> {
     const mongoFilter = this._buildMongoFilter(filter);
     const docs = await MaterialModel.find(mongoFilter)
-      .sort(options.sort as any ?? { uploadedAt: -1 })
+      .sort((options.sort as Record<string, 1 | -1>) ?? { uploadedAt: -1 })
       .skip(options.skip ?? 0)
       .limit(options.limit ?? 0)
       .lean() as unknown as IMaterialSource[];

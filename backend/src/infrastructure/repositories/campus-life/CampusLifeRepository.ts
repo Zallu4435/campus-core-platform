@@ -1,3 +1,4 @@
+import { Types } from "mongoose";
 import { ICampusLifeRepository } from "../../../application/campus-life/repositories/ICampusLifeRepository";
 import { CampusEventModel, EventRequestModel } from "../../../infrastructure/database/mongoose/events/CampusEventModel";
 import { TeamModel, SportRequestModel } from "../../database/mongoose/sport/sports.model";
@@ -24,9 +25,9 @@ import { CAMPUS_LIFE_CONSTANTS } from "../../../application/campus-life/constant
 
 export class CampusLifeRepository implements ICampusLifeRepository {
 
-  private mapRawToData<T extends { _id: any }>(raw: T): Omit<T, '_id'> & { id: string } {
+  private mapRawToData<T extends { _id: Types.ObjectId | string | unknown }>(raw: T): Omit<T, '_id'> & { id: string } {
     const { _id, ...rest } = raw;
-    return { id: _id.toString(), ...rest };
+    return { id: String(_id), ...rest } as unknown as Omit<T, '_id'> & { id: string };
   }
 
   private mapEventFilter(filter: CampusEventFilter): Record<string, unknown> {

@@ -1,4 +1,4 @@
-import { FilterQuery } from "mongoose";
+import { FilterQuery, Types } from "mongoose";
 import {
   GetEventsRequestDTO,
   CreateEventRequestDTO,
@@ -27,14 +27,14 @@ export class EventsRepository extends BaseRepository<EventData, CreateEventReque
     super(CampusEventModel as unknown as Model<EventData>);
   }
 
-  private mapRawToData<T extends { _id: any }>(raw: T): Omit<T, '_id'> & { id: string } {
+  private mapRawToData<T extends { _id: Types.ObjectId | string }>(raw: T): Omit<T, '_id'> & { id: string } {
     const { _id, ...rest } = raw;
-    return { id: _id.toString(), ...rest } as Omit<T, '_id'> & { id: string };
+    return { id: _id.toString(), ...rest } as unknown as Omit<T, '_id'> & { id: string };
   }
 
   async getEvents(params: GetEventsRequestDTO): Promise<GetEventsResponseDTO> {
     const { page, limit, type, status, startDate, endDate, search, organizerType, dateRange } = params;
-    const query: FilterQuery<any> = {};
+    const query: FilterQuery<EventData> = {};
 
     if (type && type !== "all") {
       query.eventType = { $regex: `^${type}$`, $options: "i" };
@@ -110,13 +110,13 @@ export class EventsRepository extends BaseRepository<EventData, CreateEventReque
 
   async getEventRequests(params: GetEventRequestsRequestDTO): Promise<GetEventRequestsResponseDTO> {
     const { page, limit, status, startDate, endDate, type, search, organizerType, dateRange } = params;
-    const query: FilterQuery<any> = {};
+    const query: FilterQuery<EventRequestData> = {};
 
     if (status && status !== "all") {
       query.status = status as EventRequestStatus;
     }
 
-    const eventQuery: FilterQuery<any> = {};
+    const eventQuery: FilterQuery<EventData> = {};
 
     if (type && type.toLowerCase() !== "all") {
       eventQuery.eventType = { $regex: `^${type}$`, $options: "i" };

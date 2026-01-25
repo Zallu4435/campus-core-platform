@@ -33,29 +33,30 @@ export class SportMapper {
         });
     }
 
-    static toDomainList(dataList: any[], requests: unknown[] = [], userId?: string): Sport[] {
-        return dataList.map(doc => {
+    static toDomainList(dataList: unknown[], requests: unknown[] = [], userId?: string): Sport[] {
+        return dataList.map(item => {
+            const doc = item as Record<string, unknown>;
             // Flexible mapping for legacy/mixed data
-            const id = doc.id || doc._id?.toString();
+            const id = (doc.id || (doc._id ? String(doc._id) : '')) as string;
             return new Sport({
                 id,
-                title: doc.title,
-                type: doc.type,
-                category: doc.category || "",
-                organizer: doc.organizer || "",
-                organizerType: doc.organizerType || "",
-                icon: doc.icon || "",
-                color: doc.color || "",
-                division: doc.division || "",
-                headCoach: doc.headCoach || "",
-                homeGames: doc.homeGames || 0,
-                record: doc.record || "",
-                upcomingGames: doc.upcomingGames || [],
-                participants: doc.participants || 0,
+                title: (doc.title as string) || "",
+                type: (doc.type as string) || "",
+                category: (doc.category as string) || "",
+                organizer: (doc.organizer as string) || "",
+                organizerType: (doc.organizerType as string) || "",
+                icon: (doc.icon as string) || "",
+                color: (doc.color as string) || "",
+                division: (doc.division as string) || "",
+                headCoach: (doc.headCoach as string) || "",
+                homeGames: (doc.homeGames as number) || 0,
+                record: (doc.record as string) || "",
+                upcomingGames: (doc.upcomingGames as { date: string; description: string }[]) || [],
+                participants: (doc.participants as number) || 0,
                 status: (doc.status as SportStatus) || SportStatus.Active,
-                createdAt: doc.createdAt,
-                updatedAt: doc.updatedAt,
-                logo: doc.logo
+                createdAt: doc.createdAt as Date,
+                updatedAt: doc.updatedAt as Date,
+                logo: doc.logo as string
             });
         });
     }

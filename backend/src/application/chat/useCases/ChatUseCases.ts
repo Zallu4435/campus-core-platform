@@ -213,8 +213,14 @@ export class GetChatMessagesUseCase implements IGetChatMessagesUseCase {
   }
 }
 
+import { IStorageService } from '../../../application/shared/services/IStorageService';
+import Logger from '../../../shared/utils/logger';
+
 export class SendMessageUseCase implements ISendMessageUseCase {
-  constructor(private _chatRepository: IChatRepository) { }
+  constructor(
+    private _chatRepository: IChatRepository,
+    private _storageService: IStorageService
+  ) { }
 
   async execute(params: SendMessageRequestDTO): Promise<void> {
     const { chatId, senderId, content, attachments } = params;
@@ -228,7 +234,20 @@ export class SendMessageUseCase implements ISendMessageUseCase {
       thumbnail: a.thumbnail,
       duration: a.duration
     }));
-    return this._chatRepository.sendMessage({ chatId, senderId, content, type, attachments: mappedAttachments });
+    try {
+      return await this._chatRepository.sendMessage({ chatId, senderId, content, type, attachments: mappedAttachments });
+    } catch (error) {
+      // Cleanup: If DB Message creation fails, delete uploaded files
+      if (mappedAttachments && mappedAttachments.length > 0) {
+        Logger.warn('⚠️ DB Message creation failed. Deleting uploaded attachments...');
+        for (const attachment of mappedAttachments) {
+          if (attachment.url) {
+            await this._storageService.deleteFile(attachment.url);
+          }
+        }
+      }
+      throw error;
+    }
   }
 }
 

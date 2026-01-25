@@ -12,6 +12,7 @@ export interface IPaymentSource {
     createdAt?: Date | string;
     updatedAt?: Date | string;
     chargeId?: Types.ObjectId | string;
+    receiptUrl?: string;
 }
 
 export interface IChargeSource {

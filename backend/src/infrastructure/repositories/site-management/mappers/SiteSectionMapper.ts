@@ -11,7 +11,8 @@ export class SiteSectionMapper {
      * Convert persistence document to domain entity
      */
     static toDomain(doc: ISiteSectionSource): ISiteSection {
-        const docObj = (doc as any).toObject ? (doc as any).toObject() : doc;
+        const docWithObject = doc as unknown as { toObject?: () => Record<string, unknown> };
+        const docObj = docWithObject.toObject ? (docWithObject.toObject() as Record<string, any>) : doc;
         return {
             ...docObj,
             id: (docObj._id || docObj.id || '').toString(),

@@ -35,9 +35,25 @@ export class CloudinaryStorageService implements IStorageService {
     }
 
     getPublicIdFromUrl(url: string): string {
-        // Logic extracted from existing code
-        const urlParts = url.split('/');
-        return urlParts.slice(-2).join('/').replace(/\.[^/.]+$/, '');
+        const regex = /\/upload\/(?:v\d+\/)?(.+)\.[^.]+$/;
+        const match = url.match(regex);
+        return match && match[1] ? match[1] : '';
+    }
+
+    async deleteFile(url: string): Promise<void> {
+        try {
+            const publicId = this.getPublicIdFromUrl(url);
+
+            if (publicId) {
+                console.log(`🗑️ [Storage] Deleting file from Cloudinary. Public ID: ${publicId}`);
+                await cloudinary.uploader.destroy(publicId);
+                console.log(`✅ [Storage] Deletion successful for: ${publicId}`);
+            } else {
+                console.warn(`⚠️ [Storage] Could not extract public ID from URL: ${url}`);
+            }
+        } catch (error) {
+            console.error('❌ [Storage] Delete error:', error);
+        }
     }
 }
 

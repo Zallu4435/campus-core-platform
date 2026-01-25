@@ -184,24 +184,35 @@ export class CreateVideoUseCase implements ICreateVideoUseCase {
         }
         let videoUrl = '';
         if (params.videoFile) {
-            videoUrl = await this._videoStorageService.uploadVideo(params.videoFile.path);
-        }
-        const videoData: Partial<Video> = {
-            title: params.title,
-            duration: params.duration,
-            module: params.module,
-            status: params.status,
-            description: params.description,
-            diplomaId: diploma.id,
-            uploadedAt: new Date(),
-            videoUrl
-        };
-        const created = await this._videoRepository.createVideo(videoData);
-        if (diploma.id) {
-            await this._videoRepository.addVideoToDiploma(diploma.id, created.id);
+            // Multer has already uploaded the file to Cloudinary
+            videoUrl = params.videoFile.path;
         }
 
-        return { data: { video: created }, success: true };
+        try {
+            const videoData: Partial<Video> = {
+                title: params.title,
+                duration: params.duration,
+                module: params.module,
+                status: params.status,
+                description: params.description,
+                diplomaId: diploma.id,
+                uploadedAt: new Date(),
+                videoUrl
+            };
+            const created = await this._videoRepository.createVideo(videoData);
+            if (diploma.id) {
+                await this._videoRepository.addVideoToDiploma(diploma.id, created.id);
+            }
+
+            return { data: { video: created }, success: true };
+        } catch (error) {
+            // Cleanup: If DB insertion fails, delete the uploaded video
+            if (videoUrl) {
+                Logger.warn('⚠️ DB Creation failed. Deleting uploaded video...');
+                await this._videoStorageService.deleteVideo(videoUrl);
+            }
+            throw error;
+        }
     }
 }
 
@@ -239,11 +250,12 @@ export class UpdateVideoUseCase implements IUpdateVideoUseCase {
             updateData.diplomaId = newDiplomaId;
         }
 
+        let newVideoUrl: string | undefined = undefined;
+
         if (params.videoFile) {
-            if (existingVideo.videoUrl) {
-                await this._videoStorageService.deleteVideo(existingVideo.videoUrl);
-            }
-            updateData.videoUrl = await this._videoStorageService.uploadVideo(params.videoFile.path);
+            // Multer already uploaded file
+            newVideoUrl = params.videoFile.path;
+            updateData.videoUrl = newVideoUrl;
         } else {
             if (params.videoUrl && params.videoUrl.trim().startsWith('http')) {
                 updateData.videoUrl = params.videoUrl;
@@ -252,21 +264,39 @@ export class UpdateVideoUseCase implements IUpdateVideoUseCase {
             }
         }
 
-        const updated = await this._videoRepository.updateVideo(params.id, updateData);
-        if (!updated) {
-            throw new VideoNotFoundError(params.id);
-        }
-
-        if (categoryChanged && newDiplomaId && oldDiplomaId) {
-            try {
-                await this._videoRepository.removeVideoFromDiploma(oldDiplomaId, params.id);
-                await this._videoRepository.addVideoToDiploma(newDiplomaId, params.id);
-            } catch (err) {
-                Logger.error('⚠️ [UseCase] Failed to move video between diploma arrays', err);
+        try {
+            const updated = await this._videoRepository.updateVideo(params.id, updateData);
+            if (!updated) {
+                throw new VideoNotFoundError(params.id);
             }
+
+            // Success: If we uploaded a new video, delete the old one now
+            if (newVideoUrl && existingVideo.videoUrl) {
+                Logger.info('🗑️ Deleting old video after successful update...');
+                await this._videoStorageService.deleteVideo(existingVideo.videoUrl);
+            }
+
+            if (categoryChanged && newDiplomaId && oldDiplomaId) {
+                try {
+                    await this._videoRepository.removeVideoFromDiploma(oldDiplomaId, params.id);
+                    await this._videoRepository.addVideoToDiploma(newDiplomaId, params.id);
+                } catch (err) {
+                    Logger.error('⚠️ [UseCase] Failed to move video between diploma arrays', err);
+                }
+            }
+
+            return { data: { video: updated }, success: true };
+
+        } catch (error) {
+            // Failure: If we uploaded a new video but DB update failed, delete the NEW video
+            if (newVideoUrl) {
+                Logger.warn('⚠️ DB Update failed. Deleting newly uploaded video...');
+                await this._videoStorageService.deleteVideo(newVideoUrl);
+            }
+            throw error;
         }
 
-        return { data: { video: updated }, success: true };
+
     }
 }
 

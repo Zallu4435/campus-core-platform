@@ -76,7 +76,7 @@ export interface RecentEnquiryRaw {
 }
 
 export interface RecentNotificationRaw {
-    _id: any;
+    _id: Types.ObjectId | string;
     title?: string;
     createdAt?: Date;
 }

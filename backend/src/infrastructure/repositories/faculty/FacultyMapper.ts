@@ -1,6 +1,6 @@
 import { Faculty } from "../../../domain/faculty/entities/Faculty";
 import { FacultyStatus } from "../../../domain/faculty/enums/FacultyEnums";
-
+import { FacultyRejectedBy } from "../../../domain/faculty/enums/FacultyEnums";
 import { IFacultySource } from "./infraTypes";
 
 export class FacultyMapper {
@@ -22,7 +22,7 @@ export class FacultyMapper {
             cvUrl: raw.cvUrl,
             certificatesUrl: raw.certificatesUrl || [],
             status: raw.status as FacultyStatus,
-            rejectedBy: raw.rejectedBy as any,
+            rejectedBy: raw.rejectedBy as FacultyRejectedBy,
             confirmationToken: raw.confirmationToken,
             tokenExpiry: raw.tokenExpiry ? new Date(raw.tokenExpiry as string | Date) : undefined,
             blocked: raw.blocked,

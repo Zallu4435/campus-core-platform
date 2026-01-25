@@ -23,6 +23,8 @@ import {
   IUpdateMaterialUseCase,
   IDeleteMaterialUseCase
 } from './IMaterialUseCases';
+import { IStorageService } from '../../../application/shared/services/IStorageService';
+import Logger from '../../../shared/utils/logger';
 
 export class GetMaterialsUseCase implements IGetMaterialsUseCase {
   constructor(private _repo: IMaterialsRepository) { }
@@ -111,16 +113,37 @@ export class GetMaterialByIdUseCase implements IGetMaterialByIdUseCase {
 }
 
 export class CreateMaterialUseCase implements ICreateMaterialUseCase {
-  constructor(private _repo: IMaterialsRepository) { }
+  constructor(
+    private _repo: IMaterialsRepository,
+    private _storageService: IStorageService
+  ) { }
+
   async execute(params: CreateMaterialRequestDTO): Promise<CreateMaterialResponseDTO> {
-    const material = Material.create(params);
-    const dbResult = await this._repo.create(material);
-    return { material: dbResult.toJSON() };
+    try {
+      const material = Material.create(params);
+      const dbResult = await this._repo.create(material);
+      return { material: dbResult.toJSON() };
+    } catch (error) {
+      // Cleanup: If DB creation fails, delete uploaded files if they exist
+      if (params.fileUrl) {
+        Logger.warn(`⚠️ DB Creation failed for material. Deleting uploaded file: ${params.fileUrl}`);
+        await this._storageService.deleteFile(params.fileUrl);
+      }
+      if (params.thumbnailUrl && params.thumbnailUrl !== params.fileUrl) {
+        Logger.warn(`⚠️ DB Creation failed for material. Deleting uploaded thumbnail: ${params.thumbnailUrl}`);
+        await this._storageService.deleteFile(params.thumbnailUrl);
+      }
+      throw error;
+    }
   }
 }
 
 export class UpdateMaterialUseCase implements IUpdateMaterialUseCase {
-  constructor(private _repo: IMaterialsRepository) { }
+  constructor(
+    private _repo: IMaterialsRepository,
+    private _storageService: IStorageService
+  ) { }
+
   async execute(params: UpdateMaterialRequestDTO): Promise<UpdateMaterialResponseDTO | null> {
     if (!params.id) throw new MaterialValidationError('Material ID is required');
 
@@ -128,20 +151,63 @@ export class UpdateMaterialUseCase implements IUpdateMaterialUseCase {
     if (!existingMaterial) throw new MaterialNotFoundError(params.id);
 
     const { id, ...updateData } = params;
-    const updatedMaterial = Material.update(existingMaterial.props, updateData);
-    const dbResult = await this._repo.update(params.id, updatedMaterial);
-    if (!dbResult) throw new MaterialNotFoundError(params.id);
 
-    return { material: dbResult.toJSON() };
+    // Identify if new files are being uploaded
+    const newFileUrl = updateData.fileUrl && updateData.fileUrl !== existingMaterial.fileUrl ? updateData.fileUrl : null;
+    const newThumbnailUrl = updateData.thumbnailUrl && updateData.thumbnailUrl !== existingMaterial.thumbnailUrl ? updateData.thumbnailUrl : null;
+
+    try {
+      const updatedMaterial = Material.update(existingMaterial.props, updateData);
+      const dbResult = await this._repo.update(params.id, updatedMaterial);
+
+      if (!dbResult) throw new MaterialNotFoundError(params.id);
+
+      // Success: Delete OLD files if they were replaced
+      if (newFileUrl && existingMaterial.fileUrl) {
+        Logger.info('🗑️ Deleting old material file after update...');
+        await this._storageService.deleteFile(existingMaterial.fileUrl);
+      }
+      if (newThumbnailUrl && existingMaterial.thumbnailUrl) {
+        Logger.info('🗑️ Deleting old material thumbnail after update...');
+        await this._storageService.deleteFile(existingMaterial.thumbnailUrl);
+      }
+
+      return { material: dbResult.toJSON() };
+
+    } catch (error) {
+      // Failure: Delete NEW files if DB update failed
+      if (newFileUrl) {
+        Logger.warn('⚠️ DB Update failed. Deleting newly uploaded file...');
+        await this._storageService.deleteFile(newFileUrl);
+      }
+      if (newThumbnailUrl) {
+        Logger.warn('⚠️ DB Update failed. Deleting newly uploaded thumbnail...');
+        await this._storageService.deleteFile(newThumbnailUrl);
+      }
+      throw error;
+    }
   }
 }
 
 export class DeleteMaterialUseCase implements IDeleteMaterialUseCase {
-  constructor(private _repo: IMaterialsRepository) { }
+  constructor(
+    private _repo: IMaterialsRepository,
+    private _storageService: IStorageService
+  ) { }
+
   async execute(params: DeleteMaterialRequestDTO): Promise<void> {
     if (!params.id) throw new MaterialValidationError('Material ID is required');
     const material = await this._repo.findById(params.id);
     if (!material) throw new MaterialNotFoundError(params.id);
+
     await this._repo.delete(params.id);
+
+    // Post-delete cleanup
+    if (material.fileUrl) {
+      await this._storageService.deleteFile(material.fileUrl);
+    }
+    if (material.thumbnailUrl) {
+      await this._storageService.deleteFile(material.thumbnailUrl);
+    }
   }
 }

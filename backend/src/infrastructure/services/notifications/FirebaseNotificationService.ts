@@ -35,10 +35,13 @@ export class FirebaseNotificationService implements INotificationService {
         };
         try {
             await getMessaging().send(message);
-        } catch (error: any) {
-            if (error.code === 'messaging/invalid-registration-token' ||
-                error.code === 'messaging/registration-token-not-registered') {
-                await this._authRepository.removeFcmToken(token);
+        } catch (error: unknown) {
+            if (error && typeof error === 'object' && 'code' in error) {
+                const firebaseError = error as { code: string };
+                if (firebaseError.code === 'messaging/invalid-registration-token' ||
+                    firebaseError.code === 'messaging/registration-token-not-registered') {
+                    await this._authRepository.removeFcmToken(token);
+                }
             }
             throw error;
         }
@@ -67,9 +70,13 @@ export class FirebaseNotificationService implements INotificationService {
             for (let idx = 0; idx < result.responses.length; idx++) {
                 const response = result.responses[idx];
                 if (!response.success && response.error) {
-                    if (response.error.code === 'messaging/invalid-registration-token' ||
-                        response.error.code === 'messaging/registration-token-not-registered') {
-                        await this._authRepository.removeFcmToken(batch[idx]);
+                    const error = response.error as unknown;
+                    if (error && typeof error === 'object' && 'code' in error) {
+                        const firebaseError = error as { code: string };
+                        if (firebaseError.code === 'messaging/invalid-registration-token' ||
+                            firebaseError.code === 'messaging/registration-token-not-registered') {
+                            await this._authRepository.removeFcmToken(batch[idx]);
+                        }
                     }
                 }
             }

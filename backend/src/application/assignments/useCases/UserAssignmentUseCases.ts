@@ -19,6 +19,8 @@ import {
   AssignmentNotFoundError,
   SubmissionNotFoundError
 } from '../../../domain/assignments/errors/AssignmentErrors';
+import { IStorageService } from '../../../application/shared/services/IStorageService';
+import Logger from '../../../shared/utils/logger';
 
 export class GetUserAssignmentsUseCase implements IGetUserAssignmentsUseCase {
   constructor(private userAssignmentRepository: IUserAssignmentRepository) { }
@@ -68,28 +70,61 @@ export class GetUserAssignmentByIdUseCase implements IGetUserAssignmentByIdUseCa
 }
 
 export class SubmitUserAssignmentUseCase implements ISubmitUserAssignmentUseCase {
-  constructor(private userAssignmentRepository: IUserAssignmentRepository) { }
+  constructor(
+    private userAssignmentRepository: IUserAssignmentRepository,
+    private storageService: IStorageService
+  ) { }
 
   async execute(params: SubmitAssignmentDTO): Promise<UserAssignmentResponseDTO> {
-    const submission = await this.userAssignmentRepository.submitAssignment(
-      params.assignmentId,
-      params.files,
-      params.studentId
-    );
 
-    const { assignment } = await this.userAssignmentRepository.getAssignmentById(params.assignmentId, params.studentId);
+    // Check for existing submission to clean up files later if needed
+    // Assuming `getAssignmentById` returns submission info for the student
+    const { submission: existingSubmission } = await this.userAssignmentRepository.getAssignmentById(params.assignmentId, params.studentId);
 
-    if (!assignment) {
-      throw new AssignmentNotFoundError(params.assignmentId);
+    // NOTE: This repository method seems to UPSERT/REPLACE the submission.
+    // If we are overwriting, we should delete the old files. 
+    // If the logic was APPEND, we would treat this differently. Assuming REPLACE based on 'findOneAndUpdate' with upsert.
+
+    try {
+      const submission = await this.userAssignmentRepository.submitAssignment(
+        params.assignmentId,
+        params.files,
+        params.studentId
+      );
+
+      const { assignment } = await this.userAssignmentRepository.getAssignmentById(params.assignmentId, params.studentId);
+
+      if (!assignment) {
+        throw new AssignmentNotFoundError(params.assignmentId);
+      }
+
+      // Success: If there was a previous submission with files, delete them as they are now replaced
+      if (existingSubmission && existingSubmission.files && existingSubmission.files.length > 0) {
+        // Only perform cleanup if the new submission ID matches existing (it should for upsert)
+        // or if we know we replaced the data.
+        Logger.info('🗑️ Deleting old student submission files after re-submission...');
+        for (const file of existingSubmission.files) {
+          await this.storageService.deleteFile(file.fileUrl);
+        }
+      }
+
+      const assignmentDTO = AssignmentMapper.toDTO(assignment);
+      const submissionDTO = AssignmentMapper.submissionToDTO(submission);
+
+      return {
+        ...assignmentDTO,
+        submission: submissionDTO
+      };
+    } catch (error) {
+      // Failure: Delete newly uploaded files
+      if (params.files && params.files.length > 0) {
+        Logger.warn('⚠️ DB Submission failed. Deleting uploaded student files...');
+        for (const file of params.files) {
+          await this.storageService.deleteFile(file.path);
+        }
+      }
+      throw error;
     }
-
-    const assignmentDTO = AssignmentMapper.toDTO(assignment);
-    const submissionDTO = AssignmentMapper.submissionToDTO(submission);
-
-    return {
-      ...assignmentDTO,
-      submission: submissionDTO
-    };
   }
 }
 

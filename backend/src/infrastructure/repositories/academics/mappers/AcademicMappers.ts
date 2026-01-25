@@ -25,7 +25,7 @@ import {
 } from "../infraTypes";
 
 export class AcademicMappers {
-    static toStudent(userDoc: IStudentSource, programDoc?: any): Student {
+    static toStudent(userDoc: IStudentSource, programDoc?: unknown): Student {
         const id = userDoc._id.toString();
         return new Student(
             id,

@@ -127,18 +127,47 @@ export class ChangePasswordUseCase implements IChangePasswordUseCase {
     }
 }
 
+import { IStorageService } from '../../../application/shared/services/IStorageService';
+import Logger from '../../../shared/utils/logger';
+
 export class UpdateProfilePictureUseCase implements IUpdateProfilePictureUseCase {
-    constructor(private _profileRepository: IProfileRepository) { }
+    constructor(
+        private _profileRepository: IProfileRepository,
+        private _storageService: IStorageService
+    ) { }
 
     async execute(params: UpdateProfilePictureRequestDTO): Promise<ResponseDTO<UpdateProfilePictureResponseDTO>> {
         const user = await this._profileRepository.getProfile(params.userId);
         if (!user) {
+            // Cleanup: If user not found, delete uploaded file
+            if (params.filePath) {
+                Logger.warn(`⚠️ User not found for profile update. Deleting uploaded file: ${params.filePath}`);
+                await this._storageService.deleteFile(params.filePath);
+            }
             throw new ProfileNotFoundError();
         }
 
-        user.updateProfilePicture(params.filePath);
-        const updated = await this._profileRepository.save(user);
+        const oldProfilePicture = user.profilePicture;
 
-        return { data: { profilePicture: updated.profilePicture || "" }, success: true };
+        user.updateProfilePicture(params.filePath);
+
+        try {
+            const updated = await this._profileRepository.save(user);
+
+            // Success: Delete OLD profile picture if it exists and is different
+            if (oldProfilePicture && oldProfilePicture !== params.filePath) {
+                Logger.info('🗑️ Deleting old profile picture...');
+                await this._storageService.deleteFile(oldProfilePicture);
+            }
+
+            return { data: { profilePicture: updated.profilePicture || "" }, success: true };
+        } catch (error) {
+            // Failure: Delete NEW profile picture
+            if (params.filePath) {
+                Logger.warn(`⚠️ DB Update failed. Deleting uploaded profile picture: ${params.filePath}`);
+                await this._storageService.deleteFile(params.filePath);
+            }
+            throw error;
+        }
     }
 }

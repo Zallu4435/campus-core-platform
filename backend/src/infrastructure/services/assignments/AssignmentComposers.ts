@@ -27,12 +27,18 @@ import { IAssignmentController } from '../../../presentation/http/IHttp';
 
 export function getAssignmentComposer(): IAssignmentController {
   const repository: IAssignmentRepository = new AssignmentRepository();
-  
+
+  /* Storage Service */
+  const { storageService } = require('../../shared/CloudinaryStorageService');
+
   const getAssignmentsUseCase: IGetAssignmentsUseCase = new GetAssignmentsUseCase(repository);
   const getAssignmentByIdUseCase: IGetAssignmentByIdUseCase = new GetAssignmentByIdUseCase(repository);
-  const createAssignmentUseCase: ICreateAssignmentUseCase = new CreateAssignmentUseCase(repository);
-  const updateAssignmentUseCase: IUpdateAssignmentUseCase = new UpdateAssignmentUseCase(repository);
-  const deleteAssignmentUseCase: IDeleteAssignmentUseCase = new DeleteAssignmentUseCase(repository);
+
+  /* Injected Storage Service for Cleanup */
+  const createAssignmentUseCase: ICreateAssignmentUseCase = new CreateAssignmentUseCase(repository, storageService);
+  const updateAssignmentUseCase: IUpdateAssignmentUseCase = new UpdateAssignmentUseCase(repository, storageService);
+  const deleteAssignmentUseCase: IDeleteAssignmentUseCase = new DeleteAssignmentUseCase(repository, storageService);
+
   const getSubmissionsUseCase: IGetSubmissionsUseCase = new GetSubmissionsUseCase(repository);
   const getSubmissionByIdUseCase: IGetSubmissionByIdUseCase = new GetSubmissionByIdUseCase(repository);
   const reviewSubmissionUseCase: IReviewSubmissionUseCase = new ReviewSubmissionUseCase(repository);

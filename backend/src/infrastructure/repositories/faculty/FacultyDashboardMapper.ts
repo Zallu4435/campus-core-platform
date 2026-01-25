@@ -51,7 +51,7 @@ export class FacultyDashboardMapper {
     static toRecentActivityDomain(data: IRecentActivitySource[]): RecentActivity[] {
         return data.map(item => ({
             id: item.id,
-            type: item.type as any,
+            type: item.type as RecentActivity['type'],
             message: item.message,
             time: item.time
         }));

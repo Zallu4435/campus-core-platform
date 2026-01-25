@@ -6,7 +6,7 @@ export interface IAdmissionDraftSource {
     applicationId: string;
     registerId: string;
     personal?: Record<string, unknown>;
-    choiceOfStudy?: any[]; // Array of unknown or specific type? Keeping generic for now but better than any. Record[]?
+    choiceOfStudy?: Array<{ programme: string; degree: string; catalogYear: string }>;
     education?: Record<string, unknown>;
     achievements?: Record<string, unknown>;
     otherInformation?: Record<string, unknown>;

@@ -38,7 +38,7 @@ export class CourseMapper {
      * @param domainEntity - The domain Course entity
      * @returns Plain object for Mongoose persistence
      */
-    static toPersistence(domainEntity: Course): Record<string, any> {
+    static toPersistence(domainEntity: Course): Record<string, unknown> {
         return {
             title: domainEntity.title,
             specialization: domainEntity.specialization,

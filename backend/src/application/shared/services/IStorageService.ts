@@ -21,4 +21,9 @@ export interface IStorageService {
      * Extracts public ID from a storage URL
      */
     getPublicIdFromUrl(url: string): string;
+
+    /**
+     * Deletes a file from storage
+     */
+    deleteFile(url: string): Promise<void>;
 }

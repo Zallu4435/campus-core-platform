@@ -52,7 +52,7 @@ app.use("/thumbnails", express.static(path.join(__dirname, "uploads")));
 
 Logger.info('Initializing Socket.IO services...');
 import { SocketService } from "./infrastructure/services/socket/SocketService";
-import { stringIdPlugin } from "./infrastructure/database/mongoose/plugins/stringId.plugin";
+
 const socketService = new SocketService(io);
 setupSessionSocketHandlers(io);
 Logger.info('Socket.IO services initialized');
@@ -74,7 +74,13 @@ app.use((err: CustomError, req: express.Request, res: express.Response, next: ex
   });
 });
 
-mongoose.plugin(stringIdPlugin);
+
+
+
+
+import { CronManager } from './infrastructure/services/cron/CronManager';
+// Initialize Background Services
+CronManager.initializeAll();
 
 mongoose
   .connect(config.database.mongoUri, {

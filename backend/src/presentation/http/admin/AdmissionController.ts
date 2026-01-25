@@ -35,9 +35,9 @@ export class AdminAdmissionController implements IAdminAdmissionController {
     const data = await this._getAdmissionsUseCase.execute({
       page: Number(page),
       limit: Number(limit),
-      status: status as any,
+      status: status !== "all" ? (status as import("../../../domain/admin/entities/AdminAdmissionTypes").AdminAdmissionStatus) : undefined,
       program: String(program),
-      dateRange: dateRange as any,
+      dateRange: dateRange !== "all" ? (dateRange as "last_week" | "last_month" | "last_3_months" | "custom") : undefined,
       startDate: startDate ? String(startDate) : undefined,
       endDate: endDate ? String(endDate) : undefined,
       search: search ? String(search) : undefined,

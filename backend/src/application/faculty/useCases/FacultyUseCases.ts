@@ -229,7 +229,10 @@ export class RejectFacultyUseCase implements IRejectFacultyUseCase {
 }
 
 export class DeleteFacultyUseCase implements IDeleteFacultyUseCase {
-    constructor(private _facultyRepository: IFacultyRepository) { }
+    constructor(
+        private _facultyRepository: IFacultyRepository,
+        private _storageService: IStorageService
+    ) { }
 
     async execute(params: DeleteFacultyRequestDTO): Promise<ResponseDTO<DeleteFacultyResponseDTO>> {
         const faculty = await this._facultyRepository.getFacultyById(params.id);
@@ -240,6 +243,17 @@ export class DeleteFacultyUseCase implements IDeleteFacultyUseCase {
             throw new FacultyAlreadyProcessedError();
         }
         await this._facultyRepository.deleteFaculty(params.id);
+
+        // Cleanup Files
+        if (faculty.cvUrl) {
+            await this._storageService.deleteFile(faculty.cvUrl);
+        }
+        if (faculty.certificatesUrl && faculty.certificatesUrl.length > 0) {
+            for (const certUrl of faculty.certificatesUrl) {
+                await this._storageService.deleteFile(certUrl);
+            }
+        }
+
         return { data: { message: "Faculty registration deleted" }, success: true };
     }
 }

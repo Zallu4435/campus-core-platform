@@ -49,15 +49,6 @@ import {
   IJoinEventUseCase
 } from "./ICampusLifeUseCases";
 
-interface LegacySportData {
-  category?: string;
-  organizer?: string;
-  organizerType?: string;
-  homeGames?: number;
-  record?: string;
-  upcomingGames?: { date: string; description: string }[];
-  status?: string | SportStatus;
-}
 
 export class GetCampusLifeOverviewUseCase implements IGetCampusLifeOverviewUseCase {
   constructor(private readonly _campusLifeRepository: ICampusLifeRepository) { }

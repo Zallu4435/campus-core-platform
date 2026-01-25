@@ -4,6 +4,7 @@
  * These types provide type safety for database queries
  */
 
+import { Types } from "mongoose";
 import { AdminAdmissionStatus } from "../../../domain/admin/entities/AdminAdmissionTypes";
 
 /**
@@ -50,9 +51,9 @@ export interface AdmissionProjection {
  * Raw data from database (before mapping to domain)
  */
 export interface AdmissionRawData {
-    _id?: any;
+    _id?: Types.ObjectId | string;
     id?: string;
-    registerId?: any;
+    registerId?: Types.ObjectId | string;
     applicationId?: string;
     personal?: {
         fullName?: string;

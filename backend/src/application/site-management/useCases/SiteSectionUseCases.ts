@@ -15,6 +15,8 @@ import { InvalidSectionKeyError, InvalidHighlightError, InvalidVagoNowError, Inv
 import { ICreateSiteSectionUseCase, IDeleteSiteSectionUseCase, IGetSiteSectionByIdUseCase, IGetSiteSectionsUseCase, IUpdateSiteSectionUseCase } from './ISiteSectionUseCases';
 import { SITE_MANAGEMENT_CONSTANTS } from "../constants/SiteManagementConstants";
 import { SiteSectionMapper } from "../../../infrastructure/repositories/site-management/mappers/SiteSectionMapper";
+import { IStorageService } from '../../../application/shared/services/IStorageService';
+import Logger from '../../../shared/utils/logger';
 
 export class GetSiteSectionsUseCase implements IGetSiteSectionsUseCase {
   constructor(private readonly _siteSectionRepository: ISiteSectionRepository) { }
@@ -126,7 +128,10 @@ export class GetSiteSectionByIdUseCase implements IGetSiteSectionByIdUseCase {
 }
 
 export class CreateSiteSectionUseCase implements ICreateSiteSectionUseCase {
-  constructor(private readonly siteSectionRepository: ISiteSectionRepository) { }
+  constructor(
+    private readonly siteSectionRepository: ISiteSectionRepository,
+    private readonly storageService: IStorageService
+  ) { }
 
   async execute(params: CreateSiteSectionRequestDTO): Promise<{ success: boolean; data: CreateSiteSectionResponseDTO }> {
     if (!params.sectionKey) throw new InvalidSectionKeyError();
@@ -141,28 +146,75 @@ export class CreateSiteSectionUseCase implements ICreateSiteSectionUseCase {
       throw new InvalidLeadershipError();
     }
 
-    const doc = await this.siteSectionRepository.createSection(params);
-    return { success: true, data: { section: SiteSectionMapper.toDTO(doc) } };
+    try {
+      const doc = await this.siteSectionRepository.createSection(params);
+      return { success: true, data: { section: SiteSectionMapper.toDTO(doc) } };
+    } catch (error) {
+      // Cleanup: If DB Creation fails, delete uploaded file if exists
+      // Note: `image` param holds the file path
+      if (params.image) {
+        Logger.warn(`⚠️ DB Creation failed for Site Section. Deleting uploaded image: ${params.image}`);
+        await this.storageService.deleteFile(params.image);
+      }
+      throw error;
+    }
   }
 }
 
 export class UpdateSiteSectionUseCase implements IUpdateSiteSectionUseCase {
-  constructor(private readonly _siteSectionRepository: ISiteSectionRepository) { }
+  constructor(
+    private readonly _siteSectionRepository: ISiteSectionRepository,
+    private readonly _storageService: IStorageService
+  ) { }
 
   async execute(params: UpdateSiteSectionRequestDTO): Promise<{ success: boolean; data: UpdateSiteSectionResponseDTO | null }> {
-    const doc = await this._siteSectionRepository.updateSection(params);
-    if (!doc) {
-      return { success: false, data: null };
+    // We need to fetch the existing section to know if we are replacing an image
+    const existingDoc = await this._siteSectionRepository.getSectionById(params.id);
+    // If not found, the repo update might handle it or return null, but for cleanup we need to know BEFORE or check after success.
+
+    // Note: If repo returns null, no update happened.
+    // If we have a new image in params, we might need to clean it up if update fails or returns null.
+
+    const oldImageUrl = existingDoc ? existingDoc.image : null;
+    const newImageUrl = params.image && params.image !== oldImageUrl ? params.image : null;
+
+    try {
+      const doc = await this._siteSectionRepository.updateSection(params);
+      if (!doc) {
+        // Update failed (not found?), cleanup new image if uploaded
+        if (newImageUrl) {
+          Logger.warn(`⚠️ Update failed (not found). Deleting uploaded image: ${newImageUrl}`);
+          await this._storageService.deleteFile(newImageUrl);
+        }
+        return { success: false, data: null };
+      }
+
+      // Success: Clean up OLD image if it was replaced
+      if (newImageUrl && oldImageUrl) {
+        Logger.info('🗑️ Deleting old site section image after update...');
+        await this._storageService.deleteFile(oldImageUrl);
+      }
+
+      return {
+        success: true,
+        data: { section: SiteSectionMapper.toDTO(doc) }
+      };
+    } catch (error) {
+      // Failure: Clean up NEW image
+      if (newImageUrl) {
+        Logger.warn(`⚠️ DB Update failed. Deleting uploaded image: ${newImageUrl}`);
+        await this._storageService.deleteFile(newImageUrl);
+      }
+      throw error;
     }
-    return {
-      success: true,
-      data: { section: SiteSectionMapper.toDTO(doc) }
-    };
   }
 }
 
 export class DeleteSiteSectionUseCase implements IDeleteSiteSectionUseCase {
-  constructor(private readonly _siteSectionRepository: ISiteSectionRepository) { }
+  constructor(
+    private readonly _siteSectionRepository: ISiteSectionRepository,
+    private readonly _storageService: IStorageService
+  ) { }
 
   async execute(params: DeleteSiteSectionRequestDTO): Promise<{ success: boolean; data: void }> {
     const doc = await this._siteSectionRepository.getSectionById(params.id);
@@ -170,6 +222,13 @@ export class DeleteSiteSectionUseCase implements IDeleteSiteSectionUseCase {
       throw new SiteSectionNotFoundError(params.id);
     }
     await this._siteSectionRepository.deleteSection(params);
+
+    // Cleanup Image
+    if (doc.image) {
+      Logger.info(`🗑️ Deleting image for deleted site section ${params.id}...`);
+      await this._storageService.deleteFile(doc.image);
+    }
+
     return { success: true, data: undefined };
   }
 }

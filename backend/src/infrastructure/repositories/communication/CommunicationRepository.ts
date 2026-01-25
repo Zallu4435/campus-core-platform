@@ -14,7 +14,6 @@ import { CommunicationMapper } from './mappers/CommunicationMapper';
 import { IMessageSource, IParamsUserSource, IRecipientSource } from './infraTypes';
 import { IUserSource, IFacultySource, IAdminSource } from '../auth/infraTypes';
 
-// Define explicit interfaces for query filters to avoid any type
 interface MessageFilter {
   "recipients._id"?: string;
   "recipients.status"?: MessageStatus | string;
@@ -228,7 +227,7 @@ export class CommunicationRepository implements ICommunicationRepository {
 
   async getAllAdmins(search?: string): Promise<UserInfo[]> {
     try {
-      const query: mongoose.FilterQuery<any> = {};
+      const query: mongoose.FilterQuery<IAdminSource> = {};
       if (search) {
         query.$or = [
           { firstName: { $regex: search, $options: "i" } },
@@ -261,7 +260,7 @@ export class CommunicationRepository implements ICommunicationRepository {
   }
 
   async fetchUsers(type: string, search?: string): Promise<UserInfo[]> {
-    const query: mongoose.FilterQuery<any> = {};
+    const query: mongoose.FilterQuery<IUserSource> = {};
 
     if (search) {
       query.$or = [
@@ -359,7 +358,7 @@ export class CommunicationRepository implements ICommunicationRepository {
     }
 
     if (type === 'faculty' || type === 'all_faculty') {
-      const query: mongoose.FilterQuery<any> = {};
+      const query: mongoose.FilterQuery<IFacultySource> = {};
       if (search) {
         query.$or = [
           { firstName: { $regex: search, $options: "i" } },

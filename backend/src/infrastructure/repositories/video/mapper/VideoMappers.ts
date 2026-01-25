@@ -1,7 +1,7 @@
 import { Video } from "../../../../domain/video/entities/Video";
 import { IDiplomaInfo } from "../../../../domain/video/entities/VideoTypes";
 import { Types } from "mongoose";
-
+import { VideoStatus } from "../../../../domain/video/enums/VideoStatus";
 import { IVideoSource, IDiplomaInfoSource } from "../infraTypes";
 
 export class VideoMappers {
@@ -24,12 +24,12 @@ export class VideoMappers {
             : (doc.diplomaId?.toString() || '');
 
         return new Video({
-            id: (doc._id instanceof Types.ObjectId ? doc._id.toString() : doc._id) || (doc as any).id,
+            id: (doc._id instanceof Types.ObjectId ? doc._id.toString() : doc._id) || (doc as unknown as { id: string }).id,
             title: doc.title,
             duration: String(doc.duration),
             uploadedAt: doc.uploadedAt ? new Date(doc.uploadedAt as string | Date) : new Date(),
             module: doc.module,
-            status: doc.status as any,
+            status: doc.status as VideoStatus,
             diplomaId: diplomaId,
             description: doc.description,
             videoUrl: doc.videoUrl,

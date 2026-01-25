@@ -100,8 +100,14 @@ export class GetSentMessagesUseCase implements IGetSentMessagesUseCase {
   }
 }
 
+import { IStorageService } from '../../../application/shared/services/IStorageService';
+import Logger from '../../../shared/utils/logger';
+
 export class SendMessageUseCase implements ISendMessageUseCase {
-  constructor(private readonly _repository: ICommunicationRepository) { }
+  constructor(
+    private readonly _repository: ICommunicationRepository,
+    private readonly _storageService: IStorageService
+  ) { }
 
   async execute(params: SendMessageRequestDTO): Promise<SendMessageResponseDTO> {
     if (!params.senderId || params.senderId.trim() === "") {
@@ -140,6 +146,15 @@ export class SendMessageUseCase implements ISendMessageUseCase {
       return mappedMessage as unknown as SendMessageResponseDTO;
 
     } catch (error) {
+      // Cleanup: If DB Message creation fails, delete uploaded files
+      if (attachments && attachments.length > 0) {
+        Logger.warn('⚠️ Communication Message creation failed. Deleting uploaded attachments...');
+        for (const attachment of attachments) {
+          if (attachment.path) { // Note: Communication module uses 'path' for the url in attachment object
+            await this._storageService.deleteFile(attachment.path);
+          }
+        }
+      }
       // Re-throw known domain errors or convert infrastructure errors
       if (error instanceof Error) throw error;
       throw new CommunicationError("Failed to send message");

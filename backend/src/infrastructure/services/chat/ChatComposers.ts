@@ -53,11 +53,16 @@ import {
 
 export const getChatComposer = () => {
   const chatRepository = new ChatRepository();
-  
+
   const getChatsUseCase: IGetChatsUseCase = new GetChatsUseCase(chatRepository);
   const searchChatsUseCase: ISearchChatsUseCase = new SearchChatsUseCase(chatRepository);
   const getChatMessagesUseCase: IGetChatMessagesUseCase = new GetChatMessagesUseCase(chatRepository);
-  const sendMessageUseCase: ISendMessageUseCase = new SendMessageUseCase(chatRepository);
+
+  /* Storage Service */
+  const { storageService } = require('../../shared/CloudinaryStorageService');
+  /* Injected Storage Service for Cleanup */
+  const sendMessageUseCase: ISendMessageUseCase = new SendMessageUseCase(chatRepository, storageService);
+
   const markMessagesAsReadUseCase: IMarkMessagesAsReadUseCase = new MarkMessagesAsReadUseCase(chatRepository);
   const addReactionUseCase: IAddReactionUseCase = new AddReactionUseCase(chatRepository);
   const removeReactionUseCase: IRemoveReactionUseCase = new RemoveReactionUseCase(chatRepository);

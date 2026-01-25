@@ -128,37 +128,15 @@ export class ChatController {
     if (req.files && Array.isArray(req.files)) {
       for (const file of req.files) {
         let attachmentType = 'file';
-        let url = FileUploadService.getFileUrl(file.filename);
+        // Multer with Cloudinary storage puts the Cloudinary URL in 'path' and public_id in 'filename'
+        let url = file.path;
+
         if (file.mimetype.startsWith('image/')) {
-          attachmentType = 'image';
-          const result = await cloudinary.uploader.upload(file.path, {
-            folder: 'message-attachments',
-            resource_type: 'image',
-            use_filename: true,
-            unique_filename: false,
-            overwrite: false
-          });
-          url = result.secure_url;
+          attachmentType = MessageType.Image;
         } else if (file.mimetype.startsWith('audio/')) {
           attachmentType = 'audio';
-          const result = await cloudinary.uploader.upload(file.path, {
-            folder: 'message-attachments',
-            resource_type: 'video',
-            use_filename: true,
-            unique_filename: false,
-            overwrite: false
-          });
-          url = result.secure_url;
         } else if (file.mimetype.startsWith('video/')) {
           attachmentType = 'video';
-          const result = await cloudinary.uploader.upload(file.path, {
-            folder: 'message-attachments',
-            resource_type: 'video',
-            use_filename: true,
-            unique_filename: false,
-            overwrite: false
-          });
-          url = result.secure_url;
         } else if ([
           'application/pdf',
           'application/msword',
@@ -167,6 +145,7 @@ export class ChatController {
         ].includes(file.mimetype)) {
           attachmentType = 'document';
         }
+
         attachments.push({
           type: attachmentType,
           url,

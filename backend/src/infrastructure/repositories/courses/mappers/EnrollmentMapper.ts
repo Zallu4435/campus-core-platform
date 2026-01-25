@@ -1,6 +1,6 @@
 import { Enrollment } from '../../../../domain/courses/entities/CourseEnrollment';
 import { IEnrollmentDocument, PopulatedEnrollmentDocument } from '../infraTypes';
-
+import { EnrollmentStatus } from '../../../../domain/courses/types/CourseTypes';
 import { EnrollmentDetailsDTO } from '../../../../application/courses/dtos/EnrollmentRequestDTOs';
 
 /**
@@ -32,7 +32,7 @@ export class EnrollmentMapper {
             courseId: typeof mongooseDoc.courseId === 'string'
                 ? mongooseDoc.courseId
                 : mongooseDoc.courseId.id,
-            status: mongooseDoc.status as any,
+            status: mongooseDoc.status as EnrollmentStatus,
             requestedAt: mongooseDoc.requestedAt,
             reason: mongooseDoc.reason,
         });
@@ -43,7 +43,7 @@ export class EnrollmentMapper {
      * @param domainEntity - The domain Enrollment entity
      * @returns Plain object for Mongoose persistence
      */
-    static toPersistence(domainEntity: Enrollment): Record<string, any> {
+    static toPersistence(domainEntity: Enrollment): Record<string, unknown> {
         return {
             studentId: domainEntity.studentId,
             courseId: domainEntity.courseId,

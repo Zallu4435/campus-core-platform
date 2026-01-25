@@ -35,7 +35,8 @@ export function getFacultyComposer(): IFacultyController {
   const getFacultyByTokenUseCase: IGetFacultyByTokenUseCase = new GetFacultyByTokenUseCase(repository);
   const approveFacultyUseCase: IApproveFacultyUseCase = new ApproveFacultyUseCase(repository);
   const rejectFacultyUseCase: IRejectFacultyUseCase = new RejectFacultyUseCase(repository);
-  const deleteFacultyUseCase: IDeleteFacultyUseCase = new DeleteFacultyUseCase(repository);
+  // Inject storage service for cleanup
+  const deleteFacultyUseCase: IDeleteFacultyUseCase = new DeleteFacultyUseCase(repository, storageService);
   const confirmFacultyOfferUseCase: IConfirmFacultyOfferUseCase = new ConfirmFacultyOfferUseCase(repository);
   const downloadCertificateUseCase: IDownloadCertificateUseCase = new DownloadCertificateUseCase(repository, storageService);
   const blockFacultyUseCase: IBlockFacultyUseCase = new BlockFacultyUseCase(repository);

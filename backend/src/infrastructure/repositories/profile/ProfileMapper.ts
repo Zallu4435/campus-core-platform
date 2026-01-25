@@ -8,18 +8,18 @@ export class ProfileMapper implements IProfileMapper {
         if (!raw) {
             throw new Error("Cannot map null document to domain entity");
         }
-        const doc = raw;
+        const doc = raw as Record<string, unknown>;
 
         return Profile.create({
-            id: (doc._id || (doc as any).id || '').toString(),
-            firstName: doc.firstName || (doc as any).fullName?.split(' ')[0] || '',
-            lastName: doc.lastName || (doc as any).fullName?.split(' ').slice(1).join(' ') || '',
-            email: doc.email,
+            id: (doc._id || doc.id || '').toString(),
+            firstName: (doc.firstName as string | undefined) || (doc.fullName as string | undefined)?.split(' ')[0] || '',
+            lastName: (doc.lastName as string | undefined) || (doc.fullName as string | undefined)?.split(' ').slice(1).join(' ') || '',
+            email: doc.email as string,
             phone: doc.phone as string,
-            profilePicture: (doc as any).profilePicture,
-            passwordChangedAt: (doc as any).passwordChangedAt,
-            password: doc.password,
-            role: isFaculty ? ProfileRole.Faculty : ((doc as any).role || ProfileRole.Student),
+            profilePicture: doc.profilePicture as string | undefined,
+            passwordChangedAt: doc.passwordChangedAt as Date | undefined,
+            password: doc.password as string,
+            role: isFaculty ? ProfileRole.Faculty : ((doc.role as ProfileRole) || ProfileRole.Student),
             updatedAt: doc.updatedAt ? new Date(doc.updatedAt as string | Date) : undefined
         });
     }

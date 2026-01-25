@@ -28,7 +28,9 @@ export function getCommunicationComposer(): ICommunicationController {
 
   const getInboxMessagesUseCase: IGetInboxMessagesUseCase = new GetInboxMessagesUseCase(repository);
   const getSentMessagesUseCase: IGetSentMessagesUseCase = new GetSentMessagesUseCase(repository);
-  const sendMessageUseCase: ISendMessageUseCase = new SendMessageUseCase(repository);
+  /* Storage Service for Cleanup */
+  const { storageService } = require('../../shared/CloudinaryStorageService');
+  const sendMessageUseCase: ISendMessageUseCase = new SendMessageUseCase(repository, storageService);
   const markMessageAsReadUseCase: IMarkMessageAsReadUseCase = new MarkMessageAsReadUseCase(repository);
   const deleteMessageUseCase: IDeleteMessageUseCase = new DeleteMessageUseCase(repository);
   const getMessageDetailsUseCase: IGetMessageDetailsUseCase = new GetMessageDetailsUseCase(repository);

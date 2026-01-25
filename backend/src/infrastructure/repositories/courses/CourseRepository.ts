@@ -69,11 +69,6 @@ export class CoursesRepository extends BaseRepository<ICourseDocument, CreateCou
   async getEnrollments(params: GetEnrollmentsRequestDTO) {
     const { page, limit } = params;
 
-    // 1. Get Course IDs matching filters first (if any course implementation needed)
-    // For simplicity, we can do this inside the builder or separately.
-    // The previous logic was complex mixing course query and enrollment query.
-    // Let's keep it clean but functional.
-
     const courseIds = await this._resolveCourseIdsForEnrollment(params);
     if (courseIds !== undefined && courseIds.length === 0) {
       return { enrollments: [], totalItems: 0, page, limit };
@@ -166,7 +161,7 @@ export class CoursesRepository extends BaseRepository<ICourseDocument, CreateCou
   private async _resolveCourseIdsForEnrollment(params: GetEnrollmentsRequestDTO): Promise<string[] | undefined> {
     const { specialization, faculty, term, search } = params;
     if ((specialization && specialization !== "all") || (faculty && faculty !== "all") || (term && term !== "all") || (search && search.trim())) {
-      const courseQuery = this._buildCourseQuery(params as any);
+      const courseQuery = this._buildCourseQuery(params as unknown as GetCoursesRequestDTO);
       const courses = await CourseModel.find(courseQuery).select("_id").lean();
       return courses.map((course) => course._id.toString());
     }

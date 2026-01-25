@@ -3,6 +3,7 @@ import {
     VideoSessionResponseDTO,
     SessionListResponseDTO
 } from "../../../../application/session/dtos/VideoSessionResponseDTOs";
+import { VideoSessionStatus } from "../../../../domain/session/enums/VideoSessionStatus";
 import { IVideoSessionSource } from "../infraTypes";
 
 export class VideoSessionMapper {
@@ -18,14 +19,14 @@ export class VideoSessionMapper {
             participants: mongooseDoc.participants,
             startTime: mongooseDoc.startTime instanceof Date ? mongooseDoc.startTime : new Date(mongooseDoc.startTime),
             endTime: mongooseDoc.endTime ? (mongooseDoc.endTime instanceof Date ? mongooseDoc.endTime : new Date(mongooseDoc.endTime)) : null,
-            status: mongooseDoc.status as any,
+            status: mongooseDoc.status as VideoSessionStatus,
             description: mongooseDoc.description,
             instructor: mongooseDoc.instructor,
             course: mongooseDoc.course,
             duration: mongooseDoc.duration,
             maxAttendees: mongooseDoc.maxAttendees,
             tags: mongooseDoc.tags,
-            difficulty: mongooseDoc.difficulty as any,
+            difficulty: mongooseDoc.difficulty as 'beginner' | 'intermediate' | 'advanced',
             isLive: mongooseDoc.isLive,
             hasRecording: mongooseDoc.hasRecording,
             recordingUrl: mongooseDoc.recordingUrl,
@@ -63,7 +64,7 @@ export class VideoSessionMapper {
             recordingUrl: domainEntity.recordingUrl,
             attendees: domainEntity.attendees,
             attendeeList: domainEntity.attendeeList,
-            attendance: domainEntity.attendance as any,
+            attendance: domainEntity.attendance,
             joinUrl: domainEntity.joinUrl,
         };
     }

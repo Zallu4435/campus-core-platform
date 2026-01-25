@@ -25,7 +25,7 @@ export class NotificationRepository implements INotificationRepository {
         await NotificationModel.findByIdAndDelete(id);
     }
 
-    async find(filter: NotificationFilter, options: { skip?: number; limit?: number; sort?: Record<string, any> | string } = {}): Promise<Notification[]> {
+    async find(filter: NotificationFilter, options: { skip?: number; limit?: number; sort?: Record<string, 1 | -1> | string } = {}): Promise<Notification[]> {
         const { skip = 0, limit = 0, sort = { createdAt: -1 } } = options;
 
         let queryFilter: Record<string, unknown> = { ...filter };

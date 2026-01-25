@@ -221,12 +221,12 @@ export class ChatRepository implements IChatRepository {
     return {
       chat: ChatMapper.toChatDomain(chat as unknown as IChatSource),
       messages: (messages as unknown as IMessageSource[]).map(ChatMapper.toMessageDomain),
-      participants: participants.map((p: any) => ({
-        id: p._id.toString(),
-        firstName: p.firstName,
-        lastName: p.lastName,
-        email: p.email,
-        avatar: p.profilePicture
+      participants: participants.map((p: Record<string, any>) => ({
+        id: (p._id as mongoose.Types.ObjectId).toString(),
+        firstName: p.firstName as string,
+        lastName: p.lastName as string,
+        email: p.email as string,
+        avatar: p.profilePicture as string
       })),
       unreadCount
     };
@@ -550,12 +550,12 @@ export class ChatRepository implements IChatRepository {
 
   async getUsersByIds(ids: string[]): Promise<Array<{ id: string; firstName: string; lastName: string; email: string; avatar?: string }>> {
     const users = await UserModel.find({ _id: { $in: ids } }).select("firstName lastName email profilePicture").lean();
-    return users.map((u: any) => ({ // Keep generic user map or improve
-      id: u._id.toString(),
-      firstName: u.firstName,
-      lastName: u.lastName,
-      email: u.email,
-      avatar: u.profilePicture
+    return users.map((u: Record<string, unknown>) => ({
+      id: (u._id as mongoose.Types.ObjectId).toString(),
+      firstName: u.firstName as string,
+      lastName: u.lastName as string,
+      email: u.email as string,
+      avatar: u.profilePicture as string
     }));
   }
 }

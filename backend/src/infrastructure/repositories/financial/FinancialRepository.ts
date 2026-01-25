@@ -38,8 +38,7 @@ export class FinancialRepository implements IFinancialRepository {
             const allCharges = await ChargeModel.find({}).lean() as unknown as IChargeSource[];
 
             const applicableCharges = allCharges.filter((charge) => {
-                const applicableFor = (charge as any).applicableFor as string | Record<string, unknown>; // Handle dynamic type
-                const term = (charge as any).applicableFor; // Check usage in filter logic
+                const term = charge.applicableFor; // Check usage in filter logic
 
                 if (term === "All Students" || term === "all_students") {
                     return true;
@@ -174,7 +173,7 @@ export class FinancialRepository implements IFinancialRepository {
             chargeId: chargeId,
             status: "Pending",
             paymentId: { $exists: false }
-        }).lean();
+        }).lean() as unknown as IStudentFinancialInfoSource;
 
         if (existingPending) {
             const timeSinceStart = Date.now() - new Date(existingPending.issuedAt).getTime();
@@ -184,7 +183,7 @@ export class FinancialRepository implements IFinancialRepository {
                 throw new Error("Payment for this charge is already in progress. Please complete the transaction in your other tab or wait for the pending transaction to expire.");
             } else {
                 await StudentFinancialInfoModel.deleteOne({
-                    _id: (existingPending as any)._id
+                    _id: existingPending._id
                 });
             }
         }
@@ -357,7 +356,7 @@ export class FinancialRepository implements IFinancialRepository {
         const payment = await PaymentModel.findById(paymentId).lean() as unknown as IPaymentSource;
         if (!payment) throw new Error(FinancialErrorType.PaymentNotFound);
         return {
-            url: (payment as any).receiptUrl || "", // I missed receiptUrl in IPaymentSource, adding it or casting as any is safe here for scalar.
+            url: payment.receiptUrl || "",
         };
     }
 
@@ -480,10 +479,10 @@ export class FinancialRepository implements IFinancialRepository {
             const cancelledPayments = await PaymentModel.find({
                 studentId: studentId,
                 status: 'Cancelled'
-            }).select('_id').lean();
+            }).select('_id').lean() as unknown as Pick<IPaymentSource, '_id'>[];
 
             if (cancelledPayments.length > 0) {
-                const cancelledPaymentIds = cancelledPayments.map(p => (p as any)._id);
+                const cancelledPaymentIds = cancelledPayments.map(p => p._id);
                 await StudentFinancialInfoModel.deleteMany({
                     studentId: studentId,
                     paymentId: { $in: cancelledPaymentIds },
