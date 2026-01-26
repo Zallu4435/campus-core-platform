@@ -28,13 +28,13 @@ router.get(
 );
 
 router.post(
-  '/bookmark/:id',
+  '/:id/bookmark',
   validateRequest(materialIdParamSchema),
   (req, res, next) => expressAdapter(req, res, next, userMaterialController.toggleBookmark.bind(userMaterialController))
 );
 
 router.post(
-  '/like/:id',
+  '/:id/like',
   validateRequest(materialIdParamSchema),
   (req, res, next) => expressAdapter(req, res, next, userMaterialController.toggleLike.bind(userMaterialController))
 );

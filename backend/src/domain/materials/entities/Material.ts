@@ -24,7 +24,7 @@ export class Material {
   get uploadedAt() { return this.props.uploadedAt; }
   get views() { return this.props.views; }
   get downloads() { return this.props.downloads; }
-  get rating() { return this.props.rating; }
+  get updatedAt() { return this.props.updatedAt; }
 
   static create(props: CreateMaterialProps): Material {
     if (!props.title) throw new MaterialValidationError("Title is required");
@@ -48,7 +48,7 @@ export class Material {
       uploadedAt: now,
       views: 0,
       downloads: 0,
-      rating: 0,
+      updatedAt: now
     });
   }
 
@@ -72,7 +72,7 @@ export class Material {
       uploadedAt: this.uploadedAt,
       views: this.views,
       downloads: this.downloads,
-      rating: this.rating,
+      updatedAt: this.updatedAt
     };
   }
 
@@ -85,7 +85,7 @@ export class Material {
       uploadedBy: existingProps.uploadedBy,
       views: existingProps.views,
       downloads: existingProps.downloads,
-      rating: existingProps.rating,
+      updatedAt: existingProps.updatedAt
     };
 
     return new Material(updatedProps);

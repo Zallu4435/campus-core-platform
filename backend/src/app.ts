@@ -47,8 +47,9 @@ const io = new SocketIOServer(httpServer, {
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-app.use("/files", express.static(path.join(__dirname, "uploads")));
-app.use("/thumbnails", express.static(path.join(__dirname, "uploads")));
+app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
+app.use("/files", express.static(path.join(__dirname, "..", "uploads")));
+app.use("/thumbnails", express.static(path.join(__dirname, "..", "uploads")));
 
 Logger.info('Initializing Socket.IO services...');
 import { SocketService } from "./infrastructure/services/socket/SocketService";

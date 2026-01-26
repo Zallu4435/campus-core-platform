@@ -159,7 +159,6 @@ const MaterialFilters: React.FC<MaterialFiltersProps> = ({
                                 <option value="oldest">Oldest First</option>
                                 <option value="downloads">Most Downloaded</option>
                                 <option value="views">Most Viewed</option>
-                                <option value="rating">Highest Rated</option>
                                 <option value="title">Alphabetical</option>
                             </select>
                         </div>

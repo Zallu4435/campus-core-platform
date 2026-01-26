@@ -1,19 +1,14 @@
 import httpClient from '../../../../../frameworks/api/httpClient';
 
 export const userMaterialService = {
-  getMaterials: async (filters: {
-    subject?: string;
-    course?: string;
-    semester?: string;
-    type?: string;
-    difficulty?: string;
-    page?: number;
-    limit?: number;
-    search?: string;
-    sortBy?: string;
-    sortOrder?: 'asc' | 'desc';
-  }) => {
-    const response = await httpClient.get('/materials', { params: filters });
+  getMaterials: async (filters: any) => {
+    const activeFilters = Object.entries(filters).reduce((acc: any, [key, value]) => {
+      if (value !== '' && value !== undefined && value !== null) {
+        acc[key] = key === 'semester' ? Number(value) : value;
+      }
+      return acc;
+    }, {});
+    const response = await httpClient.get('/materials', { params: activeFilters });
     return response.data.data;
   },
 

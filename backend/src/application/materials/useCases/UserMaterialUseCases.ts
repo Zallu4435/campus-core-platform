@@ -49,7 +49,7 @@ export class GetUserMaterialsUseCase implements IGetUserMaterialsUseCase {
     };
 
     const skip = (page - 1) * limit;
-    const sort: MaterialSortOptions = sortBy ? { [sortBy]: sortOrder === 'desc' ? -1 : 1 } : { uploadedAt: -1 };
+    const sort: MaterialSortOptions = sortBy ? { [sortBy]: sortOrder === 'desc' ? -1 : 1 } : { updatedAt: -1 };
 
     const materials = await this._repo.find(filter, { skip, limit, sort });
     const total = await this._repo.count(filter);
@@ -124,7 +124,7 @@ export class DownloadMaterialUseCase implements IDownloadMaterialUseCase {
     const material = await this._repo.findById(params.id);
     if (!material) throw new MaterialNotFoundError(params.id);
 
-    await this._repo.incrementDownloads(params.id);
+    await this._repo.incrementDownloads(params.id, params.userId);
     return material.fileUrl;
   }
 }

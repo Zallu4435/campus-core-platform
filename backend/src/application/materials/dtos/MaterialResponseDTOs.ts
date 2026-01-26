@@ -1,7 +1,7 @@
 import { MaterialType, MaterialDifficulty, MaterialProps } from "../../../domain/materials/entities/MaterialTypes";
 
 export interface GetMaterialsResponseDTO {
-  materials: Array<Pick<MaterialProps, 'id' | 'title' | 'description' | 'subject' | 'course' | 'semester' | 'type' | 'fileUrl' | 'thumbnailUrl' | 'tags' | 'difficulty' | 'estimatedTime' | 'isNewMaterial' | 'isRestricted' | 'uploadedBy' | 'uploadedAt' | 'views' | 'downloads' | 'rating'>>;
+  materials: Array<Pick<MaterialProps, 'id' | 'title' | 'description' | 'subject' | 'course' | 'semester' | 'type' | 'fileUrl' | 'thumbnailUrl' | 'tags' | 'difficulty' | 'estimatedTime' | 'isNewMaterial' | 'isRestricted' | 'uploadedBy' | 'uploadedAt' | 'views' | 'downloads' | 'updatedAt'>>;
   totalPages: number;
 }
 export interface GetMaterialByIdResponseDTO {

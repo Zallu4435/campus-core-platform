@@ -17,11 +17,12 @@ export interface IMaterialPersistence extends Document {
   isRestricted: boolean;
   uploadedBy: string;
   uploadedAt: Date;
+  updatedAt: Date;
   views: number;
   downloads: number;
-  rating: number;
   bookmarks: { userId: string }[];
   likes: { userId: string }[];
+  downloadedBy: { userId: string }[];
 }
 
 const materialSchema = new Schema<IMaterialPersistence>({
@@ -42,13 +43,17 @@ const materialSchema = new Schema<IMaterialPersistence>({
   uploadedAt: { type: Date, default: Date.now },
   views: { type: Number, default: 0 },
   downloads: { type: Number, default: 0 },
-  rating: { type: Number, default: 0 },
   bookmarks: [{
     userId: { type: String, required: true }
   }],
   likes: [{
     userId: { type: String, required: true }
+  }],
+  downloadedBy: [{
+    userId: { type: String, required: true }
   }]
+}, {
+  timestamps: { createdAt: 'uploadedAt', updatedAt: 'updatedAt' }
 });
 
 export const MaterialModel = mongoose.model<IMaterialPersistence>('Material', materialSchema);

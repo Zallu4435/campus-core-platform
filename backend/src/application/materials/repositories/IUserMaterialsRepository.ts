@@ -10,5 +10,5 @@ export interface IUserMaterialsRepository {
   toggleLike(materialId: string, userId: string): Promise<void>;
   isBookmarked(userId: string, materialId: string): Promise<boolean>;
   isLiked(userId: string, materialId: string): Promise<boolean>;
-  incrementDownloads(materialId: string): Promise<void>;
+  incrementDownloads(materialId: string, userId: string): Promise<void>;
 }

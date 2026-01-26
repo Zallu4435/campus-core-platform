@@ -2,7 +2,7 @@ import React from 'react';
 import { usePreferences } from '../../../../../application/context/PreferencesContext';
 import {
     FiDownload, FiHeart, FiBookmark,
-    FiUser, FiClock, FiCalendar, FiBook, FiLock, FiStar, FiEye
+    FiUser, FiClock, FiCalendar, FiBook, FiLock, FiEye
 } from 'react-icons/fi';
 import { getFileIcon, getDifficultyColor, formatDate, formatNumber } from '../utils/materialUtils';
 import { MaterialCardProps } from '../../../../../domain/types/canvas/materials';
@@ -117,7 +117,7 @@ const MaterialCard: React.FC<MaterialCardProps> = ({
                     ))}
                 </div>
 
-                <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-3 sm:mb-4 text-center">
+                <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-3 sm:mb-4 text-center">
                     <div className="text-xs sm:text-sm">
                         <div className={`flex items-center justify-center ${styles.icon.secondary} mb-0.5 sm:mb-1`}>
                             <FiDownload className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
@@ -131,13 +131,6 @@ const MaterialCard: React.FC<MaterialCardProps> = ({
                         </div>
                         <div className={`font-semibold ${styles.textPrimary}`}>{formatNumber(materialData.views)}</div>
                         <div className={`text-[10px] sm:text-xs ${styles.textTertiary}`}>Views</div>
-                    </div>
-                    <div className="text-xs sm:text-sm">
-                        <div className={`flex items-center justify-center text-yellow-400 mb-0.5 sm:mb-1`}>
-                            <FiStar className="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="currentColor" />
-                        </div>
-                        <div className={`font-semibold ${styles.textPrimary}`}>{materialData.rating}</div>
-                        <div className={`text-[10px] sm:text-xs ${styles.textTertiary}`}>Rating</div>
                     </div>
                 </div>
 

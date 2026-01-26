@@ -47,7 +47,7 @@ export const useStudyMaterials = (filters: GetMaterialsFilters = {}) => {
     onSuccess: async ({ blob, materialId }) => {
       let fileName = 'material.pdf';
       try {
-        const material = materialsData?.materials?.find((m: { _id: string; title: string; fileUrl: string }) => m._id === materialId);
+        const material = materialsData?.materials?.find((m: { id: string; _id?: string; title: string; fileUrl: string }) => (m.id === materialId || m._id === materialId));
         if (material) {
           const ext = material.fileUrl?.split('.').pop().split('?')[0] || 'pdf';
           fileName = (material.title || 'material').replace(/\s+/g, '_') + '.' + ext;

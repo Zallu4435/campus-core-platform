@@ -18,7 +18,6 @@ export interface MaterialData {
     uploadedAt: string;
     views: number;
     downloads: number;
-    rating: number;
     isBookmarked: boolean;
     isLiked: boolean;
 }
@@ -44,13 +43,12 @@ export interface Material {
     uploadedAt: string;
     views: number;
     downloads: number;
-    rating: number;
     isBookmarked: boolean;
     isLiked: boolean;
 }
 
 export type ViewMode = 'grid' | 'table';
-export type SortOption = 'newest' | 'oldest' | 'downloads' | 'views' | 'rating' | 'title'; 
+export type SortOption = 'newest' | 'oldest' | 'downloads' | 'views' | 'title';
 
 export interface MaterialCardProps {
     material: Material;
@@ -97,6 +95,5 @@ export interface GetMaterialsFilters {
     search?: string;
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
-  }
+}
 
-  

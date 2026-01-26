@@ -46,7 +46,7 @@ const MaterialManagement: React.FC = () => {
     const timer = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery);
       setPage(1)
-    }, 500); 
+    }, 500);
 
     return () => clearTimeout(timer);
   }, [searchQuery]);
@@ -54,8 +54,8 @@ const MaterialManagement: React.FC = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedFilters(filters);
-      setPage(1); 
-    }, 300); 
+      setPage(1);
+    }, 300);
 
     return () => clearTimeout(timer);
   }, [filters]);
@@ -73,7 +73,7 @@ const MaterialManagement: React.FC = () => {
     isLoadingMaterialDetails,
     handleViewMaterial,
     handleEditMaterial,
-  } = useMaterialManagement(page, ITEMS_PER_PAGE, debouncedFilters, debouncedSearchQuery, activeTab);
+  } = useMaterialManagement(page, ITEMS_PER_PAGE, debouncedFilters, debouncedSearchQuery);
 
   const materialColumns = getMaterialColumns();
 
@@ -93,26 +93,24 @@ const MaterialManagement: React.FC = () => {
       dateRange: 'all',
     });
     setSearchQuery('');
-    setPage(1);
+    setActiveTab('all');
   };
 
   const handleTabClick = (index: number) => {
     const tabKeys = ['all', 'restricted', 'unrestricted'];
     const newActiveTab = tabKeys[index];
     setActiveTab(newActiveTab);
-    
+
     const statusMap: { [key: string]: string } = {
       'all': 'all',
       'restricted': 'restricted',
       'unrestricted': 'unrestricted'
     };
-    
+
     setFilters(prev => ({
       ...prev,
       status: statusMap[newActiveTab] || 'all'
     }));
-    
-    setPage(1);
   };
 
   const handleAddMaterial = () => {
@@ -124,13 +122,13 @@ const MaterialManagement: React.FC = () => {
     try {
       console.log('[MaterialManagement] Form data received:', formData);
       let dataToSend: MaterialFormData = formData;
-      
+
       // Check if there are any file changes (new files uploaded)
       const hasFileChange = formData.file && formData.file instanceof File;
       const hasThumbnailChange = (formData as any).thumbnail && (formData as any).thumbnail instanceof File;
-      
+
       console.log('[MaterialManagement] File changes detected:', { hasFileChange, hasThumbnailChange });
-      
+
       if (hasFileChange || hasThumbnailChange) {
         const fd = new FormData();
         Object.entries(formData).forEach(([key, value]) => {
@@ -153,7 +151,7 @@ const MaterialManagement: React.FC = () => {
       } else {
         console.log('[MaterialManagement] No file changes, sending JSON data');
       }
-      
+
       if (editingMaterial) {
         await updateMaterial({ id: editingMaterial.id, data: dataToSend as Partial<Material> });
       } else {
@@ -215,8 +213,8 @@ const MaterialManagement: React.FC = () => {
       color: 'red' as const,
     },
     {
-      icon: <FiLock size={16} />, 
-      label: 'Restrict/Unrestrict', 
+      icon: <FiLock size={16} />,
+      label: 'Restrict/Unrestrict',
       onClick: (material: MaterialWithId) => {
         setMaterialToToggle({ material, isRestricted: !material.isRestricted });
         setShowToggleWarning(true);

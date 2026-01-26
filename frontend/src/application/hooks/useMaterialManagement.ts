@@ -16,19 +16,17 @@ export const useMaterialManagement = (
     startDate?: string;
     endDate?: string;
   },
-  searchQuery: string = '',
-  activeTab: string = 'all'
+  searchQuery: string = ''
 ) => {
   const queryClient = useQueryClient();
   const [selectedMaterialId, setSelectedMaterialId] = useState<string | null>(null);
 
   const { data: materialsData, isLoading, error } = useQuery<{ materials: Material[]; totalPages: number }, Error>({
-    queryKey: ['materials', page, filters, searchQuery, activeTab],
+    queryKey: ['materials', page, filters, searchQuery],
     queryFn: () => materialService.getMaterials(
       {
         ...filters,
         search: searchQuery,
-        status: activeTab === 'restricted' ? 'restricted' : activeTab === 'unrestricted' ? 'unrestricted' : undefined
       },
       page,
       itemsPerPage

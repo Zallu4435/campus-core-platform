@@ -28,11 +28,11 @@ export interface MaterialProps {
   uploadedAt: string;
   views: number;
   downloads: number;
-  rating: number;
+  updatedAt: string;
 }
 
-export type CreateMaterialProps = Omit<MaterialProps, 'id' | 'uploadedAt' | 'views' | 'downloads' | 'rating'>;
-export type UpdateMaterialProps = Partial<Omit<MaterialProps, 'uploadedAt' | 'views' | 'downloads' | 'rating'>> & { id: string };
+export type CreateMaterialProps = Omit<MaterialProps, 'id' | 'uploadedAt' | 'views' | 'downloads' | 'updatedAt'>;
+export type UpdateMaterialProps = Partial<Omit<MaterialProps, 'uploadedAt' | 'views' | 'downloads' | 'updatedAt'>> & { id: string };
 
 export interface MaterialFilter {
   subject?: string;
@@ -59,9 +59,9 @@ export interface UserMaterialFilter {
 
 export interface MaterialSortOptions {
   uploadedAt?: 1 | -1;
+  updatedAt?: 1 | -1;
   downloads?: 1 | -1;
   views?: 1 | -1;
-  rating?: 1 | -1;
   title?: 1 | -1;
   [key: string]: 1 | -1 | undefined;
 }

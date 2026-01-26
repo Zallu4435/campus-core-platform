@@ -86,7 +86,7 @@ export class GetMaterialsUseCase implements IGetMaterialsUseCase {
     }
 
     const skip = (page - 1) * limit;
-    const sort: MaterialSortOptions = { uploadedAt: -1 };
+    const sort: MaterialSortOptions = { updatedAt: -1 };
 
     const materials = await this._repo.find(filter, { skip, limit, sort });
     const total = await this._repo.count(filter);

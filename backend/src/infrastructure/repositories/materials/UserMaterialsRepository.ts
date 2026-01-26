@@ -10,7 +10,7 @@ export class UserMaterialsRepository implements IUserMaterialsRepository {
   async find(filter: UserMaterialFilter, options: { skip?: number; limit?: number; sort?: MaterialSortOptions } = {}): Promise<Material[]> {
     const mongoFilter = this._buildMongoFilter(filter);
     const docs = await MaterialModel.find(mongoFilter)
-      .sort((options.sort as Record<string, 1 | -1>) ?? { uploadedAt: -1 })
+      .sort((options.sort as Record<string, 1 | -1>) ?? { updatedAt: -1 })
       .skip(options.skip ?? 0)
       .limit(options.limit ?? 0)
       .lean() as unknown as IMaterialSource[];
@@ -24,7 +24,7 @@ export class UserMaterialsRepository implements IUserMaterialsRepository {
   }
 
   async findById(id: string): Promise<Material | null> {
-    const doc = await MaterialModel.findById(id).lean() as unknown as IMaterialSource;
+    const doc = await MaterialModel.findOne({ _id: id, isRestricted: false }).lean() as unknown as IMaterialSource;
     return doc ? MaterialMapper.toDomain(doc) : null;
   }
 
@@ -35,8 +35,8 @@ export class UserMaterialsRepository implements IUserMaterialsRepository {
   }
 
   async toggleBookmark(materialId: string, userId: string): Promise<void> {
-    const material = await MaterialModel.findById(materialId);
-    if (!material) throw new Error('Material not found');
+    const material = await MaterialModel.findOne({ _id: materialId, isRestricted: false });
+    if (!material) throw new Error('Material not found or restricted');
 
     const bookmarkIndex = material.bookmarks.findIndex((b: { userId: string }) => b.userId === userId);
     if (bookmarkIndex > -1) {
@@ -48,8 +48,8 @@ export class UserMaterialsRepository implements IUserMaterialsRepository {
   }
 
   async toggleLike(materialId: string, userId: string): Promise<void> {
-    const material = await MaterialModel.findById(materialId);
-    if (!material) throw new Error('Material not found');
+    const material = await MaterialModel.findOne({ _id: materialId, isRestricted: false });
+    if (!material) throw new Error('Material not found or restricted');
 
     const likeIndex = material.likes.findIndex((l: { userId: string }) => l.userId === userId);
     if (likeIndex > -1) {
@@ -70,12 +70,22 @@ export class UserMaterialsRepository implements IUserMaterialsRepository {
     return !!doc;
   }
 
-  async incrementDownloads(materialId: string): Promise<void> {
-    await MaterialModel.findByIdAndUpdate(materialId, { $inc: { downloads: 1 } });
+  async incrementDownloads(materialId: string, userId: string): Promise<void> {
+    const material = await MaterialModel.findById(materialId);
+    if (!material) throw new Error('Material not found');
+
+    const hasDownloaded = material.downloadedBy.some(d => d.userId === userId);
+    if (!hasDownloaded) {
+      material.downloadedBy.push({ userId });
+      material.downloads += 1;
+      await material.save();
+    }
   }
 
   private _buildMongoFilter(filter: UserMaterialFilter): FilterQuery<IMaterialSource> {
-    const mongoFilter: FilterQuery<IMaterialSource> = {};
+    const mongoFilter: FilterQuery<IMaterialSource> = {
+      isRestricted: false
+    };
 
     if (filter.subject) mongoFilter.subject = { $regex: filter.subject, $options: 'i' };
     if (filter.course) mongoFilter.course = filter.course;

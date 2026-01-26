@@ -1,6 +1,7 @@
 import { Material, MaterialProps } from "../../../domain/materials/entities/Material";
 import { MaterialType, MaterialDifficulty } from "../../../domain/materials/entities/MaterialTypes";
 
+
 import { IMaterialSource } from "./infraTypes";
 
 export class MaterialMapper {
@@ -24,7 +25,7 @@ export class MaterialMapper {
             uploadedAt: raw.uploadedAt instanceof Date ? raw.uploadedAt.toISOString() : (raw.uploadedAt as string),
             views: (raw.views as number) || 0,
             downloads: (raw.downloads as number) || 0,
-            rating: (raw.rating as number) || 0,
+            updatedAt: raw.updatedAt instanceof Date ? raw.updatedAt.toISOString() : (raw.updatedAt as string),
         };
         return new Material(props);
     }
@@ -48,7 +49,7 @@ export class MaterialMapper {
             uploadedAt: material.uploadedAt,
             views: material.views,
             downloads: material.downloads,
-            rating: material.rating,
+            updatedAt: material.updatedAt,
         };
     }
 
