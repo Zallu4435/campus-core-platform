@@ -45,7 +45,7 @@ clubSchema.pre("save", function (next) {
   next();
 });
 
-export interface IClubRequestDocument extends Omit<ClubRequestData, 'id' | 'clubId' | 'userId'>, Document {
+export interface IClubRequestDocument extends Omit<ClubRequestData, 'id' | '_id' | 'clubId' | 'userId'>, Document {
   _id: mongoose.Types.ObjectId;
   clubId: mongoose.Types.ObjectId | { _id: mongoose.Types.ObjectId; name: string; type: string; about: string; nextMeeting: string; enteredMembers: number };
   userId: mongoose.Types.ObjectId | { _id: mongoose.Types.ObjectId; firstName: string; lastName: string; email: string };

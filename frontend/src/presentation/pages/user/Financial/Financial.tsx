@@ -84,15 +84,22 @@ export default function Financial() {
                 <span className="font-medium">Account Balance:</span>
                 <MdCurrencyRupee />
                 <span>
-                  {studentInfo?.info && studentInfo.info.length > 0 && studentInfo.info[0]?.amount
-                    ? studentInfo.info[0].amount.toLocaleString()
+                  {studentInfo?.info && studentInfo.info.length > 0
+                    ? studentInfo.info.reduce((acc, charge) => acc + (charge.amount || 0), 0).toLocaleString()
                     : '0.00'}
                 </span>
               </div>
               <div>
                 <span className="font-medium">Payment Due:</span>{' '}
-                {studentInfo?.info?.[0]?.paymentDueDate
-                  ? formatDateTime(studentInfo.info[0].paymentDueDate)
+                {studentInfo?.info && studentInfo.info.length > 0
+                  ? (() => {
+                    const dueDates = studentInfo.info
+                      .map(c => c.paymentDueDate ? new Date(c.paymentDueDate).getTime() : Infinity)
+                      .filter(d => d !== Infinity);
+                    if (dueDates.length === 0) return 'N/A';
+                    const minDate = Math.min(...dueDates);
+                    return formatDateTime(new Date(minDate).toISOString());
+                  })()
                   : 'N/A'}
               </div>
               <div>

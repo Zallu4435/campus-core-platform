@@ -43,13 +43,13 @@ export const QUERY = {
  */
 export const FIELDS = {
     /** Fields to select for campus events */
-    EVENT_SELECT: 'title date time location organizer timeframe icon color description fullTime additionalInfo requirements createdAt updatedAt',
+    EVENT_SELECT: 'title date time location organizer timeframe icon color description fullTime additionalInfo requirements status maxParticipants registrationRequired participants createdAt updatedAt',
 
     /** Fields to select for sports */
-    SPORT_SELECT: 'title type teams icon color division headCoach homeGames record upcomingGames createdAt updatedAt',
+    SPORT_SELECT: 'title type category organizer organizerType division headCoach homeGames record upcomingGames participants status teams icon color createdAt updatedAt',
 
     /** Fields to select for clubs */
-    CLUB_SELECT: 'name type members icon color status role nextMeeting about upcomingEvents createdAt updatedAt',
+    CLUB_SELECT: 'name type members icon color status role nextMeeting about upcomingEvents createdBy enteredMembers createdAt updatedAt',
 } as const;
 
 /**

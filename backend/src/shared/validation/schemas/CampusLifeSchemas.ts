@@ -130,6 +130,7 @@ export const CampusLifeSchemas = {
                 .optional(),
             status: Joi.string()
                 .valid('upcoming', 'past', 'all')
+                .allow('')
                 .default('all')
                 .messages({
                     'any.only': 'Status must be one of: upcoming, past, all'
@@ -145,13 +146,18 @@ export const CampusLifeSchemas = {
         query: Joi.object({
             type: Joi.string()
                 .valid('VARSITY SPORTS', 'INTRAMURAL SPORTS')
+                .allow('')
                 .optional()
                 .messages({
                     'any.only': 'Type must be either VARSITY SPORTS or INTRAMURAL SPORTS'
                 }),
             search: Joi.string()
                 .allow('')
-                .optional()
+                .optional(),
+            status: Joi.string()
+                .valid('active', 'past', 'all')
+                .allow('')
+                .default('all')
         })
     }),
 
@@ -165,9 +171,11 @@ export const CampusLifeSchemas = {
                 .allow('')
                 .optional(),
             type: Joi.string()
+                .allow('')
                 .optional(),
             status: Joi.string()
                 .valid('active', 'inactive', 'all')
+                .allow('')
                 .default('all')
                 .messages({
                     'any.only': 'Status must be one of: active, inactive, all'

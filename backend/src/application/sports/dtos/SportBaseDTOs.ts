@@ -30,6 +30,13 @@ export interface SportSummaryDTO {
     icon: string;
     color: string;
     createdAt?: string;
+    category?: string;
+    organizer?: string;
+    organizerType?: string;
+    homeGames?: number;
+    record?: string;
+    upcomingGames?: { date: string; description: string }[];
+    userRequestStatus?: string;
 }
 
 export interface SportRequestDTO {

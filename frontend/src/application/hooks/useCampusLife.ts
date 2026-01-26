@@ -3,20 +3,41 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { campusLifeService } from '../services/campus-life.service';
 import { JoinRequest } from '../../domain/types/user/campus-life';
 
-export const useCampusLife = (activeTab?: string, searchTerm?: string, typeFilter?: string, statusFilter?: string, eventSearchTerm?: string, sportsSearchTerm?: string, sportsStatusFilter?: string) => {
+export interface UseCampusLifeOptions {
+  activeTab?: string;
+  searchTerm?: string;
+  typeFilter?: string;
+  statusFilter?: string;
+  eventSearchTerm?: string;
+  sportsSearchTerm?: string;
+  sportsStatusFilter?: string;
+}
+
+export const useCampusLife = (options: UseCampusLifeOptions = {}) => {
+  const {
+    activeTab,
+    searchTerm,
+    typeFilter,
+    statusFilter,
+    eventSearchTerm,
+    sportsSearchTerm,
+    sportsStatusFilter,
+  } = options;
+
   const queryClient = useQueryClient();
   const {
     data: events,
     isLoading: isLoadingEvents,
     error: eventsError,
   } = useQuery({
-    queryKey: ['events', eventSearchTerm || '', statusFilter || '', typeFilter || ''],
+    queryKey: ['events', eventSearchTerm || '', statusFilter || 'all', typeFilter || ''],
     queryFn: () => {
-      const params = {
-        search: eventSearchTerm,
-        status: statusFilter,
-        type: typeFilter,
+      const params: any = {
+        status: statusFilter && statusFilter !== '' ? statusFilter : 'all',
       };
+      if (eventSearchTerm) params.search = eventSearchTerm;
+      if (typeFilter) params.type = typeFilter;
+
       return campusLifeService.getEvents(params);
     },
     enabled: activeTab === 'Events',
@@ -28,9 +49,13 @@ export const useCampusLife = (activeTab?: string, searchTerm?: string, typeFilte
     isLoading: isLoadingSports,
     error: sportsError,
   } = useQuery({
-    queryKey: ['sports', sportsSearchTerm || '', sportsStatusFilter || ''],
+    queryKey: ['sports', sportsSearchTerm || '', sportsStatusFilter || 'all'],
     queryFn: () => {
-      const params = { search: sportsSearchTerm, status: sportsStatusFilter };
+      const params: any = {
+        status: sportsStatusFilter && sportsStatusFilter !== '' ? sportsStatusFilter : 'all'
+      };
+      if (sportsSearchTerm) params.search = sportsSearchTerm;
+
       return campusLifeService.getSports(params);
     },
     enabled: activeTab === 'Athletics',
@@ -41,8 +66,16 @@ export const useCampusLife = (activeTab?: string, searchTerm?: string, typeFilte
     isLoading: isLoadingClubs,
     error: clubsError,
   } = useQuery({
-    queryKey: ['clubs', searchTerm || '', typeFilter || '', statusFilter || ''],
-    queryFn: () => campusLifeService.getClubs({ search: searchTerm, type: typeFilter, status: statusFilter }),
+    queryKey: ['clubs', searchTerm || '', typeFilter || '', statusFilter || 'all'],
+    queryFn: () => {
+      const params: any = {
+        status: statusFilter && statusFilter !== '' ? statusFilter : 'all'
+      };
+      if (searchTerm) params.search = searchTerm;
+      if (typeFilter) params.type = typeFilter;
+
+      return campusLifeService.getClubs(params);
+    },
     enabled: activeTab === 'Clubs',
     staleTime: 0,
   });
@@ -96,23 +129,23 @@ export const useCampusLife = (activeTab?: string, searchTerm?: string, typeFilte
     events: events || [],
     sports: sports || [],
     clubs: clubs || [],
-    
+
     isLoadingEvents,
     isLoadingSports,
     isLoadingClubs,
-    
+
     eventsError,
     sportsError,
     clubsError,
-    
+
     requestToJoinClub,
     requestToJoinSport,
     requestToJoinEvent,
-    
+
     isJoiningClub,
     isJoiningSport,
     isJoiningEvent,
-    
+
     joinClubError,
     joinSportError,
     joinEventError

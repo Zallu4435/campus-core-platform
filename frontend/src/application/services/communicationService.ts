@@ -126,11 +126,6 @@ export class CommunicationService {
       throw new Error('Failed to fetch admins');
     }
   }
-
-
-  async markMessageAsRead(messageId: string): Promise<void> {
-    await httpClient.patch(`/messages/${messageId}/read`);
-  }
 }
 
 export const communicationService = CommunicationService.getInstance();

@@ -57,6 +57,7 @@ export default function Academics() {
           major={studentInfo?.major}
           academicStanding={studentInfo?.academicStanding}
           advisor={studentInfo?.advisor}
+          catalogYear={studentInfo?.catalogYear}
         />
         <AcademicsTabs activeSubTab={activeSubTab} setActiveSubTab={setActiveSubTab} disabledTabs={['Academic Records', 'Degree Audit']} />
         <main className="flex-grow w-full sm:px-4 md:px-6 py-4 sm:py-6 md:py-8">

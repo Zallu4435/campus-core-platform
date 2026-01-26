@@ -57,14 +57,22 @@ export class GetStudentInfoUseCase implements IGetStudentInfoUseCase {
     if (!result) {
       throw new StudentNotFoundError(input.userId);
     }
-    const { student, program, pendingEnrollments } = result;
+    const { student, program, pendingEnrollments, approvedEnrollments } = result;
 
     const pendingCreditsPromises = pendingEnrollments.map(async (enrollment) => {
       const course = await this._academicRepository.findCourseById(enrollment.courseId);
       return course ? course.credits : 0;
     });
 
-    const pendingCredits = (await Promise.all(pendingCreditsPromises)).reduce((sum, c) => sum + c, 0);
+    const approvedCreditsPromises = approvedEnrollments.map(async (enrollment) => {
+      const course = await this._academicRepository.findCourseById(enrollment.courseId);
+      return course ? course.credits : 0;
+    });
+
+    const [pendingCredits, enrolledCredits] = await Promise.all([
+      (await Promise.all(pendingCreditsPromises)).reduce((sum, c) => sum + c, 0),
+      (await Promise.all(approvedCreditsPromises)).reduce((sum, c) => sum + c, 0)
+    ]);
 
     const response: GetStudentInfoResponseDTO = {
       name: student.fullName,
@@ -77,7 +85,7 @@ export class GetStudentInfoUseCase implements IGetStudentInfoUseCase {
       academicStanding: 'Good',
       advisor: 'Unknown',
       pendingCredits,
-      credits: program.credits
+      credits: enrolledCredits
     };
     return { data: response, success: true };
   }

@@ -8,7 +8,7 @@ import type { Payment, FeesPaymentsSectionProps, ExtendedCharge } from '../../..
 import { financialService } from '../../../../application/services/financialService';
 
 export default function FeesPaymentsSection({ studentInfo, paymentHistory, onPaymentSuccess }: FeesPaymentsSectionProps) {
-  const { createPayment, loading, error } = usePaymentsManagement();
+  const { createPayment, isCreatingPayment, createPaymentError } = usePaymentsManagement(1, 10, {}, '', 'all', false);
   const { styles, theme } = usePreferences();
   const [selectedCharge, setSelectedCharge] = useState<ExtendedCharge | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<'Razorpay'>('Razorpay');
@@ -384,9 +384,9 @@ export default function FeesPaymentsSection({ studentInfo, paymentHistory, onPay
               <div className={`relative overflow-hidden rounded-lg ${styles.card.background} p-4 border ${styles.border} group/item hover:${styles.card.hover} transition-all duration-300 flex-1 min-h-[200px] flex flex-col justify-between`}>
                 <div className={`absolute -inset-0.5 bg-gradient-to-r ${styles.orb.secondary} rounded-lg blur transition-all duration-300`}></div>
                 <div className="relative z-10 flex flex-col h-full">
-                  {error && (
+                  {createPaymentError && (
                     <div className={`mb-4 p-3 ${styles.status.error} rounded-lg text-sm`}>
-                      {error.toString()}
+                      {createPaymentError.message}
                     </div>
                   )}
                   {amountError && (
@@ -431,7 +431,7 @@ export default function FeesPaymentsSection({ studentInfo, paymentHistory, onPay
                               checked={paymentMethod === 'Razorpay'}
                               onChange={() => setPaymentMethod('Razorpay')}
                               className={`mr-2 accent-amber-500 focus:ring-amber-500`}
-                              disabled={loading}
+                              disabled={isCreatingPayment}
                             />
                             Razorpay
                           </label>
@@ -441,10 +441,10 @@ export default function FeesPaymentsSection({ studentInfo, paymentHistory, onPay
                     <div className="mt-4">
                       <button
                         type="submit"
-                        disabled={loading || !selectedCharge || paymentAmount <= 0}
+                        disabled={isCreatingPayment || !selectedCharge || paymentAmount <= 0}
                         className={`group w-full bg-gradient-to-r ${styles.accent} hover:${styles.button.primary} text-white py-2 sm:py-3 px-4 rounded-full font-medium transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center space-x-2 text-sm sm:text-base`}
                       >
-                        <span>{loading ? 'Processing...' : 'Proceed to Payment'}</span>
+                        <span>{isCreatingPayment ? 'Processing...' : 'Proceed to Payment'}</span>
                         <FaMoneyCheckAlt size={12} className="group-hover:translate-x-1 transition-transform duration-300" />
                       </button>
                     </div>

@@ -39,7 +39,7 @@ const teamSchema = new Schema<ISportDocument>(
   { timestamps: true }
 );
 
-export interface ISportRequestDocument extends Omit<SportRequestData, 'id' | 'sportId' | 'userId'>, Document {
+export interface ISportRequestDocument extends Omit<SportRequestData, 'id' | '_id' | 'sportId' | 'userId'>, Document {
   _id: mongoose.Types.ObjectId;
   sportId: mongoose.Types.ObjectId | { _id: mongoose.Types.ObjectId; title: string; type: string };
   userId: mongoose.Types.ObjectId | { _id: mongoose.Types.ObjectId; email: string; firstName?: string; lastName?: string };

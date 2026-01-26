@@ -3,10 +3,11 @@ import {
     RepositorySportData,
     SportSummaryDTO
 } from "../../../../application/sports/dtos/SportBaseDTOs";
-import { SportData, SportStatus } from "../../../../domain/sports/entities/SportTypes";
+import { safelyConvertIdToString } from "../../../../shared/utils/IdUtils";
+import { SportData, SportStatus, SportRequestData, SportRequestStatus } from "../../../../domain/sports/entities/SportTypes";
 
 export class SportMapper {
-    static toDomain(data: SportData): Sport {
+    static toDomain(data: SportData, userRequestStatus?: string | null): Sport {
         if (!data) {
             throw new Error("Cannot map null data to domain entity");
         }
@@ -29,14 +30,35 @@ export class SportMapper {
             status: data.status,
             createdAt: data.createdAt,
             updatedAt: data.updatedAt,
+            userRequestStatus: userRequestStatus || undefined
         });
     }
 
-    static toDomainList(dataList: unknown[], requests: unknown[] = [], userId?: string): Sport[] {
+    static toDomainList(dataList: unknown[], requests: SportRequestData[] = [], userId?: string): Sport[] {
         return dataList.map(item => {
             const doc = item as Record<string, unknown>;
+            // Match request status if requests and userId are provided
+            let userRequestStatus: string | null = null;
+
+            // Flexible ID handling for doc
+            const docId = safelyConvertIdToString(doc.id || doc._id);
+
+            if (userId && requests.length > 0) {
+                // Check both string ID and object ID structure in requests
+                const userRequest = requests.find(req => {
+                    const reqSportId = safelyConvertIdToString(req.sportId);
+                    const reqUserId = safelyConvertIdToString(req.userId);
+
+                    return reqSportId === docId && reqUserId === userId;
+                });
+
+                if (userRequest) {
+                    userRequestStatus = userRequest.status;
+                }
+            }
+
             // Flexible mapping for legacy/mixed data
-            const id = (doc.id || (doc._id ? String(doc._id) : '')) as string;
+            const id = docId;
             return new Sport({
                 id,
                 title: (doc.title as string) || "",
@@ -55,6 +77,7 @@ export class SportMapper {
                 status: (doc.status as SportStatus) || SportStatus.Active,
                 createdAt: doc.createdAt as Date,
                 updatedAt: doc.updatedAt as Date,
+                userRequestStatus: userRequestStatus || undefined
             });
         });
     }
@@ -121,7 +144,14 @@ export class SportMapper {
             participants: data.participants || 0,
             icon: data.icon,
             color: data.color,
-            createdAt: data.createdAt ? data.createdAt.toISOString() : undefined
+            createdAt: data.createdAt ? data.createdAt.toISOString() : undefined,
+            category: data.category || "",
+            organizer: data.organizer || "",
+            organizerType: data.organizerType || "",
+            homeGames: data.homeGames,
+            record: data.record || "",
+            upcomingGames: data.upcomingGames || [],
+            userRequestStatus: (data as Sport).userRequestStatus
         };
     }
 

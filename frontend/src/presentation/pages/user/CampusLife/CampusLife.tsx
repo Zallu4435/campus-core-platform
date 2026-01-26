@@ -12,17 +12,17 @@ export default function CampusLife() {
   const [activeTab, setActiveTab] = useState('Events');
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [eventSearchTerm, setEventSearchTerm] = useState('');
-  const [athleticsStatusFilter, setAthleticsStatusFilter] = useState('');
+  const [athleticsStatusFilter, setAthleticsStatusFilter] = useState('all');
   const [athleticsSearchTerm, setAthleticsSearchTerm] = useState('');
 
   useEffect(() => {
     setSearchTerm('');
     setTypeFilter('');
-    setStatusFilter('');
+    setStatusFilter('all');
     setEventSearchTerm('');
-    setAthleticsStatusFilter('');
+    setAthleticsStatusFilter('all');
     setAthleticsSearchTerm('');
   }, [activeTab]);
 
@@ -34,14 +34,15 @@ export default function CampusLife() {
     sportsError,
     clubs,
     clubsError,
-  } = useCampusLife(
+  } = useCampusLife({
     activeTab,
     searchTerm,
     typeFilter,
     statusFilter,
     eventSearchTerm,
-    athleticsSearchTerm
-  );
+    sportsSearchTerm: athleticsSearchTerm,
+    sportsStatusFilter: athleticsStatusFilter
+  });
 
   const error =
     (activeTab === 'Events' && eventsError) ||
@@ -54,7 +55,7 @@ export default function CampusLife() {
 
   return (
     <div className={`min-h-screen flex flex-col relative overflow-hidden ${styles.background}`}>
-      <div className="relative z-10 w-full sm:px-4 md:px-6 py-6">
+      <div className="relative z-10 w-full px-2 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6">
         <div className={`group relative overflow-hidden rounded-xl sm:rounded-2xl shadow-xl ${styles.card.background} border ${styles.border} hover:${styles.card.hover} transition-all duration-300`}>
           <div className={`absolute -inset-0.5 bg-gradient-to-r ${styles.orb.secondary} rounded-xl sm:rounded-2xl blur transition-all duration-300`}></div>
           <div className="relative z-10 p-3 sm:p-5 md:p-6">
@@ -73,10 +74,10 @@ export default function CampusLife() {
                 <div className={`h-0.5 sm:h-1 w-12 sm:w-16 bg-gradient-to-r ${styles.accent} rounded-full mt-1 group-hover:w-16 sm:group-hover:w-24 transition-all duration-300`}></div>
               </div>
             </div>
-            <p className={`mt-2 text-sm ${styles.textSecondary}`}>
-              {activeTab === 'Events' && `${(events || []).length} Upcoming Events`}
-              {activeTab === 'Clubs' && `${(clubs || []).length} Clubs Available`}
-              {activeTab === 'Athletics' && `${(sports || []).length} Sports Teams`}
+            <p className={`mt-2 text-xs sm:text-sm ${styles.textSecondary} max-w-2xl`}>
+              {activeTab === 'Events' && `Discover ${(events || []).length} upcoming campus events, workshops and seminars.`}
+              {activeTab === 'Clubs' && `Explore ${(clubs || []).length} student organizations and interest groups.`}
+              {activeTab === 'Athletics' && `Join ${(sports || []).length} university sports teams and athletic programs.`}
             </p>
           </div>
         </div>

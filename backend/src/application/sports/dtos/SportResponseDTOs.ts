@@ -2,6 +2,7 @@ import { SportSummaryDTO, SportRequestDTO, RepositorySportData } from "./SportBa
 
 export interface GetSportsResponseDTO {
     data: SportSummaryDTO[];
+    sports: SportSummaryDTO[];
     totalItems: number;
     totalPages: number;
     currentPage: number;

@@ -64,11 +64,15 @@ export class GetCampusLifeOverviewUseCase implements IGetCampusLifeOverviewUseCa
       [],
       s.icon,
       s.color,
-      s.division,
-      s.headCoach,
-      [],
-      s.record,
-      [],
+      s.category || "",
+      s.organizer || "",
+      s.organizerType || "",
+      s.division || "",
+      s.headCoach || "",
+      s.homeGames || 0,
+      s.record || "",
+      s.upcomingGames || [],
+      s.participants || 0,
       s.createdAt?.toISOString() || "",
       s.updatedAt?.toISOString() || ""
     ));
@@ -145,6 +149,10 @@ export class GetEventByIdUseCase implements IGetEventByIdUseCase {
           String(rawEvent.fullTime),
           rawEvent.additionalInfo,
           rawEvent.requirements,
+          rawEvent.status,
+          rawEvent.maxParticipants,
+          rawEvent.registrationRequired,
+          rawEvent.participants,
           rawEvent.createdAt.toISOString(),
           rawEvent.updatedAt.toISOString()
         )
@@ -174,10 +182,13 @@ export class GetSportsUseCase implements IGetSportsUseCase {
 
     const { sports, requests, totalItems } = await this._campusLifeRepository.getSports(sportsRequest);
 
+    const domainSports = SportMapper.toDomainList(sports, requests as any[], userId);
+    const mappedSports = SportMapper.toSummaryDTOList(domainSports);
     return {
       success: true,
       data: {
-        data: SportMapper.toSummaryDTOList(sports),
+        data: mappedSports,
+        sports: mappedSports,
         totalItems,
         totalPages: Math.ceil(totalItems / 10),
         currentPage: 1
@@ -276,6 +287,8 @@ export class GetClubByIdUseCase implements IGetClubByIdUseCase {
           club.nextMeeting,
           club.about || "",
           club.upcomingEvents || [],
+          club.createdBy || "",
+          club.enteredMembers || 0,
           club.createdAt.toISOString(),
           club.updatedAt.toISOString()
         )

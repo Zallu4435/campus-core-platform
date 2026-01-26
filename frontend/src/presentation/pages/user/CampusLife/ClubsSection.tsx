@@ -6,6 +6,7 @@ import ReactDOM from 'react-dom';
 import type { ClubType, ClubUpcomingEvent } from '../../../../domain/types/user/campus-life';
 import { toast } from 'react-hot-toast';
 import { useCampusLife } from '../../../../application/hooks/useCampusLife';
+import { formatDate } from '../../../../shared/utils/dateUtils';
 
 export default function ClubsSection({ searchTerm, typeFilter, statusFilter, onFilterChange }: {
   searchTerm: string;
@@ -13,7 +14,12 @@ export default function ClubsSection({ searchTerm, typeFilter, statusFilter, onF
   statusFilter: string;
   onFilterChange: (filters: { search: string; type: string; status: string }) => void;
 }) {
-  const { clubs, requestToJoinClub, isJoiningClub, joinClubError, isLoadingClubs, clubsError } = useCampusLife('Clubs', searchTerm, typeFilter, statusFilter);
+  const { clubs, requestToJoinClub, isJoiningClub, joinClubError, isLoadingClubs, clubsError } = useCampusLife({
+    activeTab: 'Clubs',
+    searchTerm,
+    typeFilter,
+    statusFilter
+  });
   const [selectedClub, setSelectedClub] = useState<ClubType | null>(null);
   const [showJoinForm, setShowJoinForm] = useState(false);
   const [showMobileDetails, setShowMobileDetails] = useState(false);
@@ -31,14 +37,10 @@ export default function ClubsSection({ searchTerm, typeFilter, statusFilter, onF
   };
 
   useEffect(() => {
-    if (clubs && clubs.length > 0) {
-      if (!selectedClub) {
-        setSelectedClub(clubs[0]);
-      } else {
-        const updatedClub = clubs.find(c => c.id === selectedClub.id);
-        if (updatedClub) {
-          setSelectedClub(updatedClub);
-        }
+    if (clubs && clubs.length > 0 && selectedClub) {
+      const updatedClub = clubs.find(c => c.id === selectedClub.id);
+      if (updatedClub) {
+        setSelectedClub(updatedClub);
       }
     }
   }, [clubs, selectedClub]);
@@ -58,9 +60,9 @@ export default function ClubsSection({ searchTerm, typeFilter, statusFilter, onF
     if (!selectedClub) return;
     try {
       await requestToJoinClub({ clubId: selectedClub.id, request });
-      
+
       toast.success('Successfully submitted join request for club!');
-      
+
       setShowJoinForm(false);
     } catch (error) {
       let errorMsg = 'Failed to submit join request';
@@ -76,7 +78,7 @@ export default function ClubsSection({ searchTerm, typeFilter, statusFilter, onF
       } else if (typeof error === 'string') {
         errorMsg = error;
       }
-      
+
       toast.error(errorMsg);
       console.error('Failed to submit join request:', error);
     }
@@ -91,7 +93,7 @@ export default function ClubsSection({ searchTerm, typeFilter, statusFilter, onF
 
   useEffect(() => {
     if (debounceTimeout.current) clearTimeout(debounceTimeout.current);
-    
+
     if (searchInput !== searchTerm) {
       setIsSearching(true);
       debounceTimeout.current = setTimeout(() => {
@@ -101,7 +103,7 @@ export default function ClubsSection({ searchTerm, typeFilter, statusFilter, onF
     } else {
       setIsSearching(false);
     }
-    
+
     return () => {
       if (debounceTimeout.current) clearTimeout(debounceTimeout.current);
     };
@@ -190,14 +192,14 @@ export default function ClubsSection({ searchTerm, typeFilter, statusFilter, onF
                             onFilterChange({ search: searchTerm, type: typeFilter, status: e.target.value });
                           }}
                         >
-                          <option value="">All Statuses</option>
+                          <option value="all">All Statuses</option>
                           <option value="active">Active</option>
                           <option value="inactive">Inactive</option>
                         </select>
                         <button
                           className="mt-2 py-2 px-4 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-sm border border-slate-200 transition"
                           onClick={() => {
-                            onFilterChange({ search: '', type: '', status: '' });
+                            onFilterChange({ search: '', type: '', status: 'all' });
                             setFilterOpen(false);
                           }}
                         >
@@ -268,7 +270,8 @@ export default function ClubsSection({ searchTerm, typeFilter, statusFilter, onF
               {!isLoadingClubs && clubs.map((club: ClubType) => (
                 <div
                   key={club.id}
-                  className={`p-4 cursor-pointer group/item hover:bg-amber-50/50 transition-all duration-300 ${selectedClub?.id === club.id ? 'bg-orange-50/70' : ''}`}
+                  className={`p-4 cursor-pointer group/item hover:bg-amber-50/50 transition-all duration-300 border-l-4 ${selectedClub?.id === club.id ? 'bg-orange-50/70 border-orange-400' : 'border-transparent hover:border-amber-200'
+                    }`}
                   onClick={() => handleClubClick(club)}
                 >
                   <div className="flex items-center space-x-3">
@@ -280,7 +283,14 @@ export default function ClubsSection({ searchTerm, typeFilter, statusFilter, onF
                     </div>
                     <div className="flex-grow">
                       <h4 className={`font-semibold ${styles.textPrimary} text-sm sm:text-base truncate`}>{club.name}</h4>
-                      <div className={`text-xs sm:text-sm ${styles.textSecondary}`}>{club.role} • {club.nextMeeting}</div>
+                      <div className={`text-xs sm:text-sm ${styles.textSecondary} flex justify-between items-center`}>
+                        <span>{club.role || 'Member'}</span>
+                        <span className="opacity-60 text-[10px]">
+                          {club.nextMeeting && club.nextMeeting !== 'TBA'
+                            ? `Next: ${club.nextMeeting}`
+                            : `Since ${formatDate(club.createdAt || '')}`}
+                        </span>
+                      </div>
                     </div>
                     {selectedClub?.id === club.id ? (
                       <div className={`w-2 h-2 rounded-full ${styles.status.warning}`}></div>
@@ -321,7 +331,12 @@ export default function ClubsSection({ searchTerm, typeFilter, statusFilter, onF
                       </div>
                       <div>
                         <h3 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>{selectedClub.name}</h3>
-                        <p className={`text-xs ${styles.textSecondary}`}>{selectedClub.type} • {selectedClub.members}</p>
+                        <div className="flex items-center space-x-2">
+                          <p className={`text-xs ${styles.textSecondary}`}>{selectedClub.type} • {selectedClub.members} members</p>
+                          {selectedClub.createdAt && (
+                            <span className={`text-[10px] ${styles.textSecondary} opacity-60`}>• {formatDate(selectedClub.createdAt)}</span>
+                          )}
+                        </div>
                       </div>
                     </div>
                     {selectedClub.status && (
@@ -330,11 +345,31 @@ export default function ClubsSection({ searchTerm, typeFilter, statusFilter, onF
                       </div>
                     )}
                     <h4 className={`text-base font-bold ${styles.status.warning} mb-2`}>About</h4>
-                    <p className={`text-sm ${styles.textPrimary} mb-6`}>{selectedClub.about}</p>
+                    <p className={`text-sm ${styles.textPrimary} mb-4`}>{selectedClub.about}</p>
+
+                    <h4 className={`text-base font-bold ${styles.status.warning} mb-2`}>Leadership & Community</h4>
+                    <div className={`relative overflow-hidden rounded-lg p-3 mb-4 border ${styles.border} group/item hover:${styles.card.hover} transition-all duration-300`}>
+                      <div className={`absolute -inset-0.5 bg-gradient-to-r ${styles.orb.secondary} rounded-lg blur transition-all duration-300`}></div>
+                      <div className="relative z-10">
+                        <div className={`mb-2 text-sm ${styles.textPrimary}`}>
+                          <span className="font-medium">Founded By:</span>
+                          <span className="ml-2">{selectedClub.createdBy || 'University Administration'}</span>
+                        </div>
+                        <div className={`mb-2 text-sm ${styles.textPrimary}`}>
+                          <span className="font-medium">Active Membership:</span>
+                          <span className="ml-2">{selectedClub.members} students</span>
+                        </div>
+                        <div className={`text-sm ${styles.textPrimary}`}>
+                          <span className="font-medium">Your Role:</span>
+                          <span className="ml-2 font-semibold text-orange-600">{selectedClub.role || 'Prospective Member'}</span>
+                        </div>
+                      </div>
+                    </div>
+
                     {selectedClub.upcomingEvents && selectedClub.upcomingEvents.length > 0 && (
                       <>
-                        <h4 className={`text-base font-bold ${styles.status.warning} mb-2`}>Upcoming Events</h4>
-                        <ul className={`relative overflow-hidden rounded-lg p-4 mb-4 border ${styles.border} group/item hover:${styles.card.hover} transition-all duration-300`}>
+                        <h4 className={`text-base font-bold ${styles.status.warning} mb-2`}>Upcoming Event Schedule</h4>
+                        <ul className={`relative overflow-hidden rounded-lg p-3 mb-4 border ${styles.border} group/item hover:${styles.card.hover} transition-all duration-300`}>
                           <div className={`absolute -inset-0.5 bg-gradient-to-r ${styles.orb.secondary} rounded-lg blur transition-all duration-300`}></div>
                           <div className="relative z-10">
                             {selectedClub.upcomingEvents.map((event: string | ClubUpcomingEvent, index: number) => {
@@ -353,9 +388,9 @@ export default function ClubsSection({ searchTerm, typeFilter, statusFilter, onF
                                     <span className={`${styles.status.warning} mr-2`}>•</span>
                                     <span>
                                       {hasDate && hasDescription
-                                        ? `${event.date}: ${event.description}`
+                                        ? `${formatDate(event.date || '')}: ${event.description}`
                                         : hasDate
-                                          ? event.date
+                                          ? formatDate(event.date || '')
                                           : hasDescription
                                             ? event.description
                                             : ''}
@@ -367,16 +402,6 @@ export default function ClubsSection({ searchTerm, typeFilter, statusFilter, onF
                             })}
                           </div>
                         </ul>
-                        <div className="flex flex-col gap-3 mt-4">
-                          <button className={`group/btn bg-gradient-to-r ${styles.accent} hover:${styles.button.primary} text-white py-2 px-4 rounded-full font-medium transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-105 flex items-center justify-center space-x-2 text-sm`}>
-                            <span>Get Tickets</span>
-                            <FaCalendarAlt size={12} className="group-hover/btn:translate-x-1 transition-transform duration-300" />
-                          </button>
-                          <button className={`group/btn border ${styles.border} ${styles.status.warning} hover:bg-amber-50 py-2 px-4 rounded-full font-medium transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-105 flex items-center justify-center space-x-2 text-sm`}>
-                            <span>View Calendar</span>
-                            <FaCalendarAlt size={12} className="group-hover/btn:translate-x-1 transition-transform duration-300" />
-                          </button>
-                        </div>
                       </>
                     )}
                     {!showJoinForm ? (
@@ -446,18 +471,42 @@ export default function ClubsSection({ searchTerm, typeFilter, statusFilter, onF
                     </div>
                     <div>
                       <h3 className={`text-lg sm:text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>{selectedClub.name}</h3>
-                      <p className={`text-sm ${styles.textSecondary}`}>{selectedClub.type} • {selectedClub.members}</p>
+                      <div className="flex items-center space-x-2">
+                        <p className={`text-sm ${styles.textSecondary}`}>{selectedClub.type} • {selectedClub.members} members</p>
+                        {selectedClub.createdAt && (
+                          <span className={`text-[10px] ${styles.textSecondary} opacity-60`}>• {formatDate(selectedClub.createdAt)}</span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  {selectedClub.status && (
-                    <div className={`bg-green-500 text-white px-3 py-1 rounded-full text-xs sm:text-sm font-medium`}>
-                      {selectedClub.status}
-                    </div>
-                  )}
+                  <div className={`text-xs sm:text-sm md:text-base ${styles.textSecondary} sm:text-right px-4 sm:px-0`}>
+                    <div className={`font-medium ${styles.textPrimary}`}>{selectedClub.nextMeeting ? 'Next Meeting' : ''}</div>
+                    <div className={`${styles.status.warning}`}>{selectedClub.nextMeeting ? formatDate(selectedClub.nextMeeting) : 'TBA'}</div>
+                  </div>
                 </div>
                 <div className="p-4 sm:p-6">
                   <h4 className={`text-base font-bold ${styles.status.warning} mb-2`}>About</h4>
                   <p className={`text-sm sm:text-base ${styles.textPrimary} mb-6`}>{selectedClub.about}</p>
+
+                  <h4 className={`text-base font-bold ${styles.status.warning} mb-2`}>Leadership & Community</h4>
+                  <div className={`relative overflow-hidden rounded-lg p-4 mb-6 border ${styles.border} group/item hover:${styles.card.hover} transition-all duration-300`}>
+                    <div className={`absolute -inset-0.5 bg-gradient-to-r ${styles.orb.secondary} rounded-lg blur transition-all duration-300`}></div>
+                    <div className="relative z-10">
+                      <div className={`mb-2 text-sm sm:text-base ${styles.textPrimary}`}>
+                        <span className="font-medium">Founded By:</span>
+                        <span className="ml-2">{selectedClub.createdBy || 'University Administration'}</span>
+                      </div>
+                      <div className={`mb-2 text-sm sm:text-base ${styles.textPrimary}`}>
+                        <span className="font-medium">Active Membership:</span>
+                        <span className="ml-2">{selectedClub.members} active students</span>
+                      </div>
+                      <div className={`text-sm sm:text-base ${styles.textPrimary}`}>
+                        <span className="font-medium">Your Role:</span>
+                        <span className="ml-2 font-semibold text-orange-600">{selectedClub.role || 'Prospective Member'}</span>
+                      </div>
+                    </div>
+                  </div>
+
                   {selectedClub.upcomingEvents && (
                     <>
                       <h4 className={`text-base font-bold ${styles.status.warning} mb-2`}>Upcoming Events</h4>
@@ -480,9 +529,9 @@ export default function ClubsSection({ searchTerm, typeFilter, statusFilter, onF
                                   <span className={`${styles.status.warning} mr-2`}>•</span>
                                   <span>
                                     {hasDate && hasDescription
-                                      ? `${event.date}: ${event.description}`
+                                      ? `${formatDate(event.date || '')}: ${event.description}`
                                       : hasDate
-                                        ? event.date
+                                        ? formatDate(event.date || '')
                                         : hasDescription
                                           ? event.description
                                           : ''}
@@ -494,16 +543,6 @@ export default function ClubsSection({ searchTerm, typeFilter, statusFilter, onF
                           })}
                         </div>
                       </ul>
-                      <div className="flex flex-col sm:flex-row gap-3 mt-4">
-                        <button className={`group/btn bg-gradient-to-r ${styles.accent} hover:${styles.button.primary} text-white py-2 sm:py-3 px-4 rounded-full font-medium transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-105 flex items-center justify-center space-x-2 text-sm sm:text-base`}>
-                          <span>Get Tickets</span>
-                          <FaCalendarAlt size={12} className="group-hover/btn:translate-x-1 transition-transform duration-300" />
-                        </button>
-                        <button className={`group/btn border ${styles.border} ${styles.status.warning} hover:bg-amber-50 py-2 sm:py-3 px-4 rounded-full font-medium transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-105 flex items-center justify-center space-x-2 text-sm sm:text-base`}>
-                          <span>View Calendar</span>
-                          <FaCalendarAlt size={12} className="group-hover/btn:translate-x-1 transition-transform duration-300" />
-                        </button>
-                      </div>
                     </>
                   )}
                   {!showJoinForm ? (

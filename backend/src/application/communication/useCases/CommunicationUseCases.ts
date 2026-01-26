@@ -83,7 +83,7 @@ export class GetSentMessagesUseCase implements IGetSentMessagesUseCase {
     }
 
     try {
-      const mappedMessages = result.messages.map((message) => CommunicationDTOMapper.toAdminSentMessageDTO(message));
+      const mappedMessages = result.messages.map((message) => CommunicationDTOMapper.toMessageSummaryDTO(message));
       return {
         messages: mappedMessages,
         pagination: {

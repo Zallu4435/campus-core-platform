@@ -1,18 +1,23 @@
 import { useState, useCallback } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { communicationService } from '../../application/services/communicationService';
 import debounce from 'lodash/debounce';
 import { Message, MessageForm, UseCommunicationManagementProps } from '../../domain/types/user/communication';
 import { RecipientType, User } from '../../domain/types/management/communicationmanagement';
 
 
-export const useCommunicationManagement = ({ isAdmin = false }: UseCommunicationManagementProps = {}) => {
+export const useCommunicationManagement = ({
+  isAdmin = false,
+  fetchInbox = true,
+  fetchSent = true
+}: UseCommunicationManagementProps = {}) => {
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState({
     status: 'All Statuses',
     to: 'All Recipients',
     search: '',
   });
+  const queryClient = useQueryClient();
 
   const ITEMS_PER_PAGE = 10;
 
@@ -26,6 +31,7 @@ export const useCommunicationManagement = ({ isAdmin = false }: UseCommunication
         status: filters.status !== 'All Statuses' ? (filters.status.toLowerCase() as 'read' | 'unread') : undefined,
         isAdmin,
       }),
+    enabled: fetchInbox,
   });
 
   const sentQuery = useQuery({
@@ -42,25 +48,28 @@ export const useCommunicationManagement = ({ isAdmin = false }: UseCommunication
         to: filters.to !== 'All Recipients' ? filters.to : undefined,
         isAdmin,
       }),
+    enabled: fetchSent,
   });
 
   const sendMessageMutation = useMutation({
     mutationFn: (form: MessageForm) => communicationService.sendMessage(form),
     onSuccess: () => {
-      sentQuery.refetch();
+      queryClient.invalidateQueries({ queryKey: ['sentMessages'] });
     },
   });
 
   const markAsReadMutation = useMutation({
     mutationFn: (messageId: string) => communicationService.markAsRead(messageId, isAdmin),
-    onSuccess: () => inboxQuery.refetch(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['inboxMessages'] });
+    },
   });
 
   const deleteMessageMutation = useMutation({
     mutationFn: (messageId: string) => communicationService.deleteMessage(messageId, isAdmin),
     onSuccess: () => {
-      inboxQuery.refetch();
-      sentQuery.refetch();
+      queryClient.invalidateQueries({ queryKey: ['inboxMessages'] });
+      queryClient.invalidateQueries({ queryKey: ['sentMessages'] });
     },
   });
 
@@ -88,10 +97,8 @@ export const useCommunicationManagement = ({ isAdmin = false }: UseCommunication
     console.log('Archiving message:', message);
   };
 
-  const handleViewMessage = (message: Message) => {
-    if (message.status === 'unread') {
-      markAsReadMutation.mutate(message.id);
-    }
+  const handleViewMessage = (messageId: string) => {
+    markAsReadMutation.mutate(messageId);
   };
 
   const fetchSentMessages = () => {
@@ -114,10 +121,9 @@ export const useCommunicationManagement = ({ isAdmin = false }: UseCommunication
     []
   );
 
-  const mapMessage = (msg: any) => {
+  const mapMessage = useCallback((msg: any) => {
     try {
-
-      const messageId = msg._id || msg.id || msg._id?.toString() || msg.id?.toString();
+      const messageId = msg._id || msg.id || (msg._id && msg._id.toString()) || (msg.id && msg.id.toString());
 
       if (!messageId) {
         console.error('Message missing ID:', msg);
@@ -125,7 +131,7 @@ export const useCommunicationManagement = ({ isAdmin = false }: UseCommunication
       }
 
       let sender = undefined;
-      if (msg.sender && msg.sender._id) {
+      if (msg.sender) {
         sender = {
           id: msg.sender._id || msg.sender.id,
           name: msg.sender.name || 'Unknown',
@@ -149,7 +155,7 @@ export const useCommunicationManagement = ({ isAdmin = false }: UseCommunication
           name: recipient.name || 'Unknown',
           email: recipient.email || 'unknown@email.com',
           role: recipient.role || 'unknown',
-          status: recipient.status || 'read'
+          status: (recipient.status || 'read') as 'read' | 'unread'
         }));
       }
 
@@ -163,7 +169,7 @@ export const useCommunicationManagement = ({ isAdmin = false }: UseCommunication
         isBroadcast: msg.isBroadcast || false,
         createdAt: msg.createdAt || new Date().toISOString(),
         updatedAt: msg.updatedAt || new Date().toISOString(),
-        status: msg.status || 'read',
+        status: (msg.status || 'read') as 'read' | 'unread' | 'delivered' | 'opened',
         recipientsCount: msg.recipientCount || recipients.length
       };
       return mappedMessage;
@@ -171,7 +177,7 @@ export const useCommunicationManagement = ({ isAdmin = false }: UseCommunication
       console.error('Error mapping message:', error, msg);
       return null;
     }
-  };
+  }, []);
 
   const fetchUsers = useCallback(async (type: RecipientType, search?: string): Promise<User[]> => {
     try {
@@ -255,8 +261,8 @@ export const useCommunicationManagement = ({ isAdmin = false }: UseCommunication
   }, [sentQuery, page, filters, isAdmin]);
 
   return {
-    inboxMessages: (inboxQuery.data?.messages || []).map(mapMessage).filter(Boolean),
-    sentMessages: (sentQuery.data?.messages || []).map(mapMessage).filter(Boolean),
+    inboxMessages: (inboxQuery.data?.messages || []).map(mapMessage).filter(Boolean) as Message[],
+    sentMessages: (sentQuery.data?.messages || []).map(mapMessage).filter(Boolean) as Message[],
     totalInboxPages: inboxQuery.data?.pagination.totalPages || 1,
     totalSentPages: sentQuery.data?.pagination.totalPages || 1,
     isLoadingInbox: inboxQuery.isLoading,

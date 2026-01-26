@@ -42,8 +42,9 @@ export const useCourseSearch = (searchQuery: string, debounceMs: number = 500) =
   return useQuery<Course[]>({
     queryKey: ['courses', debouncedQuery],
     queryFn: () => academicService.getCourses(debouncedQuery),
-    staleTime: 5 * 60 * 1000, 
-    gcTime: 10 * 60 * 1000, 
+    enabled: !!debouncedQuery,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 };
 

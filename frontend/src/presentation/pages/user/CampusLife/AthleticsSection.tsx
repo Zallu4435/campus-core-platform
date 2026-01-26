@@ -6,10 +6,15 @@ import { usePreferences } from '../../../../application/context/PreferencesConte
 import ReactDOM from 'react-dom';
 import type { Sport } from '../../../../domain/types/user/campus-life';
 import { toast } from 'react-hot-toast';
+import { formatDate } from '../../../../shared/utils/dateUtils';
 
 
 export default function AthleticsSection({ statusFilter, searchTerm, onFilterChange }: { statusFilter: string; searchTerm: string; onFilterChange: (filters: { search: string; status: string }) => void }) {
-  const { sports, requestToJoinSport, isJoiningSport, joinSportError } = useCampusLife('Athletics', '', '', '', searchTerm, statusFilter);
+  const { sports, requestToJoinSport, isJoiningSport, joinSportError } = useCampusLife({
+    activeTab: 'Athletics',
+    sportsSearchTerm: searchTerm,
+    sportsStatusFilter: statusFilter
+  });
   const [selectedSport, setSelectedSport] = useState<Sport | null>(null);
   const [showJoinForm, setShowJoinForm] = useState(false);
   const [showMobileDetails, setShowMobileDetails] = useState(false);
@@ -27,21 +32,17 @@ export default function AthleticsSection({ statusFilter, searchTerm, onFilterCha
   }, [searchTerm]);
 
   useEffect(() => {
-    if (sports && sports.length > 0) {
-      if (!selectedSport) {
-        setSelectedSport(sports[0]);
-      } else {
-        const updatedSport = sports.find(s => s.id === selectedSport.id);
-        if (updatedSport) {
-          setSelectedSport(updatedSport);
-        }
+    if (sports && sports.length > 0 && selectedSport) {
+      const updatedSport = sports.find(s => s.id === selectedSport.id);
+      if (updatedSport) {
+        setSelectedSport(updatedSport);
       }
     }
   }, [sports, selectedSport]);
 
   useEffect(() => {
     if (debounceTimeout.current) clearTimeout(debounceTimeout.current);
-    
+
     if (searchInput !== searchTerm) {
       setIsSearching(true);
       debounceTimeout.current = setTimeout(() => {
@@ -51,7 +52,7 @@ export default function AthleticsSection({ statusFilter, searchTerm, onFilterCha
     } else {
       setIsSearching(false);
     }
-    
+
     return () => {
       if (debounceTimeout.current) clearTimeout(debounceTimeout.current);
     };
@@ -61,9 +62,9 @@ export default function AthleticsSection({ statusFilter, searchTerm, onFilterCha
     if (!selectedSport) return;
     try {
       await requestToJoinSport({ sportId: selectedSport.id, request });
-      
+
       toast.success('Successfully submitted tryout request for sports team!');
-      
+
       setShowJoinForm(false);
     } catch (error) {
       let errorMsg = 'Failed to submit tryout request';
@@ -79,7 +80,7 @@ export default function AthleticsSection({ statusFilter, searchTerm, onFilterCha
       } else if (typeof error === 'string') {
         errorMsg = error;
       }
-      
+
       toast.error(errorMsg);
       console.error('Failed to submit join request:', error);
     }
@@ -178,10 +179,19 @@ export default function AthleticsSection({ statusFilter, searchTerm, onFilterCha
                           setFilterOpen(false);
                         }}
                       >
-                        <option value="">All Statuses</option>
+                        <option value="all">All Statuses</option>
                         <option value="active">Active</option>
                         <option value="past">Past</option>
                       </select>
+                      <button
+                        className="w-full mt-1 py-1.5 px-3 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-xs border border-slate-200 transition"
+                        onClick={() => {
+                          onFilterChange({ search: '', status: 'all' });
+                          setFilterOpen(false);
+                        }}
+                      >
+                        Reset Filters
+                      </button>
                     </div>
                   )}
                 </div>
@@ -198,7 +208,8 @@ export default function AthleticsSection({ statusFilter, searchTerm, onFilterCha
                 {!isSearching && sports?.map((sport: Sport) => (
                   <div
                     key={sport.id}
-                    className={`p-4 cursor-pointer group/item hover:bg-amber-50/50 transition-all duration-300 ${selectedSport?.id === sport.id ? 'bg-orange-50/70' : ''}`}
+                    className={`p-4 cursor-pointer group/item hover:bg-amber-50/50 transition-all duration-300 border-l-4 ${selectedSport?.id === sport.id ? 'bg-orange-50/70 border-orange-400' : 'border-transparent hover:border-amber-200'
+                      }`}
                     onClick={() => handleSportClick(sport)}
                   >
                     <div className="flex items-center space-x-3">
@@ -210,7 +221,14 @@ export default function AthleticsSection({ statusFilter, searchTerm, onFilterCha
                       </div>
                       <div className="flex-grow">
                         <h4 className={`font-semibold ${styles.textPrimary} text-sm sm:text-base truncate`}>{sport.title}</h4>
-                        <div className={`text-xs sm:text-sm ${styles.textSecondary}`}>{sport.participants} players</div>
+                        <div className={`text-xs sm:text-sm ${styles.textSecondary} flex justify-between items-center`}>
+                          <span>{sport.participants} players</span>
+                          <span className="opacity-60 text-[10px]">
+                            {sport.upcomingGames && sport.upcomingGames.length > 0
+                              ? `Next: ${typeof sport.upcomingGames[0] === 'string' ? sport.upcomingGames[0].split(':')[0] : (sport.upcomingGames[0] as any).date ? formatDate((sport.upcomingGames[0] as any).date) : formatDate(sport.createdAt || '')}`
+                              : `Since ${formatDate(sport.createdAt || '')}`}
+                          </span>
+                        </div>
                       </div>
                       {selectedSport?.id === sport.id && (
                         <div className={`w-2 h-2 rounded-full ${styles.status.warning}`}></div>
@@ -253,16 +271,27 @@ export default function AthleticsSection({ statusFilter, searchTerm, onFilterCha
                       </div>
                       <div>
                         <h3 className={`text-lg sm:text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>{selectedSport.title}</h3>
-                        <p className={`text-sm ${styles.textSecondary}`}>{selectedSport.division}</p>
+                        <div className="flex items-center space-x-2">
+                          <p className={`text-sm ${styles.textSecondary}`}>{selectedSport.division}</p>
+                          {selectedSport.createdAt && (
+                            <span className={`text-[10px] ${styles.textSecondary} opacity-60`}>• {formatDate(selectedSport.createdAt)}</span>
+                          )}
+                        </div>
                       </div>
                     </div>
-                    {selectedSport.type === 'Basketball' && (
-                      <div className={`bg-amber-300 text-amber-800 px-3 py-1 rounded-full text-xs sm:text-sm font-medium flex items-center space-x-1`}>
-                        <FaTrophy size={12} />
-                        <span>Season!</span>
-                      </div>
-                    )}
+                    <div className={`text-xs sm:text-sm md:text-base ${styles.textSecondary} sm:text-right px-4 sm:px-0`}>
+                      <div className={`font-medium ${styles.textPrimary}`}>Head Coach</div>
+                      <div className={`${styles.status.warning}`}>{selectedSport.headCoach}</div>
+                    </div>
                   </div>
+                  {selectedSport.type === 'Basketball' && (
+                    <div className="px-4 sm:px-6 mb-4">
+                      <div className={`inline-flex bg-amber-300 text-amber-800 px-3 py-1 rounded-full text-xs sm:text-sm font-medium items-center space-x-1`}>
+                        <FaTrophy size={12} />
+                        <span>Championship Season!</span>
+                      </div>
+                    </div>
+                  )}
                   <div className="p-4 sm:p-6">
                     <h4 className={`text-base sm:text-lg font-bold ${styles.status.warning} mb-4`}>Team Information</h4>
                     <div className={`relative overflow-hidden rounded-lg p-4 mb-4 border ${styles.border} group/item hover:${styles.card.hover} transition-all duration-300`}>
@@ -297,17 +326,19 @@ export default function AthleticsSection({ statusFilter, searchTerm, onFilterCha
                                   </li>
                                 );
                               } else if (game && typeof game === 'object' && ('date' in game || 'description' in game)) {
+                                const hasDate = !!game.date;
+                                const hasDescription = !!game.description;
                                 return (
                                   <li key={index} className={`mb-2 flex text-sm sm:text-base ${styles.textPrimary}`}>
                                     <span className={`${styles.status.warning} mr-2`}>•</span>
                                     <span>
-                                      {game.date
-                                        ? `${new Date(game.date).toLocaleDateString('en-US', {
-                                            month: 'short',
-                                            day: 'numeric',
-                                            year: 'numeric',
-                                          })}: ${game.description || ''}`
-                                        : game.description || ''}
+                                      {hasDate && hasDescription
+                                        ? `${formatDate(game.date || '')}: ${game.description}`
+                                        : hasDate
+                                          ? formatDate(game.date || '')
+                                          : hasDescription
+                                            ? game.description
+                                            : ''}
                                     </span>
                                   </li>
                                 );
@@ -316,16 +347,6 @@ export default function AthleticsSection({ statusFilter, searchTerm, onFilterCha
                             })}
                           </div>
                         </ul>
-                        <div className="flex flex-col sm:flex-row gap-3 mt-4">
-                          <button className={`group/btn bg-gradient-to-r ${styles.accent} hover:${styles.button.primary} text-white py-2 sm:py-3 px-4 rounded-full font-medium transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-105 flex items-center justify-center space-x-2 text-sm sm:text-base`}>
-                            <span>Get Tickets</span>
-                            <FaTrophy size={12} className="group-hover/btn:translate-x-1 transition-transform duration-300" />
-                          </button>
-                          <button className={`group/btn border ${styles.border} ${styles.status.warning} hover:bg-amber-50 py-2 sm:py-3 px-4 rounded-full font-medium transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-105 flex items-center justify-center space-x-2 text-sm sm:text-base`}>
-                            <span>Team Roster</span>
-                            <FaUsers size={12} className="group-hover/btn:translate-x-1 transition-transform duration-300" />
-                          </button>
-                        </div>
                       </>
                     ) : (
                       <p className={`text-sm sm:text-base ${styles.textSecondary}`}>No upcoming games scheduled.</p>
@@ -334,9 +355,8 @@ export default function AthleticsSection({ statusFilter, searchTerm, onFilterCha
                       <button
                         onClick={() => setShowJoinForm(true)}
                         disabled={selectedSport.userRequestStatus === 'pending' || selectedSport.userRequestStatus === 'approved'}
-                        className={`group/btn mt-4 w-full bg-gradient-to-r ${styles.accent} hover:${styles.button.primary} text-white py-2 sm:py-3 px-4 rounded-full font-medium transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-105 flex items-center justify-center space-x-2 text-sm sm:text-base ${
-                          selectedSport.userRequestStatus === 'pending' || selectedSport.userRequestStatus === 'approved' ? 'opacity-60 cursor-not-allowed' : ''
-                        }`}
+                        className={`group/btn mt-4 w-full bg-gradient-to-r ${styles.accent} hover:${styles.button.primary} text-white py-2 sm:py-3 px-4 rounded-full font-medium transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-105 flex items-center justify-center space-x-2 text-sm sm:text-base ${selectedSport.userRequestStatus === 'pending' || selectedSport.userRequestStatus === 'approved' ? 'opacity-60 cursor-not-allowed' : ''
+                          }`}
                       >
                         <span>
                           {selectedSport.userRequestStatus === 'pending'
@@ -368,147 +388,146 @@ export default function AthleticsSection({ statusFilter, searchTerm, onFilterCha
             </div>
           </div>
         </div>
-      )}
+      )
+      }
 
-      {ReactDOM.createPortal(
-        <div
-          className={`fixed inset-0 z-[9999] ${styles.card.background} transition-transform duration-700 transform sm:hidden flex flex-col
+      {
+        ReactDOM.createPortal(
+          <div
+            className={`fixed inset-0 z-[9999] ${styles.card.background} transition-transform duration-700 transform sm:hidden flex flex-col
             ${showMobileDetails && selectedSport ? 'translate-x-0 pointer-events-auto' : 'translate-x-full pointer-events-none'}`}
-          style={{ willChange: 'transform' }}
-        >
-          <div className="flex items-center p-4 border-b border-gray-200 dark:border-gray-700 justify-between">
-            <span className="font-bold text-lg text-gray-800 dark:text-white">Sport Details</span>
-            <button
-              aria-label="Close"
-              className={`ml-3 text-2xl focus:outline-none ${styles.textPrimary}`}
-              onClick={() => setShowMobileDetails(false)}
-            >
-              <FaArrowRight className={styles.accent} />
-            </button>
-          </div>
-          <div className="flex-1 overflow-y-auto">
-            <div className="p-4">
-              {selectedSport ? (
-                <>
-                  <div className="flex items-center mb-4">
-                    <div
-                      className={`w-10 h-10 rounded-full text-white flex items-center justify-center font-bold mr-4`}
-                      style={{ backgroundColor: selectedSport.color }}
-                    >
-                      {selectedSport.icon}
-                    </div>
-                    <div>
-                      <h3 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>{selectedSport.title}</h3>
-                      <p className={`text-xs ${styles.textSecondary}`}>{selectedSport.division}</p>
-                    </div>
-                  </div>
-                  <h4 className={`text-base font-bold ${styles.status.warning} mb-4`}>Team Information</h4>
-                  <div className={`relative overflow-hidden rounded-lg p-4 mb-4 border ${styles.border} group/item hover:${styles.card.hover} transition-all duration-300`}>
-                    <div className={`absolute -inset-0.5 bg-gradient-to-r ${styles.orb.secondary} rounded-lg blur transition-all duration-300`}></div>
-                    <div className="relative z-10">
-                      <div className={`mb-2 text-sm ${styles.textPrimary}`}>
-                        <span className="font-medium">Head Coach:</span>
-                        <span className="ml-2">{selectedSport.headCoach}</span>
-                      </div>
-                      <div className={`mb-2 text-sm ${styles.textPrimary}`}>
-                        <span className="font-medium">Home Games:</span>
-                        <span className="ml-2">{selectedSport.homeGames}</span>
-                      </div>
-                      <div className={`mb-2 text-sm ${styles.textPrimary}`}>
-                        <span className="font-medium">Current Record:</span>
-                        <span className="ml-2">{selectedSport.record}</span>
-                      </div>
-                    </div>
-                  </div>
-                  {(selectedSport?.upcomingGames?.length ?? 0) > 0 ? (
-                    <>
-                      <h4 className={`text-base font-bold ${styles.status.warning} mb-2`}>Upcoming Games</h4>
-                      <ul className={`relative overflow-hidden rounded-lg p-4 mb-4 border ${styles.border} group/item hover:${styles.card.hover} transition-all duration-300`}>
-                        <div className={`absolute -inset-0.5 bg-gradient-to-r ${styles.orb.secondary} rounded-lg blur transition-all duration-300`}></div>
-                        <div className="relative z-10">
-                          {selectedSport?.upcomingGames?.map((game, index) => {
-                            if (typeof game === 'string') {
-                              return (
-                                <li key={index} className={`mb-2 flex text-sm sm:text-base ${styles.textPrimary}`}>
-                                  <span className={`${styles.status.warning} mr-2`}>•</span>
-                                  <span>{game}</span>
-                                </li>
-                              );
-                            } else if (game && typeof game === 'object' && ('date' in game || 'description' in game)) {
-                              return (
-                                <li key={index} className={`mb-2 flex text-sm sm:text-base ${styles.textPrimary}`}>
-                                  <span className={`${styles.status.warning} mr-2`}>•</span>
-                                  <span>
-                                    {game.date
-                                      ? `${new Date(game.date).toLocaleDateString('en-US', {
-                                          month: 'short',
-                                          day: 'numeric',
-                                          year: 'numeric',
-                                        })}: ${game.description || ''}`
-                                      : game.description || ''}
-                                  </span>
-                                </li>
-                              );
-                            }
-                            return null;
-                          })}
-                        </div>
-                      </ul>
-                      <div className="flex flex-col gap-3 mt-4">
-                        <button className={`group/btn bg-gradient-to-r ${styles.accent} hover:${styles.button.primary} text-white py-2 px-4 rounded-full font-medium transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-105 flex items-center justify-center space-x-2 text-sm`}>
-                          <span>Get Tickets</span>
-                          <FaTrophy size={12} className="group-hover/btn:translate-x-1 transition-transform duration-300" />
-                        </button>
-                        <button className={`group/btn border ${styles.border} ${styles.status.warning} hover:bg-amber-50 py-2 px-4 rounded-full font-medium transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-105 flex items-center justify-center space-x-2 text-sm`}>
-                          <span>Team Roster</span>
-                          <FaUsers size={12} className="group-hover/btn:translate-x-1 transition-transform duration-300" />
-                        </button>
-                      </div>
-                    </>
-                  ) : (
-                    <p className={`text-sm ${styles.textSecondary}`}>No upcoming games scheduled.</p>
-                  )}
-                  {!showJoinForm ? (
-                    <button
-                      onClick={() => setShowJoinForm(true)}
-                      disabled={selectedSport.userRequestStatus === 'pending' || selectedSport.userRequestStatus === 'approved'}
-                      className={`group/btn mt-4 w-full bg-gradient-to-r ${styles.accent} hover:${styles.button.primary} text-white py-2 sm:py-3 px-4 rounded-full font-medium transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-105 flex items-center justify-center space-x-2 text-sm sm:text-base ${
-                        selectedSport.userRequestStatus === 'pending' || selectedSport.userRequestStatus === 'approved' ? 'opacity-60 cursor-not-allowed' : ''
-                      }`}
-                    >
-                      <span>
-                        {selectedSport.userRequestStatus === 'pending'
-                          ? 'Request Pending'
-                          : selectedSport.userRequestStatus === 'approved'
-                            ? 'Already Joined'
-                            : 'Try Out for Team'}
-                      </span>
-                      <FaTrophy size={12} className="group-hover/btn:translate-x-1 transition-transform duration-300" />
-                    </button>
-                  ) : (
-                    <div className="mt-4">
-                      <JoinRequestForm
-                        onSubmit={handleJoinRequest}
-                        onCancel={() => setShowJoinForm(false)}
-                        isLoading={isJoiningSport}
-                        title={selectedSport.title}
-                      />
-                      {joinSportError && (
-                        <div className={`mt-2 ${styles.status.error} text-sm`}>
-                          Failed to submit tryout request. Please try again.
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="text-center text-sm text-gray-400">Select a sport to view details.</div>
-              )}
+            style={{ willChange: 'transform' }}
+          >
+            <div className="flex items-center p-4 border-b border-gray-200 dark:border-gray-700 justify-between">
+              <span className="font-bold text-lg text-gray-800 dark:text-white">Sport Details</span>
+              <button
+                aria-label="Close"
+                className={`ml-3 text-2xl focus:outline-none ${styles.textPrimary}`}
+                onClick={() => setShowMobileDetails(false)}
+              >
+                <FaArrowRight className={styles.accent} />
+              </button>
             </div>
-          </div>
-        </div>,
-        document.body
-      )}
-    </div>
+            <div className="flex-1 overflow-y-auto">
+              <div className="p-4">
+                {selectedSport ? (
+                  <>
+                    <div className="flex items-center mb-4">
+                      <div
+                        className={`w-10 h-10 rounded-full text-white flex items-center justify-center font-bold mr-4`}
+                        style={{ backgroundColor: selectedSport.color }}
+                      >
+                        {selectedSport.icon}
+                      </div>
+                      <div>
+                        <h3 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>{selectedSport.title}</h3>
+                        <div className="flex items-center space-x-2">
+                          <p className={`text-xs ${styles.textSecondary}`}>{selectedSport.division}</p>
+                          {selectedSport.createdAt && (
+                            <span className={`text-[10px] ${styles.textSecondary} opacity-60`}>• {formatDate(selectedSport.createdAt)}</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <h4 className={`text-base font-bold ${styles.status.warning} mb-4`}>Team Information</h4>
+                    <div className={`relative overflow-hidden rounded-lg p-3 mb-4 border ${styles.border} group/item hover:${styles.card.hover} transition-all duration-300`}>
+                      <div className={`absolute -inset-0.5 bg-gradient-to-r ${styles.orb.secondary} rounded-lg blur transition-all duration-300`}></div>
+                      <div className="relative z-10">
+                        <div className={`mb-2 text-sm ${styles.textPrimary}`}>
+                          <span className="font-medium">Head Coach:</span>
+                          <span className="ml-2">{selectedSport.headCoach}</span>
+                        </div>
+                        <div className={`mb-2 text-sm ${styles.textPrimary}`}>
+                          <span className="font-medium">Home Games:</span>
+                          <span className="ml-2">{selectedSport.homeGames}</span>
+                        </div>
+                        <div className={`text-sm ${styles.textPrimary}`}>
+                          <span className="font-medium">Current Record:</span>
+                          <span className="ml-2">{selectedSport.record}</span>
+                        </div>
+                      </div>
+                    </div>
+                    {(selectedSport?.upcomingGames?.length ?? 0) > 0 ? (
+                      <>
+                        <h4 className={`text-base font-bold ${styles.status.warning} mb-2`}>Upcoming Games</h4>
+                        <ul className={`relative overflow-hidden rounded-lg p-4 mb-4 border ${styles.border} group/item hover:${styles.card.hover} transition-all duration-300`}>
+                          <div className={`absolute -inset-0.5 bg-gradient-to-r ${styles.orb.secondary} rounded-lg blur transition-all duration-300`}></div>
+                          <div className="relative z-10">
+                            {selectedSport?.upcomingGames?.map((game, index) => {
+                              if (typeof game === 'string') {
+                                return (
+                                  <li key={index} className={`mb-2 flex text-sm sm:text-base ${styles.textPrimary}`}>
+                                    <span className={`${styles.status.warning} mr-2`}>•</span>
+                                    <span>{game}</span>
+                                  </li>
+                                );
+                              } else if (game && typeof game === 'object' && ('date' in game || 'description' in game)) {
+                                const hasDate = !!game.date;
+                                const hasDescription = !!game.description;
+                                return (
+                                  <li key={index} className={`mb-2 flex text-sm sm:text-base ${styles.textPrimary}`}>
+                                    <span className={`${styles.status.warning} mr-2`}>•</span>
+                                    <span>
+                                      {hasDate && hasDescription
+                                        ? `${formatDate(game.date || '')}: ${game.description}`
+                                        : hasDate
+                                          ? formatDate(game.date || '')
+                                          : hasDescription
+                                            ? game.description
+                                            : ''}
+                                    </span>
+                                  </li>
+                                );
+                              }
+                              return null;
+                            })}
+                          </div>
+                        </ul>
+                      </>
+                    ) : (
+                      <p className={`text-sm ${styles.textSecondary}`}>No upcoming games scheduled.</p>
+                    )}
+                    {!showJoinForm ? (
+                      <button
+                        onClick={() => setShowJoinForm(true)}
+                        disabled={selectedSport.userRequestStatus === 'pending' || selectedSport.userRequestStatus === 'approved'}
+                        className={`group/btn mt-4 w-full bg-gradient-to-r ${styles.accent} hover:${styles.button.primary} text-white py-2 sm:py-3 px-4 rounded-full font-medium transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-105 flex items-center justify-center space-x-2 text-sm sm:text-base ${selectedSport.userRequestStatus === 'pending' || selectedSport.userRequestStatus === 'approved' ? 'opacity-60 cursor-not-allowed' : ''
+                          }`}
+                      >
+                        <span>
+                          {selectedSport.userRequestStatus === 'pending'
+                            ? 'Request Pending'
+                            : selectedSport.userRequestStatus === 'approved'
+                              ? 'Already Joined'
+                              : 'Try Out for Team'}
+                        </span>
+                        <FaTrophy size={12} className="group-hover/btn:translate-x-1 transition-transform duration-300" />
+                      </button>
+                    ) : (
+                      <div className="mt-4">
+                        <JoinRequestForm
+                          onSubmit={handleJoinRequest}
+                          onCancel={() => setShowJoinForm(false)}
+                          isLoading={isJoiningSport}
+                          title={selectedSport.title}
+                        />
+                        {joinSportError && (
+                          <div className={`mt-2 ${styles.status.error} text-sm`}>
+                            Failed to submit tryout request. Please try again.
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="text-center text-sm text-gray-400">Select a sport to view details.</div>
+                )}
+              </div>
+            </div>
+          </div>,
+          document.body
+        )
+      }
+    </div >
   );
 }

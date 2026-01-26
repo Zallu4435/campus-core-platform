@@ -1,11 +1,30 @@
 export const formatDate = (dateString: string): string => {
   if (!dateString) return 'N/A';
   const date = new Date(dateString);
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
+  const now = new Date();
+
+  // Clean dates for comparison (ignoring time)
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+  const targetDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+  if (targetDate.getTime() === today.getTime()) {
+    return 'Today';
+  } else if (targetDate.getTime() === yesterday.getTime()) {
+    return 'Yesterday';
+  }
+
+  const options: Intl.DateTimeFormatOptions = {
     month: 'short',
-    day: 'numeric',
-  });
+    day: 'numeric'
+  };
+
+  // Only show year if it's not the current year
+  if (date.getFullYear() !== now.getFullYear()) {
+    options.year = 'numeric';
+  }
+
+  return date.toLocaleDateString('en-US', options);
 };
 
 export const formatDateTime = (dateString: string): string => {
@@ -51,9 +70,27 @@ export const formatRelativeTime = (dateString: string): string => {
 };
 
 export const formatTime = (timestamp: string): string => {
+  if (!timestamp) return 'N/A';
   return new Date(timestamp).toLocaleTimeString('en-US', {
     hour: '2-digit',
     minute: '2-digit',
-    second: '2-digit'
   });
+};
+
+export const formatTimeString = (timeString: string): string => {
+  if (!timeString) return 'N/A';
+  if (timeString.includes('AM') || timeString.includes('PM')) return timeString;
+
+  // Try to parse HH:mm
+  const [hours, minutes] = timeString.split(':');
+  if (hours && minutes) {
+    const h = parseInt(hours);
+    const m = parseInt(minutes);
+    if (!isNaN(h) && !isNaN(m)) {
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      const h12 = h % 12 || 12;
+      return `${h12}:${m.toString().padStart(2, '0')} ${ampm}`;
+    }
+  }
+  return timeString;
 };

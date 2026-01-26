@@ -9,7 +9,7 @@ export default function CourseDetailsModal({ isOpen, onClose, onConfirm, course,
   const [enrollmentData, setEnrollmentData] = useState({ reason: '' });
   const { styles, theme } = usePreferences();
 
-  const isReadOnly = !onConfirm || isEnrolling === undefined || (typeof onConfirm === 'function' && onConfirm.toString() === (() => {}).toString() && isEnrolling === false);
+  const isReadOnly = !onConfirm || isEnrolling === undefined || (typeof onConfirm === 'function' && onConfirm.toString() === (() => { }).toString() && isEnrolling === false);
 
   useEffect(() => {
     if (isOpen) {
@@ -74,7 +74,7 @@ export default function CourseDetailsModal({ isOpen, onClose, onConfirm, course,
             <div className={`absolute -top-16 -left-16 w-48 sm:w-64 h-48 sm:h-64 rounded-full bg-gradient-to-br ${styles.orb.primary} blur-2xl sm:blur-3xl animate-pulse`}></div>
             <div className={`absolute -bottom-16 -right-16 w-32 sm:w-48 h-32 sm:h-48 rounded-full bg-gradient-to-br ${styles.orb.secondary} blur-xl sm:blur-2xl animate-pulse delay-700`}></div>
 
-            <div className={`relative bg-gradient-to-r ${styles.accent} px-4 sm:px-8 py-4 sm:py-6 text-white overflow-hidden`}>
+            <div className={`relative bg-gradient-to-r ${styles.accent} px-4 sm:px-8 py-4 sm:py-6 ${theme === 'dark' ? 'text-white' : 'text-amber-950'} overflow-hidden`}>
               <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent"></div>
               <div className="relative z-10 flex items-start justify-between">
                 <div className="flex-1">
@@ -87,15 +87,15 @@ export default function CourseDetailsModal({ isOpen, onClose, onConfirm, course,
                       <div className={`absolute -inset-1 bg-gradient-to-br ${styles.orb.primary} rounded-xl sm:rounded-2xl blur opacity-75 group-hover:opacity-100 transition-opacity duration-300`}></div>
                     </div>
                     <div>
-                      <h2 className={`text-lg sm:text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-800'} bg-clip-text text-transparent leading-tight`}>
+                      <h2 className={`text-lg sm:text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-amber-950'} leading-tight`}>
                         {course.title}
                       </h2>
                       <div className={`h-0.5 sm:h-1 w-12 sm:w-16 bg-gradient-to-r ${styles.accent} rounded-full mt-1 group-hover:w-16 sm:group-hover:w-24 transition-all duration-300`}></div>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2 sm:space-x-4 text-amber-100 text-xs sm:text-sm">
+                  <div className={`flex items-center space-x-2 sm:space-x-4 ${theme === 'dark' ? 'text-amber-100' : 'text-amber-900/80'} text-xs sm:text-sm`}>
                     <span className={`bg-white/20 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full font-medium`}>{course.credits} Credits</span>
-                    <span className={isFullyBooked ? styles.status.error : 'text-amber-100'}>
+                    <span className={isFullyBooked ? styles.status.error : theme === 'dark' ? 'text-amber-100' : 'text-amber-900/80'}>
                       {availableSpots > 0 ? `${availableSpots} spots left` : 'Fully booked'}
                     </span>
                   </div>
@@ -104,7 +104,7 @@ export default function CourseDetailsModal({ isOpen, onClose, onConfirm, course,
                   onClick={handleClose}
                   className="ml-2 sm:ml-4 p-1.5 sm:p-2 hover:bg-white/20 rounded-full transition-colors duration-200"
                 >
-                  <FaTimes size={16} className="sm:w-5 sm:h-5" />
+                  <FaTimes size={16} className={`sm:w-5 sm:h-5 ${theme === 'dark' ? 'text-white' : 'text-amber-950'}`} />
                 </button>
               </div>
             </div>
@@ -135,10 +135,10 @@ export default function CourseDetailsModal({ isOpen, onClose, onConfirm, course,
                         <span className={`text-xs font-medium ${theme == 'dark' ? 'text-white' : styles.textTertiary} uppercase tracking-wider`}>Enrollment Status</span>
                         <span
                           className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs font-medium ${isFullyBooked
-                              ? styles.status.error.replace('text-', 'bg-') + '/10 text-red-800'
-                              : availableSpots <= 5
-                                ? styles.status.warning.replace('text-', 'bg-') + '/10 text-yellow-800'
-                                : styles.status.success.replace('text-', 'bg-') + '/10 text-green-800'
+                            ? styles.status.error.replace('text-', 'bg-') + '/10 text-red-800'
+                            : availableSpots <= 5
+                              ? styles.status.warning.replace('text-', 'bg-') + '/10 text-yellow-800'
+                              : styles.status.success.replace('text-', 'bg-') + '/10 text-green-800'
                             }`}
                         >
                           {isFullyBooked ? 'Full' : availableSpots <= 5 ? 'Almost Full' : 'Available'}
@@ -235,10 +235,10 @@ export default function CourseDetailsModal({ isOpen, onClose, onConfirm, course,
                         <span className={`text-xs font-medium ${theme == 'dark' ? 'text-white' : styles.textTertiary} uppercase tracking-wider`}>Enrollment Status</span>
                         <span
                           className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs font-medium ${isFullyBooked
-                              ? styles.status.error.replace('text-', 'bg-') + '/10 text-red-800'
-                              : availableSpots <= 5
-                                ? styles.status.warning.replace('text-', 'bg-') + '/10 text-yellow-800'
-                                : styles.status.success.replace('text-', 'bg-') + '/10 text-green-800'
+                            ? styles.status.error.replace('text-', 'bg-') + '/10 text-red-800'
+                            : availableSpots <= 5
+                              ? styles.status.warning.replace('text-', 'bg-') + '/10 text-yellow-800'
+                              : styles.status.success.replace('text-', 'bg-') + '/10 text-green-800'
                             }`}
                         >
                           {isFullyBooked ? 'Full' : availableSpots <= 5 ? 'Almost Full' : 'Available'}

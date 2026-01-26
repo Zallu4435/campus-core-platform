@@ -13,6 +13,9 @@ export interface Sport {
   color?: string;
   division?: string;
   headCoach?: string;
+  category?: string;
+  organizer?: string;
+  organizerType?: string;
   homeGames?: number | string[];
   record?: string;
   upcomingGames?: (string | Game)[];
@@ -46,7 +49,13 @@ export interface EventType {
   fullTime?: string;
   additionalInfo?: string;
   requirements?: string;
+  status?: string;
+  maxParticipants?: number;
+  registrationRequired?: boolean;
+  participants?: number;
   userRequestStatus?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface EventsSectionProps {
@@ -70,6 +79,8 @@ export interface ClubType {
   nextMeeting: string;
   about?: string;
   upcomingEvents?: (string | ClubUpcomingEvent)[];
+  createdBy?: string;
+  enteredMembers?: number;
   userRequestStatus?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -105,7 +116,13 @@ export interface Event {
   fullTime?: string;
   additionalInfo?: string;
   requirements?: string;
+  status?: string;
+  maxParticipants?: number;
+  registrationRequired?: boolean;
+  participants?: number;
   userRequestStatus?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Club {

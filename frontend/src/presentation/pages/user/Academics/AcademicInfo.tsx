@@ -1,7 +1,7 @@
 import { FaGraduationCap } from 'react-icons/fa';
 import { usePreferences } from '../../../../application/context/PreferencesContext';
 
-export default function AcademicInfo({ major = 'Computer Science', academicStanding = 'Good', advisor = 'Dr. Emma Wilson' }) {
+export default function AcademicInfo({ major = 'Computer Science', academicStanding = 'Good', advisor = 'Dr. Emma Wilson', catalogYear = '2025-2029' }) {
   const { styles, theme } = usePreferences();
 
   return (
@@ -32,8 +32,9 @@ export default function AcademicInfo({ major = 'Computer Science', academicStand
               </div>
             </div>
 
-            <p className={`${styles.textSecondary} text-xs sm:text-sm md:text-sm`}>
+            <p className={`${styles.textSecondary} text-xs sm:text-sm md:text-sm leading-relaxed`}>
               <span className="font-medium">Current Major:</span> {major} |{' '}
+              <span className="font-medium">Catalog Year:</span> {catalogYear} |{' '}
               <span className="font-medium">Academic Standing:</span> {academicStanding} |{' '}
               <span className="font-medium">Advisor:</span> {advisor}
             </p>

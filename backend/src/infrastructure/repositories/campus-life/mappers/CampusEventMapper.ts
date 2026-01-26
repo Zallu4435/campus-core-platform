@@ -1,6 +1,7 @@
 import { CampusEvent } from '../../../../domain/campus-life/entities/CampusLife';
 import { CampusEventData, JoinRequestData } from '../../../../domain/campus-life/entities/CampusLifeTypes';
 import { RequestStatus } from '../../../../domain/campus-life/enums/CampusLifeEnums';
+import { safelyConvertIdToString } from '../../../../shared/utils/IdUtils';
 
 /**
  * Campus Event Mapper
@@ -25,9 +26,13 @@ export class CampusEventMapper {
             raw.icon,
             raw.color,
             raw.description,
-            raw.fullTime ? 'Yes' : 'No', // Convert boolean to string
+            raw.fullTime ? 'Yes' : 'No',
             raw.additionalInfo,
             raw.requirements,
+            raw.status || '',
+            raw.maxParticipants || 0,
+            raw.registrationRequired ?? false,
+            raw.participants || 0,
             raw.createdAt.toISOString(),
             raw.updatedAt.toISOString(),
             userRequestStatus ?? null
@@ -50,9 +55,13 @@ export class CampusEventMapper {
             let userRequestStatus: RequestStatus | null = null;
 
             if (userId && requests.length > 0) {
-                const userRequest = requests.find(
-                    req => req.eventId === raw.id && req.userId === userId
-                );
+                const userRequest = requests.find(req => {
+                    const reqEventId = safelyConvertIdToString(req.eventId);
+                    const reqUserId = safelyConvertIdToString(req.userId);
+
+                    return reqEventId === raw.id && reqUserId === userId;
+                });
+
                 if (userRequest) {
                     userRequestStatus = userRequest.status as RequestStatus;
                 }

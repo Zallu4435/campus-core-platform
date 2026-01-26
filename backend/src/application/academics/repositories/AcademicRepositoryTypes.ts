@@ -6,6 +6,7 @@ export interface StudentInfoResult {
     student: Student;
     program: Program;
     pendingEnrollments: Enrollment[];
+    approvedEnrollments: Enrollment[];
 }
 
 export interface CourseFilter {

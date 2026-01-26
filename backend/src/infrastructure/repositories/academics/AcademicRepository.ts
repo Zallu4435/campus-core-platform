@@ -53,16 +53,22 @@ export class AcademicRepository implements IAcademicRepository {
     // Old code: if (!program) return null; (Yes)
 
     // Enrollments
-    const enrollmentDocs = await EnrollmentModel.find({
+    const pendingEnrollmentDocs = await EnrollmentModel.find({
       studentId: userId,
       status: { $regex: /^pending/i }
     }).lean();
 
+    const approvedEnrollmentDocs = await EnrollmentModel.find({
+      studentId: userId,
+      status: 'Approved'
+    }).lean();
+
     const student = AcademicMappers.toStudent(userDoc as unknown as IStudentSource);
     const program = AcademicMappers.toProgram(programDoc as unknown as IProgramSource);
-    const pendingEnrollments = enrollmentDocs.map(doc => AcademicMappers.toEnrollment(doc as unknown as IEnrollmentSource));
+    const pendingEnrollments = pendingEnrollmentDocs.map(doc => AcademicMappers.toEnrollment(doc as unknown as IEnrollmentSource));
+    const approvedEnrollments = approvedEnrollmentDocs.map(doc => AcademicMappers.toEnrollment(doc as unknown as IEnrollmentSource));
 
-    return { student, program, pendingEnrollments };
+    return { student, program, pendingEnrollments, approvedEnrollments };
   }
 
   async findGradeByUserId(userId: string): Promise<Grade | null> {

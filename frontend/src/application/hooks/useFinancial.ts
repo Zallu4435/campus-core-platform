@@ -15,7 +15,8 @@ export const usePaymentsManagement = (
     studentId?: string;
   } = {},
   searchQuery: string = '',
-  activeTab: string = 'all'
+  activeTab: string = 'all',
+  enabled: boolean = true
 ) => {
   const queryClient = useQueryClient();
   const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(null);
@@ -29,6 +30,7 @@ export const usePaymentsManagement = (
       page,
       limit: itemsPerPage,
     }),
+    enabled,
   });
 
   const createPaymentMutation = useMutation({
@@ -66,6 +68,8 @@ export const usePaymentsManagement = (
     isLoading,
     error,
     createPayment: createPaymentMutation.mutate,
+    isCreatingPayment: createPaymentMutation.isPending,
+    createPaymentError: createPaymentMutation.error,
     paymentDetails,
     isLoadingPaymentDetails,
     handleViewPayment,

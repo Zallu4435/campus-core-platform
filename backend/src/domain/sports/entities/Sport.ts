@@ -20,6 +20,7 @@ export class Sport {
   private updatedAtValue?: Date;
   private playerCountValue?: number;
   private formedOnValue?: string;
+  private userRequestStatusValue?: string;
 
   constructor(props: SportProps) {
     this.idValue = props.id;
@@ -41,6 +42,7 @@ export class Sport {
     this.updatedAtValue = props.updatedAt;
     this.playerCountValue = props.playerCount;
     this.formedOnValue = props.formedOn;
+    this.userRequestStatusValue = props.userRequestStatus;
   }
 
   static create(props: SportProps): Sport {
@@ -69,4 +71,5 @@ export class Sport {
   get updatedAt(): Date | undefined { return this.updatedAtValue; }
   get playerCount(): number | undefined { return this.playerCountValue; }
   get formedOn(): string | undefined { return this.formedOnValue; }
+  get userRequestStatus(): string | undefined { return this.userRequestStatusValue; }
 }

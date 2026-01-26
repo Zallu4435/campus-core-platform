@@ -32,7 +32,7 @@ export interface GetInboxMessagesResponseDTO {
 }
 
 export interface GetSentMessagesResponseDTO {
-  messages: AdminSentMessageResponseDTO[];
+  messages: MessageSummaryDTO[];
   pagination: {
     total: number;
     page: number;

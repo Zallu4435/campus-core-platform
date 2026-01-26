@@ -1,6 +1,7 @@
 import { Club } from '../../../../domain/campus-life/entities/CampusLife';
 import { ClubData, JoinRequestData } from '../../../../domain/campus-life/entities/CampusLifeTypes';
 import { ClubStatus, RequestStatus } from '../../../../domain/campus-life/enums/CampusLifeEnums';
+import { safelyConvertIdToString } from '../../../../shared/utils/IdUtils';
 
 /**
  * Club Mapper
@@ -18,14 +19,16 @@ export class ClubMapper {
             raw.id,
             raw.name,
             raw.type,
-            Array.isArray(raw.members) ? raw.members.length : 0, // Convert array to count
+            raw.enteredMembers || (Array.isArray(raw.members) ? raw.members.length : 0),
             raw.icon,
             raw.color,
             raw.status as ClubStatus,
-            '', // role - ClubData doesn't have this field
+            raw.role || '',
             raw.nextMeeting,
             raw.about,
             raw.upcomingEvents || [],
+            raw.createdBy || '',
+            raw.enteredMembers || 0,
             raw.createdAt.toISOString(),
             raw.updatedAt.toISOString(),
             userRequestStatus ?? null
@@ -48,9 +51,13 @@ export class ClubMapper {
             let userRequestStatus: RequestStatus | null = null;
 
             if (userId && requests.length > 0) {
-                const userRequest = requests.find(
-                    req => req.clubId === raw.id && req.userId === userId
-                );
+                const userRequest = requests.find(req => {
+                    const reqClubId = safelyConvertIdToString(req.clubId);
+                    const reqUserId = safelyConvertIdToString(req.userId);
+
+                    return reqClubId === raw.id && reqUserId === userId;
+                });
+
                 if (userRequest) {
                     userRequestStatus = userRequest.status as RequestStatus;
                 }

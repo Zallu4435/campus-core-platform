@@ -4,6 +4,15 @@ export interface AcademicsTabsProps {
 }
 
 export interface StudentInfo {
+  name: string;
+  id: string;
+  email: string;
+  phone?: string;
+  profilePicture?: string;
+  major: string;
+  catalogYear: string;
+  academicStanding: string;
+  advisor: string;
   credits: number;
   pendingCredits: number;
 }
@@ -51,14 +60,7 @@ export interface CourseDetailsModalProps {
   isEnrolling: boolean;
 }
 
-export interface StudentInfo {
-  name?: string;
-  id?: string;
-  major?: string;
-  email?: string;
-  academicStanding?: string;
-  advisor?: string;
-}
+
 
 export interface GradeInfo {
   cumulativeGPA: string;

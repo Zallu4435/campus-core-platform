@@ -1,17 +1,15 @@
 import { useState } from 'react';
 import { useCommunicationManagement } from '../../../../application/hooks/useCommunication';
-import ComposeMessageModal from './ComposeMessageModal';
 import WarningModal from '../../../components/common/WarningModal';
-import { FaPaperPlane, FaTrash, FaPlus } from 'react-icons/fa';
+import { FaPaperPlane, FaTrash } from 'react-icons/fa';
 import { usePreferences } from '../../../../application/context/PreferencesContext';
 import { Message, Recipient } from '../../../../domain/types/user/communication';
 
 export default function SentSection() {
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
-  const [isComposing, setIsComposing] = useState(false);
   const [showDeleteWarning, setShowDeleteWarning] = useState(false);
   const [messageToDelete, setMessageToDelete] = useState<Message | null>(null);
-  const { sentMessages, isLoadingSent, handleDeleteMessage, handleSendMessage } = useCommunicationManagement();
+  const { sentMessages, isLoadingSent, handleDeleteMessage } = useCommunicationManagement({ fetchInbox: false, fetchSent: true });
   const { styles, theme } = usePreferences();
 
   const handleMessageClick = (message: Message) => {
@@ -64,13 +62,6 @@ export default function SentSection() {
               <div className={`h-1 w-16 bg-gradient-to-r ${styles.accent} rounded-full mt-1 group-hover:w-24 transition-all duration-300`}></div>
             </div>
           </div>
-          <button
-            onClick={() => setIsComposing(true)}
-            className={`group/btn bg-gradient-to-r ${styles.accent} hover:${styles.button.primary} text-white py-2 px-4 rounded-full transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-105 flex items-center space-x-2`}
-          >
-            <FaPlus size={12} />
-            <span>Compose Message</span>
-          </button>
         </div>
       </div>
 
@@ -78,37 +69,49 @@ export default function SentSection() {
         <div className={`lg:col-span-1 relative overflow-hidden rounded-2xl shadow-xl ${styles.card.background} border ${styles.border} group hover:${styles.card.hover} transition-all duration-500`}>
           <div className={`absolute -inset-0.5 bg-gradient-to-r ${styles.orb.secondary} rounded-2xl blur transition-all duration-300`}></div>
           <div className="relative z-10 divide-y divide-amber-100/50">
-            {sentMessages.map((message) => (
-              <div
-                key={message?.id}
-                className={`p-4 cursor-pointer group/item hover:bg-amber-50/50 transition-all duration-300 ${
-                  selectedMessage?.id === message?.id ? 'bg-orange-50/70' : ''
-                }`}
-                onClick={() => handleMessageClick(message as Message)}
-              >
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <h3 className={`font-medium ${styles.textPrimary} text-sm sm:text-base truncate`}>{message?.subject}</h3>
-                    <p className={`text-sm ${styles.textSecondary} truncate mt-1`}>{message?.content}</p>
+            {(sentMessages as Message[]).map((message) => {
+              const recipientName = message?.isBroadcast ? 'A' : (message?.recipients?.[0]?.name || 'U');
+              const initial = recipientName.charAt(0).toUpperCase();
+
+              return (
+                <div
+                  key={message?.id}
+                  className={`p-4 cursor-pointer group/item hover:bg-amber-50/50 transition-all duration-300 border-l-4 ${selectedMessage?.id === message?.id ? 'bg-orange-50/70 border-orange-400' : 'border-transparent hover:border-amber-200'
+                    }`}
+                  onClick={() => handleMessageClick(message)}
+                >
+                  <div className="flex items-start space-x-3">
+                    <div className={`flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br ${styles.accent} flex items-center justify-center text-white font-bold shadow-sm transition-transform duration-300 group-hover/item:scale-105`}>
+                      {initial}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-start mb-1">
+                        <h3 className={`font-semibold ${styles.textPrimary} text-sm truncate`}>
+                          {message?.isBroadcast ? 'All Students' : message?.recipients?.map((r: Recipient) => r.name).join(', ') || 'Unknown'}
+                        </h3>
+                        <span className={`text-[10px] ${styles.textSecondary} flex-shrink-0 ml-2`}>{new Date(message?.createdAt).toLocaleDateString()}</span>
+                      </div>
+                      <h4 className={`text-xs font-medium ${styles.textPrimary} truncate mb-1`}>{message?.subject || 'No Subject'}</h4>
+                      <p className={`text-[11px] ${styles.textSecondary} truncate mt-1 leading-relaxed`}>{message?.content}</p>
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(message);
+                      }}
+                      className={`flex-shrink-0 p-1 opacity-0 group-hover/item:opacity-100 ${styles.icon.secondary} hover:${styles.status.error} transition-all duration-300 transform scale-75 hover:scale-100`}
+                    >
+                      <FaTrash size={14} />
+                    </button>
                   </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete(message as Message);
-                    }}
-                    className={`ml-2 ${styles.icon.secondary} hover:${styles.status.error} transition-colors duration-300`}
-                  >
-                    <FaTrash size={16} />
-                  </button>
                 </div>
-                <div className="mt-2 flex flex-col sm:flex-row justify-between items-start sm:items-center text-xs">
-                  <span className={`truncate ${styles.textSecondary}`}>To: {message?.recipients?.map((r: Recipient) => r.name).join(', ')}</span>
-                  <span className={`mt-1 sm:mt-0 ${styles.textSecondary}`}>{new Date(message?.createdAt).toLocaleDateString()}</span>
-                </div>  
-              </div>
-            ))}
+              );
+            })}
             {sentMessages.length === 0 && (
-              <div className={`p-4 text-center ${styles.textSecondary} text-sm`}>No messages found</div>
+              <div className={`flex flex-col items-center justify-center p-8 text-center ${styles.textSecondary}`}>
+                <FaPaperPlane size={32} className="mb-2 opacity-20" />
+                <p className="text-sm">No sent messages</p>
+              </div>
             )}
           </div>
         </div>
@@ -117,33 +120,34 @@ export default function SentSection() {
           <div className={`absolute -inset-0.5 bg-gradient-to-r ${styles.orb.secondary} rounded-2xl blur transition-all duration-300`}></div>
           <div className="relative z-10 p-4 sm:p-6">
             {selectedMessage ? (
-              <div>
+              <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
                 <div className="flex flex-col sm:flex-row justify-between items-start mb-4 sm:mb-6">
                   <div>
                     <h2 className={`text-lg sm:text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-800'} mb-2`}>{selectedMessage.subject}</h2>
                     <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 text-xs sm:text-sm">
                       <span className={`${styles.textSecondary}`}>From: You</span>
-                      <span className={`${styles.textSecondary}`}>To: {selectedMessage.recipients.map((r) => r.name).join(', ')}</span>
+                      <span className={`${styles.textSecondary}`}>
+                        To: {selectedMessage.isBroadcast ? 'All Students' : selectedMessage.recipients.map((r) => r.name).join(', ') || 'Unknown'}
+                      </span>
                     </div>
                   </div>
                   <div className={`text-xs sm:text-sm ${styles.textSecondary} mt-2 sm:mt-0`}>
                     {new Date(selectedMessage.createdAt).toLocaleString()}
                   </div>
                 </div>
-                <div className="prose max-w-none text-sm sm:text-base">
-                  <p className={`${styles.textPrimary} whitespace-pre-wrap`}>{selectedMessage.content}</p>
+                <div className={`prose max-w-none text-sm sm:text-base border-t ${styles.border} pt-6`}>
+                  <p className={`${styles.textPrimary} whitespace-pre-wrap leading-relaxed`}>{selectedMessage.content}</p>
                 </div>
               </div>
             ) : (
-              <div className={`flex items-center justify-center h-48 sm:h-64 ${styles.textSecondary} text-sm sm:text-base`}>
-                Select a message to view its details
+              <div className={`flex flex-col items-center justify-center h-48 sm:h-64 ${styles.textSecondary}`}>
+                <FaPaperPlane size={48} className="mb-4 opacity-10" />
+                <p className="text-sm sm:text-base">Select a sent message to view</p>
               </div>
             )}
           </div>
         </div>
       </div>
-
-      <ComposeMessageModal isOpen={isComposing} onClose={() => setIsComposing(false)} onSend={handleSendMessage} />
 
       <WarningModal
         isOpen={showDeleteWarning}

@@ -1,14 +1,22 @@
 import { useState, useEffect, useRef } from 'react';
-import { FaSearch, FaCalendarAlt, FaClock, FaMapPin, FaArrowRight, FaFilter } from 'react-icons/fa';
+import {
+  FaCalendarAlt, FaMapPin, FaClock, FaCheckCircle,
+  FaArrowRight, FaFilter, FaSearch, FaTrophy, FaUsers, FaBuilding
+} from 'react-icons/fa';
 import { useCampusLife } from '../../../../application/hooks/useCampusLife';
 import JoinRequestForm from './JoinRequestForm';
 import { usePreferences } from '../../../../application/context/PreferencesContext';
 import ReactDOM from 'react-dom';
 import type { EventType } from '../../../../domain/types/user/campus-life';
 import { toast } from 'react-hot-toast';
+import { formatDate, formatTimeString } from '../../../../shared/utils/dateUtils';
 
 export default function EventsSection({ searchTerm, statusFilter, onFilterChange }: { searchTerm: string; statusFilter: string; onFilterChange: (filters: { search: string; status: string }) => void }) {
-  const { events, requestToJoinEvent, isJoiningEvent, joinEventError } = useCampusLife('Events', '', '', statusFilter, searchTerm);
+  const { events, requestToJoinEvent, isJoiningEvent, joinEventError } = useCampusLife({
+    activeTab: 'Events',
+    statusFilter,
+    eventSearchTerm: searchTerm
+  });
   const [selectedEvent, setSelectedEvent] = useState<EventType | null>(null);
   const [showJoinForm, setShowJoinForm] = useState(false);
   const [showMobileDetails, setShowMobileDetails] = useState(false);
@@ -26,14 +34,10 @@ export default function EventsSection({ searchTerm, statusFilter, onFilterChange
   }, [searchTerm]);
 
   useEffect(() => {
-    if (events && events.length > 0) {
-      if (!selectedEvent) {
-        setSelectedEvent(events[0]);
-      } else {
-        const updatedEvent = events.find(e => e.id === selectedEvent.id);
-        if (updatedEvent) {
-          setSelectedEvent(updatedEvent);
-        }
+    if (events && events.length > 0 && selectedEvent) {
+      const updatedEvent = events.find(e => e.id === selectedEvent.id);
+      if (updatedEvent) {
+        setSelectedEvent(updatedEvent);
       }
     }
   }, [events, selectedEvent]);
@@ -86,11 +90,9 @@ export default function EventsSection({ searchTerm, statusFilter, onFilterChange
       });
 
       toast.success('Successfully registered for event!');
-
       setShowJoinForm(false);
 
     } catch (error) {
-      // Show error toast
       let errorMsg = 'Failed to register for event';
       if (error && typeof error === 'object' && 'response' in error) {
         const response = (error as { response?: { data?: { error?: string; data?: { error?: string } } } }).response;
@@ -179,14 +181,14 @@ export default function EventsSection({ searchTerm, statusFilter, onFilterChange
                             onFilterChange({ search: searchInput, status: e.target.value });
                           }}
                         >
-                          <option value="">All Statuses</option>
+                          <option value="all">All Statuses</option>
                           <option value="upcoming">Upcoming</option>
                           <option value="past">Past</option>
                         </select>
                         <button
                           className="mt-2 py-2 px-4 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-sm border border-slate-200 transition"
                           onClick={() => {
-                            onFilterChange({ search: '', status: '' });
+                            onFilterChange({ search: '', status: 'all' });
                             setFilterOpen(false);
                           }}
                         >
@@ -207,14 +209,14 @@ export default function EventsSection({ searchTerm, statusFilter, onFilterChange
                             onFilterChange({ search: searchInput, status: e.target.value });
                           }}
                         >
-                          <option value="">All Statuses</option>
+                          <option value="all">All Statuses</option>
                           <option value="upcoming">Upcoming</option>
                           <option value="past">Past</option>
                         </select>
                         <button
                           className="mt-2 py-2 px-4 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-sm border border-slate-200 transition"
                           onClick={() => {
-                            onFilterChange({ search: '', status: '' });
+                            onFilterChange({ search: '', status: 'all' });
                             setFilterOpen(false);
                           }}
                         >
@@ -244,8 +246,9 @@ export default function EventsSection({ searchTerm, statusFilter, onFilterChange
               {!isSearching && events.map((event: EventType) => (
                 <div
                   key={event.id}
-                  className={`p-3 sm:p-4 cursor-pointer group/item hover:bg-amber-50/50 transition-all duration-300 ${selectedEvent?.id === event.id ? 'bg-orange-50/70' : ''
-                    }`}
+                  className={`p-3 sm:p-4 cursor-pointer group/item hover:bg-amber-50/50 transition-all duration-300 border-l-4 ${
+                    selectedEvent?.id === event.id ? 'bg-orange-50/70 border-orange-400' : 'border-transparent hover:border-amber-200'
+                  }`}
                   onClick={() => handleEventClick(event)}
                 >
                   <div className="flex items-center space-x-2 sm:space-x-3">
@@ -258,7 +261,7 @@ export default function EventsSection({ searchTerm, statusFilter, onFilterChange
                     <div className="flex-grow">
                       <h4 className={`font-semibold ${styles.textPrimary} text-xs sm:text-sm md:text-base truncate`}>{event.title || ''}</h4>
                       <div className={`text-xs sm:text-sm ${styles.textSecondary} flex items-center`}>
-                        <FaMapPin size={12} className={`mr-1 ${styles.status.warning}`} /> {(event.location || '')} - {(event.date || '')}
+                        <FaMapPin size={12} className={`mr-1 ${styles.status.warning}`} /> {(event.location || '')} - {formatDate(event.date || '')}
                       </div>
                     </div>
                     <span className={`bg-amber-100 text-orange-700 text-xs px-2 py-1 rounded-full`}>{event.timeframe || ''}</span>
@@ -303,11 +306,10 @@ export default function EventsSection({ searchTerm, statusFilter, onFilterChange
                       </div>
                     </div>
                     <div className="mb-4">
-                      <div className={`font-medium ${styles.textPrimary}`}>{selectedEvent?.date}</div>
-                      <div className={`${styles.status.warning}`}>{selectedEvent?.time}</div>
+                      <div className={`font-medium ${styles.textPrimary}`}>{formatDate(selectedEvent?.date || '')}</div>
+                      <div className={`${styles.status.warning}`}>{formatTimeString(selectedEvent?.time || '')}</div>
                     </div>
-                    <h4 className={`text-base font-bold ${styles.status.warning} mb-2`}>Annual {selectedEvent?.title}</h4>
-                    <p className={`text-sm ${styles.textPrimary} mb-2`}>Join us for the biggest campus event of the spring semester!</p>
+                    <h4 className={`text-base font-bold ${styles.status.warning} mb-2`}>{selectedEvent?.title}</h4>
                     {selectedEvent?.description && (
                       <p className={`text-sm ${styles.textPrimary} mb-2`}>{selectedEvent.description}</p>
                     )}
@@ -317,13 +319,22 @@ export default function EventsSection({ searchTerm, statusFilter, onFilterChange
                         <div className="flex items-center mb-2">
                           <FaMapPin className={`${styles.status.warning} mr-2`} size={16} />
                           <span className="font-medium text-sm">Location:</span>
-                          <span className={`ml-2 text-sm ${styles.textSecondary}`}>{selectedEvent?.location || ''}{' '}{selectedEvent?.id === '1' && '(Rain location: Indoor Arena)'}</span>
+                          <span className={`ml-2 text-sm ${styles.textSecondary}`}>{selectedEvent?.location || ''}</span>
                         </div>
                         <div className="flex items-center mb-2">
                           <FaClock className={`${styles.status.warning} mr-2`} size={16} />
                           <span className="font-medium text-sm">Time:</span>
-                          <span className={`ml-2 text-sm ${styles.textSecondary}`}>{selectedEvent?.time}</span>
+                          <span className={`ml-2 text-sm ${styles.textSecondary}`}>{formatTimeString(selectedEvent?.time || '')}</span>
                         </div>
+                        {selectedEvent?.registrationRequired && (
+                          <div className="flex items-center mb-2">
+                            <FaUsers className={`${styles.status.warning} mr-2`} size={16} />
+                            <span className="font-medium text-sm">Registration:</span>
+                            <span className={`ml-2 text-sm ${styles.textSecondary}`}>
+                              {selectedEvent.participants} / {selectedEvent.maxParticipants || 'Unlimited'} joined
+                            </span>
+                          </div>
+                        )}
                         {selectedEvent?.additionalInfo && (
                           <div className={`mt-3 pt-3 border-t ${styles.border} ${styles.textPrimary} text-sm`}>
                             {selectedEvent.additionalInfo}
@@ -338,8 +349,9 @@ export default function EventsSection({ searchTerm, statusFilter, onFilterChange
                       <button
                         onClick={() => setShowJoinForm(true)}
                         disabled={selectedEvent?.userRequestStatus === 'pending' || selectedEvent?.userRequestStatus === 'approved'}
-                        className={`group/btn mt-4 w-full bg-gradient-to-r ${styles.accent} hover:${styles.button.primary} text-white py-2 px-4 rounded-full font-medium transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-105 flex items-center justify-center space-x-2 text-sm ${selectedEvent?.userRequestStatus === 'pending' || selectedEvent?.userRequestStatus === 'approved' ? 'opacity-60 cursor-not-allowed' : ''
-                          }`}
+                        className={`group/btn mt-4 w-full bg-gradient-to-r ${styles.accent} hover:${styles.button.primary} text-white py-2 px-4 rounded-full font-medium transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-105 flex items-center justify-center space-x-2 text-sm ${
+                          selectedEvent?.userRequestStatus === 'pending' || selectedEvent?.userRequestStatus === 'approved' ? 'opacity-60 cursor-not-allowed' : ''
+                        }`}
                       >
                         <span>
                           {selectedEvent?.userRequestStatus === 'pending'
@@ -393,19 +405,21 @@ export default function EventsSection({ searchTerm, statusFilter, onFilterChange
                       </div>
                       <div>
                         <h3 className={`text-base sm:text-lg md:text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>{selectedEvent.title}</h3>
-                        <p className={`text-xs sm:text-sm ${styles.textSecondary}`}>Organized by {selectedEvent.organizer}</p>
+                        <div className="flex items-center space-x-2">
+                          <p className={`text-xs sm:text-sm ${styles.textSecondary}`}>Organized by {selectedEvent.organizer}</p>
+                          {selectedEvent.createdAt && (
+                            <span className={`text-[10px] ${styles.textSecondary} opacity-60`}>• {formatDate(selectedEvent.createdAt)}</span>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <div className={`text-xs sm:text-sm md:text-base ${styles.textSecondary}`}>
-                      <div className={`font-medium ${styles.textPrimary}`}>{selectedEvent.date}</div>
-                      <div className={`${styles.status.warning}`}>{selectedEvent.time}</div>
+                      <div className={`font-medium ${styles.textPrimary}`}>{formatDate(selectedEvent.date || '')}</div>
+                      <div className={`${styles.status.warning}`}>{formatTimeString(selectedEvent.time || '')}</div>
                     </div>
                   </div>
                   <div className="p-3 sm:p-4 md:p-6">
-                    <h4 className={`text-sm sm:text-base md:text-lg font-bold ${styles.status.warning} mb-3 sm:mb-4`}>Annual {selectedEvent.title}</h4>
-                    <p className={`text-xs sm:text-sm md:text-base ${styles.textPrimary} mb-3 sm:mb-4`}>
-                      Join us for the biggest campus event of the spring semester!
-                    </p>
+                    <h4 className={`text-sm sm:text-base md:text-lg font-bold ${styles.status.warning} mb-3 sm:mb-4`}>{selectedEvent.title}</h4>
                     {selectedEvent.description && (
                       <p className={`text-xs sm:text-sm md:text-base ${styles.textPrimary} mb-3 sm:mb-4`}>{selectedEvent.description}</p>
                     )}
@@ -416,15 +430,23 @@ export default function EventsSection({ searchTerm, statusFilter, onFilterChange
                           <FaMapPin className={`${styles.status.warning} mr-2`} size={16} />
                           <span className="font-medium text-xs sm:text-sm md:text-base">Location:</span>
                           <span className={`ml-2 text-xs sm:text-sm md:text-base ${styles.textSecondary}`}>
-                            {selectedEvent.location}{' '}
-                            {selectedEvent.id === '1' && '(Rain location: Indoor Arena)'}
+                            {selectedEvent.location}
                           </span>
                         </div>
                         <div className="flex items-center mb-2">
                           <FaClock className={`${styles.status.warning} mr-2`} size={16} />
                           <span className="font-medium text-xs sm:text-sm md:text-base">Time:</span>
-                          <span className={`ml-2 text-xs sm:text-sm md:text-base ${styles.textSecondary}`}>{selectedEvent.time}</span>
+                          <span className={`ml-2 text-xs sm:text-sm md:text-base ${styles.textSecondary}`}>{formatTimeString(selectedEvent.time || '')}</span>
                         </div>
+                        {selectedEvent.registrationRequired && (
+                          <div className="flex items-center mb-2">
+                            <FaUsers className={`${styles.status.warning} mr-2`} size={16} />
+                            <span className="font-medium text-xs sm:text-sm md:text-base">Registration:</span>
+                            <span className={`ml-2 text-xs sm:text-sm md:text-base ${styles.textSecondary}`}>
+                              {selectedEvent.participants} / {selectedEvent.maxParticipants || 'Unlimited'} joined
+                            </span>
+                          </div>
+                        )}
                         {selectedEvent.additionalInfo && (
                           <div className={`mt-3 pt-3 border-t ${styles.border} ${styles.textPrimary} text-xs sm:text-sm md:text-base`}>
                             {selectedEvent.additionalInfo}
@@ -441,8 +463,9 @@ export default function EventsSection({ searchTerm, statusFilter, onFilterChange
                       <button
                         onClick={() => setShowJoinForm(true)}
                         disabled={selectedEvent.userRequestStatus === 'pending' || selectedEvent.userRequestStatus === 'approved'}
-                        className={`group/btn mt-3 sm:mt-4 w-full bg-gradient-to-r ${styles.accent} hover:${styles.button.primary} text-white py-2 sm:py-3 px-4 rounded-full font-medium transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-105 flex items-center justify-center space-x-2 text-xs sm:text-sm md:text-base ${selectedEvent.userRequestStatus === 'pending' || selectedEvent.userRequestStatus === 'approved' ? 'opacity-60 cursor-not-allowed' : ''
-                          }`}
+                        className={`group/btn mt-3 sm:mt-4 w-full bg-gradient-to-r ${styles.accent} hover:${styles.button.primary} text-white py-2 sm:py-3 px-4 rounded-full font-medium transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-105 flex items-center justify-center space-x-2 text-xs sm:text-sm md:text-base ${
+                          selectedEvent.userRequestStatus === 'pending' || selectedEvent.userRequestStatus === 'approved' ? 'opacity-60 cursor-not-allowed' : ''
+                        }`}
                       >
                         <span>
                           {selectedEvent.userRequestStatus === 'pending'

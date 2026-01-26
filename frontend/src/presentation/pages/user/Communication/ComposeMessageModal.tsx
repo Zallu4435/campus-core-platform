@@ -28,12 +28,12 @@ const ComposeMessageModal: React.FC<ComposeMessageModalProps> = ({
         setError(null);
         try {
           const adminList = await communicationService.getAllAdmins();
-          
+
           const transformedAdmins = adminList.map(admin => ({
             ...admin,
             name: admin.name || `${admin.firstName || 'Unknown'} ${admin.lastName || 'Admin'}`.trim() || 'Unknown Admin'
           }));
-          
+
           setAdmins(transformedAdmins);
           setError(null);
         } catch (err: unknown) {
@@ -84,22 +84,22 @@ const ComposeMessageModal: React.FC<ComposeMessageModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!recipients || recipients.length === 0) {
       setError('Please select a recipient.');
       return;
     }
-    
+
     if (!subject.trim()) {
       setError('Please enter a subject.');
       return;
     }
-    
+
     if (!message.trim()) {
       setError('Please enter a message.');
       return;
     }
-    
+
     try {
       const form: MessageForm = {
         to: recipients,
@@ -107,9 +107,9 @@ const ComposeMessageModal: React.FC<ComposeMessageModalProps> = ({
         message: message.trim(),
         isAdmin: false,
       };
-      
+
       onSend(form);
-      
+
       setSubject('');
       setMessage('');
       setRecipients([]);
@@ -189,8 +189,9 @@ const ComposeMessageModal: React.FC<ComposeMessageModalProps> = ({
                     <option value="">Select a recipient</option>
                     {admins?.map((admin) => {
                       const displayName = admin.name || `${admin.firstName || 'Unknown'} ${admin.lastName || 'Admin'}`.trim() || 'Unknown Admin';
+                      const adminId = admin.id || admin._id;
                       return (
-                        <option key={admin._id} value={admin._id}>
+                        <option key={adminId} value={adminId}>
                           {displayName} ({admin.email})
                         </option>
                       );

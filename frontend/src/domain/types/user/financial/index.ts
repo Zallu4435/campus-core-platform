@@ -17,7 +17,7 @@ export interface Payment {
   date?: string;
   chargeTitle?: string;
   description?: string;
-  method?: 'Financial Aid' | 'Credit Card' | 'Bank Transfer' | 'Razorpay';
+  method?: 'Financial Aid' | 'Credit Card' | 'Bank Transfer' | 'Razorpay' | 'stripe';
   amount?: number;
 }
 

@@ -106,7 +106,11 @@ export class CommunicationRepository implements ICommunicationRepository {
       }
 
       for (const recipient of to) {
-        const admin = await this.findUserById(recipient.value, UserRole.Admin);
+        // Try to find as admin first, then student, then faculty
+        let admin = await this.findUserById(recipient.value, UserRole.Admin);
+        if (!admin) admin = await this.findUserById(recipient.value, UserRole.Student);
+        if (!admin) admin = await this.findUserById(recipient.value, UserRole.Faculty);
+
         if (admin) {
           recipients.push(admin);
         }
@@ -173,7 +177,10 @@ export class CommunicationRepository implements ICommunicationRepository {
           recipients.push(...students);
           isBroadcast = true;
         } else {
-          const user = await this.findUserById(recipient.value, UserRole.Student);
+          let user = await this.findUserById(recipient.value, UserRole.Student);
+          if (!user) user = await this.findUserById(recipient.value, UserRole.Admin);
+          if (!user) user = await this.findUserById(recipient.value, UserRole.Faculty);
+
           if (user) {
             recipients.push(user);
           }
@@ -308,6 +315,18 @@ export class CommunicationRepository implements ICommunicationRepository {
           role: UserRole.Admin,
           firstName,
           lastName
+        };
+      } else if (role === UserRole.Faculty || role === 'faculty') {
+        user = await FacultyModel.findOne({ _id: userId }).lean() as unknown as IFacultySource;
+        if (!user) return null;
+
+        return {
+          id: user._id.toString(),
+          name: user.fullName || 'Unknown Faculty',
+          email: user.email,
+          role: UserRole.Faculty,
+          firstName: user.fullName ? user.fullName.split(' ')[0] : '',
+          lastName: user.fullName ? user.fullName.split(' ').slice(1).join(' ') : ''
         };
       } else {
         user = await UserModel.findOne({ _id: userId }).lean() as unknown as IUserSource;

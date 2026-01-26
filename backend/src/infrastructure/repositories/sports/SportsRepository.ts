@@ -72,8 +72,10 @@ export class SportsRepository extends BaseRepository<SportData, CreateSportReque
     const totalItems = await TeamModel.countDocuments(query);
     const totalPages = Math.ceil(totalItems / limit);
 
+    const mappedSports = SportMapper.toSummaryDTOList(sportsData);
     return {
-      data: SportMapper.toSummaryDTOList(sportsData),
+      data: mappedSports,
+      sports: mappedSports,
       totalItems,
       totalPages,
       currentPage: page

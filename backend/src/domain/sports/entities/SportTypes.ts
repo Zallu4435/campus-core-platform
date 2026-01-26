@@ -29,6 +29,7 @@ export interface SportProps {
   updatedAt?: Date;
   playerCount?: number;
   formedOn?: string;
+  userRequestStatus?: string;
 }
 
 export interface SportRequestProps {

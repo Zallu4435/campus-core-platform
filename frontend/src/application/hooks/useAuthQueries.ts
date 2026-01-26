@@ -31,11 +31,7 @@ export const useLoginUser = () => {
     mutationFn: authService.loginUser,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user'] });
-      toast.success('Logged in successfully');
     },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Login failed');
-    }
   });
 };
 

@@ -10,6 +10,9 @@ import { CreateChargeParams, UploadDocumentParams, ChargeFilter, PaymentFilter }
 import { Charge } from "../../../domain/financial/entities/FinancialEntities";
 import { FinancialMapper } from "./FinancialMapper";
 
+import { User as UserModel } from "../../database/mongoose/auth/user.model";
+import { Register as RegisterModel } from "../../database/mongoose/auth/register.model";
+
 const razorpay = new Razorpay({
     key_id: process.env.RAZORPAY_KEY_ID!,
     key_secret: process.env.RAZORPAY_KEY_SECRET!,
@@ -27,7 +30,6 @@ export class FinancialRepository implements IFinancialRepository {
     async getStudentFinancialInfo(studentId: string) {
         try {
             const studentProgram = await ProgramModel.findOne({ studentId: studentId }).lean();
-
             if (!studentProgram) {
                 return {
                     info: [],
@@ -81,16 +83,38 @@ export class FinancialRepository implements IFinancialRepository {
                 };
             });
 
-            const formattedHistory = studentFinancialInfo
-                .filter((info) => info.status === "Paid")
-                .map((info) => ({
-                    id: info.paymentId ? info.paymentId.toString() : undefined,
-                    paidAt: info.paidAt instanceof Date ? info.paidAt.toISOString() : String(info.paidAt),
-                    chargeTitle: info.chargeId ? "Payment for " + info.term : "Payment",
-                    method: info.method,
-                    amount: info.amount,
-                }))
-                .sort((a, b) => new Date(b.paidAt).getTime() - new Date(a.paidAt).getTime());
+            // Get user email to find linked Register/Application ID
+            // Get user email to find linked Register/Application ID
+            const user = await UserModel.findById(studentId).select('email').lean();
+            const associatedIds: string[] = [studentId];
+
+            if (user) {
+                const registerDoc = await RegisterModel.findOne({ email: user.email! }).select('_id').lean();
+                if (registerDoc) {
+                    const registerId = (registerDoc._id as unknown as mongoose.Types.ObjectId).toString();
+                    associatedIds.push(registerId);
+                }
+            }
+
+            // Convert string IDs to Mongoose ObjectIds for strict type matching
+            const queryIds = associatedIds.map(id => new mongoose.Types.ObjectId(id));
+
+            // Fetch actual payment history from PaymentModel including both User ID and Register ID
+            const payments = await PaymentModel.find({
+                studentId: { $in: queryIds },
+                status: 'Completed'
+            }).sort({ date: -1 }).lean() as unknown as IPaymentSource[];
+
+            const formattedHistory = payments.map((payment) => ({
+                id: payment._id.toString(),
+                paidAt: payment.date instanceof Date ? payment.date.toISOString() : String(payment.date),
+                date: payment.date instanceof Date ? payment.date.toISOString() : String(payment.date),
+                chargeTitle: payment.description || "Payment",
+                description: payment.description,
+                method: payment.method,
+                amount: payment.amount,
+                status: payment.status
+            }));
 
 
             const unpaidCharges = formattedCharges.filter(charge => charge.status === "Pending");
@@ -190,7 +214,7 @@ export class FinancialRepository implements IFinancialRepository {
         });
 
         // If not found, try Register
-        if (!payment.studentId || typeof payment.studentId !== 'object' || !('firstName' in (payment.studentId as any))) {
+        if (!payment.studentId || typeof payment.studentId !== 'object' || !('firstName' in (payment.studentId))) {
             payment.studentId = originalStudentId;
             await mongoose.model('Register').populate(payment, {
                 path: 'studentId',

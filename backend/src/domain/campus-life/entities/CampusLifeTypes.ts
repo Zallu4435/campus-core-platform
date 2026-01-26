@@ -104,6 +104,10 @@ export interface CampusEventData {
     fullTime: boolean;
     additionalInfo: string;
     requirements: string;
+    status: string;
+    maxParticipants: number;
+    registrationRequired: boolean;
+    participants: number;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -139,11 +143,13 @@ export interface ClubData {
     status: string;
     description: string;
     members: string[];
+    role: string;
     color: string;
     icon: string;
     nextMeeting: string;
     about: string;
-    upcomingEvents: string[];
+    upcomingEvents: { date: string; description: string }[];
+    enteredMembers: number;
     createdAt: Date;
     updatedAt: Date;
 }
