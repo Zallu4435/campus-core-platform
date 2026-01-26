@@ -5,9 +5,7 @@ import store from './appStore/store';
 import './index.css';
 import { ProtectedRoute } from './frameworks/router/ProtectedRoute';
 import { useEffect } from 'react';
-import httpClient from './frameworks/api/httpClient';
 import { useDispatch } from 'react-redux';
-import { setAuth } from './appStore/authSlice';
 
 // Layouts - Keep these loaded initially
 import PublicLayout from './presentation/Layout/PublicLayout';
@@ -54,7 +52,7 @@ const AdminCourseManagement = lazy(() => import('./presentation/pages/admin/cour
 const AdminClubManagement = lazy(() => import('./presentation/pages/admin/campusLife/clubs/ClubManagement'));
 const AdminSportsManagement = lazy(() => import('./presentation/pages/admin/campusLife/sports/SportsManagement'));
 const AdminEventsManagement = lazy(() => import('./presentation/pages/admin/campusLife/events/EventsManagement'));
-const CommunicationManagement = lazy(() => import('./presentation/pages/admin/communication/CommunicstionManagement'));
+const CommunicationManagement = lazy(() => import('./presentation/pages/admin/communication/CommunicationManagement'));
 const PaymentManagement = lazy(() => import('./presentation/pages/admin/payment/PaymentManagement'));
 const ComputerScience = lazy(() => import('./presentation/pages/departments/ComputerScience'));
 const Business = lazy(() => import('./presentation/pages/departments/Business'));

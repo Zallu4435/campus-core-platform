@@ -5,7 +5,6 @@ import {
   IoPersonOutline as User,
   IoInformationCircleOutline as Info,
   IoMailOutline as Mail,
-  IoIdCardOutline as IdCard,
   IoHeartOutline as Heart,
   IoDocumentTextOutline as DocumentText,
   IoSparklesOutline as Sparkles,
@@ -25,7 +24,7 @@ const ClubRequestDetailsModal: React.FC<ClubRequestDetailsModalProps> = ({
   onClose,
   request,
 }) => {
-  usePreventBodyScroll(isOpen); 
+  usePreventBodyScroll(isOpen);
 
   console.log(request, "request")
 
@@ -69,7 +68,6 @@ const ClubRequestDetailsModal: React.FC<ClubRequestDetailsModalProps> = ({
               </div>
               <div>
                 <h2 className="text-2xl font-bold text-purple-100">{club.name}</h2>
-                <p className="text-sm text-purple-300">Request ID: {clubRequest.id}</p>
                 <div className="flex items-center mt-2">
                   <RequestStatusBadge status={clubRequest.status as StatusType} />
                 </div>
@@ -93,7 +91,6 @@ const ClubRequestDetailsModal: React.FC<ClubRequestDetailsModalProps> = ({
               highlight={true}
             />
             <RequestInfoCard icon={Mail} label="Contact Email" value={user?.email || 'N/A'} />
-            <RequestInfoCard icon={IdCard} label="Club ID" value={club.id || ''} />
             <RequestInfoCard icon={Info} label="Club Type" value={club.type} />
             <RequestInfoCard
               icon={Users}
@@ -114,7 +111,12 @@ const ClubRequestDetailsModal: React.FC<ClubRequestDetailsModalProps> = ({
                 <h3 className="ml-3 text-lg font-semibold text-purple-100">Club Description</h3>
               </div>
               <div className="p-6">
-                <p className="text-purple-200 leading-relaxed">{club.about || 'No description available'}</p>
+                <p className="text-purple-200 leading-relaxed">
+                  {('clubDescription' in clubRequest ? clubRequest.clubDescription : '') ||
+                    ('about' in club ? club.about : '') ||
+                    ('description' in club ? club.description : '') ||
+                    'No description available'}
+                </p>
               </div>
             </div>
           </div>

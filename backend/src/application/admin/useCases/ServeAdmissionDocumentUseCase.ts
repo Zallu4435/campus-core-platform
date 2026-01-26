@@ -17,6 +17,8 @@ export interface IServeAdmissionDocumentUseCase {
     execute(params: ServeAdmissionDocumentRequestDTO): Promise<ServeAdmissionDocumentResponseDTO>;
 }
 
+import axios from "axios";
+
 export class ServeAdmissionDocumentUseCase implements IServeAdmissionDocumentUseCase {
     constructor(private _admissionRepository: IAdmissionRepository) { }
 
@@ -41,18 +43,16 @@ export class ServeAdmissionDocumentUseCase implements IServeAdmissionDocumentUse
             throw new AdminAdmissionNotFoundError();
         }
 
-        const response = await fetch(documentUrl);
+        try {
+            const response = await axios.get(documentUrl, { responseType: 'arraybuffer' });
 
-        if (!response.ok) {
+            return {
+                pdfData: Buffer.from(response.data).toString('base64'),
+                fileName: document.fileName,
+                contentType: response.headers['content-type'] || 'application/pdf'
+            };
+        } catch (error) {
             throw new AdminAdmissionNotFoundError();
         }
-
-        const pdfBuffer = await response.arrayBuffer();
-
-        return {
-            pdfData: Buffer.from(pdfBuffer).toString('base64'),
-            fileName: document.fileName,
-            contentType: 'application/pdf'
-        };
     }
 }

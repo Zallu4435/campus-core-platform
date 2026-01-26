@@ -36,10 +36,10 @@ const CommunicationManagement: React.FC = () => {
     handleSendMessage,
     handleDeleteMessage,
     handleArchiveMessage,
-    handleViewMessage,  
+    handleViewMessage,
     fetchSentMessages,
     fetchUsers,
-  } = useCommunicationManagement({ isAdmin: true }); 
+  } = useCommunicationManagement({ isAdmin: true });
 
 
   const [activeTab, setActiveTab] = useState<'inbox' | 'sent' | 'compose'>('inbox');
@@ -78,7 +78,7 @@ const CommunicationManagement: React.FC = () => {
 
   const handleConfirmDelete = () => {
     if (messageToDelete) {
-      handleDeleteMessage(messageToDelete.id); 
+      handleDeleteMessage(messageToDelete.id);
       setShowDeleteWarning(false);
       setMessageToDelete(null);
     }
@@ -209,7 +209,7 @@ const CommunicationManagement: React.FC = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
         <Header
-          title="Admin Communication Management"
+          title="Communication Management"
           subtitle="Manage all incoming and outgoing messages for admin"
           stats={[
             {
@@ -270,14 +270,14 @@ const CommunicationManagement: React.FC = () => {
                 <>
                   {activeTab === 'inbox' && !isLoadingInbox && inboxMessages.length > 0 && (
                     <>
-                      <ApplicationsTable data={inboxMessages.filter(msg => msg && msg.id).map((msg) => { 
+                      <ApplicationsTable data={inboxMessages.filter(msg => msg && msg.id).map((msg) => {
                         if (!msg) return null;
                         return {
-                          ...msg, 
+                          ...msg,
                           id: msg.id,
                           sender: msg.sender ? { ...msg.sender, id: msg.sender.id } : undefined,
-                          recipients: typeof msg.recipients === 'string' 
-                            ? msg.recipients 
+                          recipients: typeof msg.recipients === 'string'
+                            ? msg.recipients
                             : msg.recipients.map((recipient: { id: string; name: string; email: string; role: string; status: string }) => ({ ...recipient, id: recipient.id }))
                         };
                       }).filter(Boolean) as TransformedMessage[]} columns={inboxColumns} actions={inboxActions} />
@@ -294,13 +294,13 @@ const CommunicationManagement: React.FC = () => {
                   )}
                   {activeTab === 'sent' && !isLoadingSent && sentMessages.length > 0 && (
                     <>
-                      <ApplicationsTable data={sentMessages.filter(msg => msg && msg.id).map((msg) => { 
+                      <ApplicationsTable data={sentMessages.filter(msg => msg && msg.id).map((msg) => {
                         if (!msg) return null;
                         return {
-                          ...msg, 
+                          ...msg,
                           id: msg.id,
                           sender: msg.sender ? { ...msg.sender, id: msg.sender.id } : undefined,
-                          recipients: msg.recipients 
+                          recipients: msg.recipients
                         };
                       }).filter(Boolean) as TransformedMessage[]} columns={sentColumns} actions={sentActions} />
                       <Pagination
@@ -316,16 +316,16 @@ const CommunicationManagement: React.FC = () => {
                   )}
                   {((activeTab === 'inbox' && !isLoadingInbox && inboxMessages.length === 0) ||
                     (activeTab === 'sent' && !isLoadingSent && sentMessages.length === 0)) && (
-                    <div className="flex flex-col items-center justify-center py-12">
-                      <div className="w-16 h-16 bg-purple-900/30 rounded-full flex items-center justify-center mb-4 border border-purple-500/30">
-                        <Mail size={32} className="text-purple-400" />
+                      <div className="flex flex-col items-center justify-center py-12">
+                        <div className="w-16 h-16 bg-purple-900/30 rounded-full flex items-center justify-center mb-4 border border-purple-500/30">
+                          <Mail size={32} className="text-purple-400" />
+                        </div>
+                        <h3 className="text-lg font-medium text-white mb-1">No Messages Found</h3>
+                        <p className="text-gray-400 text-center max-w-sm">
+                          There are no messages matching your current filters. Try adjusting your search criteria.
+                        </p>
                       </div>
-                      <h3 className="text-lg font-medium text-white mb-1">No Messages Found</h3>
-                      <p className="text-gray-400 text-center max-w-sm">
-                        There are no messages matching your current filters. Try adjusting your search criteria.
-                      </p>
-                    </div>
-                  )}
+                    )}
                 </>
               )}
             </div>
@@ -338,11 +338,11 @@ const CommunicationManagement: React.FC = () => {
         initialForm={
           selectedMessage && selectedMessage.sender
             ? {
-                to: [{ value: selectedMessage.sender.id, label: selectedMessage.sender.name }],
-                subject: `Re: ${selectedMessage.subject}`,
-                message: '',
-                isAdmin: true
-              }
+              to: [{ value: selectedMessage.sender.id, label: selectedMessage.sender.name }],
+              subject: `Re: ${selectedMessage.subject}`,
+              message: '',
+              isAdmin: true
+            }
             : { to: [], subject: '', message: '', isAdmin: true }
         }
         userGroups={USER_GROUPS}

@@ -2,7 +2,7 @@ export interface Club {
   id: string;
   name: string;
   type: string;
-  members: string;
+  members: string | string[];
   icon: string;
   color: string;
   status: string;
@@ -13,6 +13,8 @@ export interface Club {
   createdAt: string;
   upcomingEvents: { date: string; description: string }[];
   memberCount?: number;
+  enteredMembers?: number;
+  description?: string;
   _id?: string;
   clubName?: string;
   whyJoin?: string;
@@ -33,7 +35,7 @@ export interface ClubRequest {
   requestedBy: string;
   createdAt: string;
   status: string;
-  rejectionReason: string;
+  rejectionReason?: string;
   upcomingEvents: { date: string; description: string }[];
   clubName?: string;
   requestedId?: string;
@@ -41,6 +43,7 @@ export interface ClubRequest {
   id?: string;
   whyJoin?: string;
   additionalInfo?: string;
+  clubDescription?: string;
 }
 
 export type ClubStatus = 'active' | 'inactive';
@@ -140,12 +143,15 @@ export interface ClubRequestDetails {
     updatedAt: string;
     whyJoin: string;
     additionalInfo?: string;
+    clubDescription?: string;
     club: {
       id: string;
       name: string;
       type: string;
       about: string;
       enteredMembers: number;
+      members?: string | string[];
+      description?: string;
       nextMeeting?: string;
     };
     user: {

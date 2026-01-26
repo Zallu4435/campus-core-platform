@@ -2,13 +2,9 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { sportsService } from '../services/sports.service';
-import { Team, TeamApiResponseSingle } from '../../domain/types/management/sportmanagement';
+import { Team, TeamApiResponseSingle, PlayerRequest, SportRequestDetails, Filters, SportsApiResponse } from '../../domain/types/management/sportmanagement';
 
-interface Filters {
-  sportType: string;
-  status: string;
-  dateRange: string;
-}
+// Filters interface is now imported from domain types
 
 export const useSportsManagement = () => {
   const queryClient = useQueryClient();
@@ -54,11 +50,11 @@ export const useSportsManagement = () => {
     return dateRangeString;
   };
 
-  const { data: teamsData, isLoading: isLoadingTeams, error: teamsError } = useQuery({
+  const { data: teamsData, isLoading: isLoadingTeams, error: teamsError } = useQuery<SportsApiResponse<Team>['data']>({
     queryKey: ['teams', page, filters, searchTerm, limit],
-    queryFn: () => {
+    queryFn: async (): Promise<SportsApiResponse<Team>['data']> => {
       const dateRange = getDateRangeFilter(filters.dateRange);
-      return sportsService.getTeams(
+      const data = await sportsService.getTeams(
         page,
         limit,
         filters.sportType !== 'all' ? filters.sportType : undefined,
@@ -67,15 +63,32 @@ export const useSportsManagement = () => {
         dateRange,
         searchTerm && searchTerm.trim() !== '' ? searchTerm : undefined
       );
+      if (data && data.data) {
+        return {
+          ...data,
+          data: data.data.map((team: Team) => ({
+            ...team,
+            id: team.id || team._id || '',
+            _id: team._id || team.id || '',
+            name: team.name || team.title || '',
+            title: team.title || team.name || '',
+            participants: team.participants || team.playerCount || 0,
+            playerCount: team.playerCount || team.participants || 0,
+            formedOn: team.formedOn || team.createdAt || '',
+            createdAt: team.createdAt || team.formedOn || '',
+          }))
+        };
+      }
+      return data;
     },
     enabled: activeTab === 'teams',
   });
 
-  const { data: playerRequestsData, isLoading: isLoadingPlayerRequests, error: playerRequestsError } = useQuery({
+  const { data: playerRequestsData, isLoading: isLoadingPlayerRequests, error: playerRequestsError } = useQuery<SportsApiResponse<PlayerRequest>['data']>({
     queryKey: ['playerRequests', page, filters, searchTerm, limit],
-    queryFn: () => {
+    queryFn: async (): Promise<SportsApiResponse<PlayerRequest>['data']> => {
       const dateRange = getDateRangeFilter(filters.dateRange);
-      return sportsService.getPlayerRequests(
+      const data = await sportsService.getPlayerRequests(
         page,
         limit,
         filters.sportType !== 'all' ? filters.sportType : undefined,
@@ -83,24 +96,87 @@ export const useSportsManagement = () => {
         dateRange,
         searchTerm && searchTerm.trim() !== '' ? searchTerm : undefined
       );
+      if (data && data.data) {
+        return {
+          ...data,
+          data: data.data.map((req: PlayerRequest) => ({
+            ...req,
+            requestId: req.requestId || req.id || req._id || '',
+            id: req.id || req._id || '',
+            _id: req._id || req.id || '',
+            teamName: req.teamName || req.sportTitle || '',
+            sportName: req.sportName || req.sportTitle || '',
+            requestedBy: req.requestedBy || req.userName || '',
+            requestedAt: req.requestedAt || req.requestedDate || '',
+          }))
+        };
+      }
+      return data;
     },
     enabled: activeTab === 'requests',
   });
 
   const { data: teamDetails, isLoading: isLoadingTeamDetails } = useQuery<TeamApiResponseSingle['data']>({
     queryKey: ['teamDetails', selectedTeamId],
-    queryFn: () => {
+    queryFn: async () => {
       if (!selectedTeamId) throw new Error('No team ID provided');
-      return sportsService.getTeamDetails(selectedTeamId);
+      const data = await sportsService.getTeamDetails(selectedTeamId);
+      if (data && data.sport) {
+        const sport = data.sport;
+        return {
+          ...data,
+          sport: {
+            ...sport,
+            id: sport.id || sport._id || '',
+            _id: sport._id || sport.id || '',
+            name: sport.name || sport.title || '',
+            title: sport.title || sport.name || '',
+            participants: sport.participants || sport.playerCount || 0,
+            playerCount: sport.playerCount || sport.participants || 0,
+            formedOn: sport.formedOn || sport.createdAt || '',
+            createdAt: sport.createdAt || sport.formedOn || '',
+          }
+        };
+      }
+      return data;
     },
     enabled: !!selectedTeamId,
   });
 
-  const { data: requestDetails, isLoading: isLoadingRequestDetails } = useQuery({
+  const { data: requestDetails, isLoading: isLoadingRequestDetails } = useQuery<SportRequestDetails>({
     queryKey: ['requestDetails', selectedRequestId],
-    queryFn: () => {
+    queryFn: async () => {
       if (!selectedRequestId) throw new Error('No request ID provided');
-      return sportsService.getRequestDetails(selectedRequestId);
+      const data = await sportsService.getRequestDetails(selectedRequestId);
+      // Backend returns sportRequest: { ... }
+      if (data && data.sportRequest) {
+        const req = data.sportRequest;
+        const normalizedRequest: SportRequestDetails = {
+          sportRequest: {
+            id: req.id || '',
+            status: req.status || '',
+            createdAt: req.requestedDate || '',
+            updatedAt: req.updatedAt || '',
+            whyJoin: req.whyJoin || '',
+            additionalInfo: req.additionalInfo || '',
+            sport: {
+              id: req.sportId || '',
+              title: req.sportTitle || '',
+              type: req.type || '',
+              headCoach: req.headCoach || '',
+              playerCount: req.playerCount || 0,
+              division: req.division || '',
+            },
+            user: {
+              id: req.userId || '',
+              name: req.userName || '',
+              email: req.userEmail || '',
+            },
+          }
+        };
+        return normalizedRequest;
+      }
+      throw new Error('Failed to load request details');
     },
     enabled: !!selectedRequestId,
   });
@@ -117,7 +193,7 @@ export const useSportsManagement = () => {
   });
 
   const { mutateAsync: updateTeam } = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<Team> }) => 
+    mutationFn: ({ id, data }: { id: string; data: Partial<Team> }) =>
       sportsService.updateTeam(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['teams'] });
@@ -167,39 +243,6 @@ export const useSportsManagement = () => {
   const handleTabChange = (tab: 'teams' | 'requests') => {
     setActiveTab(tab);
     setPage(1);
-
-    if (tab === 'teams') {
-      queryClient.fetchQuery({
-        queryKey: ['teams', page, filters, searchTerm, limit],
-        queryFn: () => {
-          const dateRange = getDateRangeFilter(filters.dateRange);
-          return sportsService.getTeams(
-            page,
-            limit,
-            filters.sportType !== 'all' ? filters.sportType : undefined,
-            filters.status !== 'all' ? filters.status : undefined,
-            undefined, // coach
-            dateRange,
-            searchTerm && searchTerm.trim() !== '' ? searchTerm : undefined
-          );
-        },
-      });
-    } else if (tab === 'requests') {
-      queryClient.fetchQuery({
-        queryKey: ['playerRequests', page, filters, searchTerm, limit],
-        queryFn: () => {
-          const dateRange = getDateRangeFilter(filters.dateRange);
-          return sportsService.getPlayerRequests(
-            page,
-            limit,
-            filters.sportType !== 'all' ? filters.sportType : undefined,
-            filters.status !== 'all' ? filters.status : undefined,
-            dateRange,
-            searchTerm && searchTerm.trim() !== '' ? searchTerm : undefined
-          );
-        },
-      });
-    }
   };
 
   const handleViewTeam = (teamId: string) => {
@@ -233,7 +276,8 @@ export const useSportsManagement = () => {
     approvePlayerRequest,
     rejectPlayerRequest,
     handleTabChange,
-    teamDetails : teamDetails?.sport,
+    activeTab,
+    teamDetails: teamDetails?.sport,
     handleViewTeam,
     handleEditTeam,
     setSelectedTeamId,

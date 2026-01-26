@@ -9,6 +9,18 @@ import { ghostParticles } from '../../../../shared/constants/paymentManagementCo
 
 
 const AddChargeModal: React.FC<AddChargeModalProps> = ({ isOpen, onClose, onSubmit, initialValues }) => {
+  const getInitialValue = (val: string | Record<string, unknown> | undefined) => {
+    if (typeof val === 'object' && val !== null) {
+      return (val.type as string) || (val.slug as string) || '';
+    }
+    return val || '';
+  };
+
+  const formatDateForInput = (dateStr: string) => {
+    if (!dateStr) return '';
+    return dateStr.split('T')[0];
+  };
+
   const {
     control,
     handleSubmit,
@@ -22,8 +34,8 @@ const AddChargeModal: React.FC<AddChargeModalProps> = ({ isOpen, onClose, onSubm
         description: initialValues.description || '',
         amount: initialValues.amount !== undefined ? String(initialValues.amount) : '0',
         term: initialValues.term || '',
-        dueDate: initialValues.dueDate || '',
-        applicableFor: initialValues.applicableFor || '',
+        dueDate: formatDateForInput(initialValues.dueDate || ''),
+        applicableFor: getInitialValue(initialValues.applicableFor),
       }
       : {
         title: '',
@@ -43,8 +55,8 @@ const AddChargeModal: React.FC<AddChargeModalProps> = ({ isOpen, onClose, onSubm
         description: initialValues.description || '',
         amount: initialValues.amount !== undefined ? String(initialValues.amount) : '0',
         term: initialValues.term || '',
-        dueDate: initialValues.dueDate || '',
-        applicableFor: initialValues.applicableFor || '',
+        dueDate: formatDateForInput(initialValues.dueDate || ''),
+        applicableFor: getInitialValue(initialValues.applicableFor),
       });
     } else if (isOpen) {
       reset({
@@ -216,6 +228,7 @@ const AddChargeModal: React.FC<AddChargeModalProps> = ({ isOpen, onClose, onSubm
                       <input
                         {...field}
                         type="date"
+                        min={new Date().toISOString().split('T')[0]}
                         className={`w-full pl-12 pr-4 py-3 bg-gray-900/60 border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 ${errors.dueDate ? 'border-red-500' : 'border-purple-500/30'
                           }`}
                       />
@@ -231,13 +244,18 @@ const AddChargeModal: React.FC<AddChargeModalProps> = ({ isOpen, onClose, onSubm
                   name="applicableFor"
                   control={control}
                   render={({ field }) => (
-                    <input
+                    <select
                       {...field}
-                      type="text"
-                      className={`w-full px-4 py-3 bg-gray-900/60 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 ${errors.applicableFor ? 'border-red-500' : 'border-purple-500/30'
+                      className={`w-full px-4 py-3 bg-gray-900/60 border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 ${errors.applicableFor ? 'border-red-500' : 'border-purple-500/30'
                         }`}
-                      placeholder="e.g., batch_2024, cs_department"
-                    />
+                    >
+                      <option value="">Select Target Group</option>
+                      <option value="all_students">All Students</option>
+                      <option value="batch_2024">Batch 2024</option>
+                      <option value="batch_2025">Batch 2025</option>
+                      <option value="cs_department">CS Department</option>
+                      <option value="admission_applicant">Admission Applicant</option>
+                    </select>
                   )}
                 />
                 {errors.applicableFor && <p className="mt-1 text-sm text-red-400">{errors.applicableFor.message}</p>}

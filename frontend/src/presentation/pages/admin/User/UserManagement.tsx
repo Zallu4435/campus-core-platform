@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import toast from 'react-hot-toast';
 import { useUserManagement } from '../../../../application/hooks/useUserManagement';
 import { FiUsers, FiClipboard, FiBarChart2, FiEye, FiCheckCircle, FiXCircle, FiSlash } from 'react-icons/fi';
 import { debounce } from 'lodash';
@@ -99,7 +100,7 @@ const UserManagement: React.FC = () => {
   const debouncedSearchChange = useCallback(
     debounce((query: string) => {
       setFilters((prev) => ({ ...prev, search: query }));
-      setPage(1); 
+      setPage(1);
     }, 500),
     []
   );
@@ -109,7 +110,7 @@ const UserManagement: React.FC = () => {
     setFilters((prev) => ({
       ...prev,
       [field]: value,
-      dateRange: 'custom' 
+      dateRange: 'custom'
     }));
   };
 
@@ -188,6 +189,7 @@ const UserManagement: React.FC = () => {
     } catch (error) {
       setShowBlockWarning(false);
       setAdmissionToBlock(null);
+      console.error('Error blocking/unblocking user:', error);
     }
   };
 
@@ -196,12 +198,12 @@ const UserManagement: React.FC = () => {
       status: 'all',
       program: 'all',
       dateRange: 'all',
-      search: '', 
-      startDate: '', 
-      endDate: '', 
+      search: '',
+      startDate: '',
+      endDate: '',
     });
     setCustomDateRange({ startDate: '', endDate: '' });
-    setPage(1); 
+    setPage(1);
   };
 
   const toggleSection = (section: keyof typeof expandedSections) => {

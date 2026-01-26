@@ -29,7 +29,6 @@ export class SportMapper {
             status: data.status,
             createdAt: data.createdAt,
             updatedAt: data.updatedAt,
-            logo: data.logo,
         });
     }
 
@@ -56,7 +55,6 @@ export class SportMapper {
                 status: (doc.status as SportStatus) || SportStatus.Active,
                 createdAt: doc.createdAt as Date,
                 updatedAt: doc.updatedAt as Date,
-                logo: doc.logo as string
             });
         });
     }
@@ -77,7 +75,6 @@ export class SportMapper {
             upcomingGames: domainEntity.upcomingGames,
             participants: domainEntity.participants,
             status: domainEntity.status,
-            logo: domainEntity.logo,
         };
     }
 
@@ -104,7 +101,6 @@ export class SportMapper {
             status: data.status,
             createdAt: data.createdAt,
             updatedAt: data.updatedAt,
-            logo: data.logo,
         };
     }
 
@@ -121,7 +117,6 @@ export class SportMapper {
             playerCount: data.participants || 0,
             status: data.status,
             formedOn: data.createdAt ? data.createdAt.toISOString() : undefined,
-            logo: data.logo || "",
             division: data.division || "",
             participants: data.participants || 0,
             icon: data.icon,

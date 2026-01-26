@@ -16,6 +16,7 @@ export interface Charge {
   term: string;
   applicableFor: string;
   createdBy?: string;
+  creatorName?: string;
   createdAt: string;
   updatedAt: string;
   status?: 'Active' | 'Inactive';
@@ -25,6 +26,8 @@ export interface Payment {
   id: string;
   _id?: string;
   studentId?: string;
+  studentName?: string;
+  studentEmail?: string;
   date: string;
   description: string;
   method: 'Credit Card' | 'Bank Transfer' | 'Financial Aid' | 'Razorpay';

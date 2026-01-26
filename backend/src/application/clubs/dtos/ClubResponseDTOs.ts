@@ -10,18 +10,14 @@ import { ClubData } from "../../../domain/clubs/entities/ClubTypes";
 // Re-exporting consolidated DTOs for convenience
 export { ClubSummaryDTO, ClubRequestDTO };
 
-export interface PaginatedResponseDTO<T> {
+export interface PaginatedResponseDTO {
     totalItems: number;
     totalPages: number;
     currentPage: number;
-    data: T[];
 }
 
-export interface GetClubsResponseDTO {
+export interface GetClubsResponseDTO extends PaginatedResponseDTO {
     clubs: ClubSummaryDTO[];
-    totalItems: number;
-    totalPages: number;
-    currentPage: number;
 }
 
 export interface GetClubByIdResponseDTO {
@@ -46,23 +42,25 @@ export interface LeaveClubResponseDTO {
     club: ClubData;
 }
 
-export interface GetClubRequestsResponseDTO extends PaginatedResponseDTO<ClubRequestDTO> { }
+export interface GetClubRequestsResponseDTO extends PaginatedResponseDTO {
+    clubRequests: ClubRequestDTO[];
+}
 
 export interface CreateClubRequestResponseDTO {
     message: string;
-    request: ClubRequestDTO;
+    clubRequest: ClubRequestDTO;
 }
 
 export interface ApproveClubRequestResponseDTO {
     message: string;
-    request: ClubRequestDTO;
+    clubRequest: ClubRequestDTO;
 }
 
 export interface RejectClubRequestResponseDTO {
     message: string;
-    request: ClubRequestDTO;
+    clubRequest: ClubRequestDTO;
 }
 
 export interface GetClubRequestDetailsResponseDTO {
-    request: ClubRequestDTO;
+    clubRequest: ClubRequestDTO;
 }

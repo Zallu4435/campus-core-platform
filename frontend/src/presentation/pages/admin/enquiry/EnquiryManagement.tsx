@@ -103,9 +103,8 @@ const EnquiryManagement: React.FC = () => {
       if (selectedEnquiry && selectedEnquiry.id === enquiryId) {
         setSelectedEnquiry({ ...selectedEnquiry, status: status as EnquiryStatus });
       }
-      toast.success('Enquiry status updated successfully');
     } catch (error) {
-      toast.error('Failed to update enquiry status');
+      console.error('Failed to update enquiry status:', error);
     }
   };
 

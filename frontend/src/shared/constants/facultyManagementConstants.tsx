@@ -37,7 +37,7 @@ export const facultyColumns: ColumnConfig<Faculty>[] = [
         </div>
         <div className="ml-3">
           <p className="font-medium text-gray-200">{faculty.fullName || 'N/A'}</p>
-          <p className="text-xs text-gray-400">ID: {faculty._id.substring(0, 8)}</p>
+          <p className="text-xs text-gray-400">ID: {faculty._id ? faculty._id.substring(0, 8) : 'N/A'}</p>
         </div>
       </div>
     ),
@@ -79,10 +79,10 @@ export const facultyColumns: ColumnConfig<Faculty>[] = [
     render: (faculty: Faculty) => (
       <span
         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${faculty.status.toLowerCase() === 'approved'
-            ? 'bg-green-900/30 text-green-400 border-green-500/30'
-            : faculty.status.toLowerCase() === 'rejected'
-              ? 'bg-red-900/30 text-red-400 border-red-500/30'
-              : 'bg-yellow-900/30 text-yellow-400 border-yellow-500/30'
+          ? 'bg-green-900/30 text-green-400 border-green-500/30'
+          : faculty.status.toLowerCase() === 'rejected'
+            ? 'bg-red-900/30 text-red-400 border-red-500/30'
+            : 'bg-yellow-900/30 text-yellow-400 border-yellow-500/30'
           }`}
         role="status"
       >

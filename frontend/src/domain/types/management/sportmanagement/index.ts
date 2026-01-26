@@ -8,7 +8,6 @@ export interface Team {
   playerCount: number;
   status: string;
   createdAt: string;
-  logo: string;
   category: string;
   organizer: string;
   organizerType: string;
@@ -17,44 +16,63 @@ export interface Team {
   division: string;
   homeGames: number;
   record: string;
-  name: string;
-  participants: number;
-  formedOn: string;
-  description: string;
+  name?: string;
+  participants?: number;
+  formedOn?: string;
+  description?: string;
   upcomingGames: { date: string; description: string }[];
   _id?: string;
-  _title?: string;
-  _type?: string;
-  _headCoach?: string;
-  _playerCount?: number;
-  _status?: string;
-  _createdAt?: string;
-  _logo?: string;
-  _category?: string;
-  _organizer?: string;
-  _organizerType?: string;
-  _icon?: string;
-  _color?: string;
-  _division?: string;
-  _homeGames?: number;
-  _record?: string;
-  _upcomingGames?: { date: string; description: string }[];
-  data?: unknown;
 }
 
 export interface PlayerRequest {
-  requestId: string;
-  teamName: string;
-  requestedBy: string;
-  type: string;
-  requestedDate: string;
+  id: string;
+  sportId: string;
+  sportTitle: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
   status: string;
+  whyJoin: string;
+  additionalInfo: string;
+  requestedDate: string;
+  updatedAt: string;
+  type: string;
+  headCoach: string;
+  playerCount: number;
+  division: string;
+  // UI helper fields
+  requestId?: string;
+  teamName?: string;
   sportName?: string;
-  requestedAt: string;
+  requestedBy?: string;
+  requestedAt?: string;
+  _id?: string;
 }
 
 export interface SportRequestDetails {
-  data: {
+  sportRequest: {
+    id: string;
+    status: string;
+    createdAt: string;
+    updatedAt: string;
+    whyJoin: string;
+    requestedDate?: string;
+    additionalInfo?: string;
+    sport: {
+      id: string;
+      title: string;
+      type: string;
+      headCoach: string;
+      playerCount: number;
+      division: string;
+    };
+    user: {
+      id: string;
+      name: string;
+      email: string;
+    };
+  };
+  data?: {
     id: string;
     status: string;
     createdAt: string;
@@ -67,32 +85,9 @@ export interface SportRequestDetails {
       type: string;
       description: string;
       expectedParticipants: number;
-      proposedDate?: string;
-      proposedVenue?: string;
     };
     user: {
       name?: string;
-      email: string;
-    };
-  };
-  sportRequest: {
-    id: string;
-    status: string;
-    createdAt: string;
-    updatedAt: string;
-    whyJoin: string;
-    additionalInfo?: string;
-    sport: {
-      id: string;
-      title: string;
-      type: string;
-      headCoach: string;
-      playerCount: number;
-      division: string;
-    };
-    user?: {
-      id: string;
-      name: string;
       email: string;
     };
   };
@@ -135,7 +130,6 @@ export interface TeamDetailsTeam {
   category: string;
   organizer: string;
   organizerType: string;
-  logo: string;
   color: string;
   division: string;
   coach: string;
@@ -344,7 +338,7 @@ export interface IconOption {
 
 export interface ColorOption {
   color: string;
-} 
+}
 
 export interface SportsApiResponse<T = unknown> {
   data: {
@@ -363,68 +357,11 @@ export interface TeamApiResponseSingle {
 
 export interface PlayerRequestApiResponseSingle {
   data: {
-    sportRequest: {
-      id: string;
-      status: string;
-      createdAt: string;
-      updatedAt: string;
-      whyJoin: string;
-      additionalInfo?: string;
-      sport: {
-        id: string;
-        title: string;
-        type: string;
-        headCoach: string;
-        playerCount: number;
-        division: string;
-      };
-      user: {
-        id: string;
-        name: string;
-        email: string;
-      };
-    };
+    sportRequest: PlayerRequest;
   };
 }
 
-export interface Team {
-  _id?: string;
-  title: string;
-  type: string;
-  headCoach: string;
-  playerCount: number;
-  status: string;
-  createdAt: string;
-  logo: string;
-  category: string;
-  organizer: string;
-  organizerType: string;
-  icon: string;
-  color: string;
-  division: string;
-  homeGames: number;
-  record: string;
-  upcomingGames: { date: string; description: string }[];
-}
-
-export interface TeamRequest {
-  id: string;
-  teamName: string;
-  sportType: string;
-  requestedBy: string;
-  reason: string;
-  requestedAt: string;
-  status: string;
-}
-
-export interface PlayerRequest {
-  _id: string;
-  teamName: string;
-  requestedBy: string;
-  type: string;
-  requestedDate: string;
-  status: string;
-}
+// Consolidated interfaces have been moved to the top of the file
 
 
 export interface EventModalProps {
@@ -439,6 +376,6 @@ export interface EventModalProps {
     venue: string;
     status: string;
   };
-  setForm: (form: unknown) => void;
+  setForm: (form: EventModalProps['form']) => void;
   sportTypes: string[];
 }

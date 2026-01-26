@@ -1,16 +1,16 @@
 import React from 'react';
-import { 
-  IoCloseOutline as X, 
-  IoCalendarOutline as Calendar, 
-  IoTimeOutline as Clock, 
-  IoLocationOutline as MapPin, 
-  IoPeopleOutline as Users, 
+import {
+  IoCloseOutline as X,
+  IoCalendarOutline as Calendar,
+  IoTimeOutline as Clock,
+  IoLocationOutline as MapPin,
+  IoPeopleOutline as Users,
   IoTrophyOutline as Trophy,
   IoSparklesOutline as Sparkles,
   IoTicketOutline as Ticket,
   IoInformationCircleOutline as Info,
 } from 'react-icons/io5';
-import { 
+import {
   EventDetailsModalProps,
 } from '../../../../../domain/types/management/eventmanagement';
 import { usePreventBodyScroll } from '../../../../../shared/hooks/usePreventBodyScroll';
@@ -25,8 +25,8 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
 
   if (!isOpen || !event) return null;
 
-  const OrganizerIcon = getOrganizerIcon('_organizerType' in event ? event._organizerType : 'default');
-  
+  const OrganizerIcon = getOrganizerIcon(event.organizerType || 'default');
+
   return (
     <div className="fixed inset-0 bg-gray-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       {ghostParticles.map((particle, i) => (
@@ -57,10 +57,10 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
                 <Sparkles size={28} className="text-white" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-purple-100">{event._title || 'Untitled Event'}</h2>
-                <p className="text-sm text-purple-300 mt-1">Event ID: {event._id || event.id}</p>
+                <h2 className="text-2xl font-bold text-purple-100">{event.title || 'Untitled Event'}</h2>
+                <p className="text-sm text-purple-300 mt-1">Event ID: {event.id || event._id}</p>
                 <div className="flex items-center mt-2 space-x-4">
-                  <StatusBadge status={event._status || event.status} />
+                  <StatusBadge status={event.status} />
                 </div>
               </div>
             </div>
@@ -75,12 +75,12 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
 
         <div className="overflow-y-auto max-h-[calc(90vh-200px)] p-6 space-y-6 custom-scrollbar">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <InfoCard icon={OrganizerIcon} label="Organizer" value={event._organizer || 'Unknown'} />
-            <InfoCard icon={Ticket} label="Event Type" value={event._eventType || 'Unknown'} />
-            <InfoCard icon={MapPin} label="Venue" value={event._location || 'TBD'} />
-            <InfoCard icon={Clock} label="Timeframe" value={event._timeframe || 'TBD'} />
-            <InfoCard icon={Users} label="Participants" value={`${event._participants || 0} / ${event._maxParticipants || 0} registered`} />
-            <InfoCard icon={Calendar} label="Registration" value={event._registrationRequired ? "Required" : "Not Required"} />
+            <InfoCard icon={OrganizerIcon} label="Organizer" value={event.organizer || 'Unknown'} />
+            <InfoCard icon={Ticket} label="Event Type" value={event.eventType || 'Unknown'} />
+            <InfoCard icon={MapPin} label="Venue" value={event.location || 'TBD'} />
+            <InfoCard icon={Clock} label="Timeframe" value={event.timeframe || 'TBD'} />
+            <InfoCard icon={Users} label="Participants" value={`${event.participants || 0} / ${event.maxParticipants || 0} registered`} />
+            <InfoCard icon={Calendar} label="Registration" value={event.registrationRequired ? "Required" : "Not Required"} />
           </div>
 
           <div className="mb-8">
@@ -90,23 +90,23 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
                 <h3 className="ml-3 text-lg font-semibold text-purple-100">Event Description</h3>
               </div>
               <div className="p-6">
-                <p className="text-purple-200 leading-relaxed">{event._description || event.description || 'No description available'}</p>
-                {event._additionalInfo && (
+                <p className="text-purple-200 leading-relaxed">{event.description || 'No description available'}</p>
+                {event.additionalInfo && (
                   <div className="mt-4 p-4 bg-gray-900/60 rounded-lg border border-purple-500/30">
                     <h4 className="text-sm font-medium text-purple-300 mb-2 flex items-center">
                       <Sparkles size={16} className="mr-2" />
                       Additional Information
                     </h4>
-                    <p className="text-purple-200 text-sm">{event._additionalInfo}</p>
+                    <p className="text-purple-200 text-sm">{event.additionalInfo}</p>
                   </div>
                 )}
-                {event._requirements && (
+                {event.requirements && (
                   <div className="mt-4 p-4 bg-gray-900/60 rounded-lg border border-purple-500/30">
                     <h4 className="text-sm font-medium text-purple-300 mb-2 flex items-center">
                       <Trophy size={16} className="mr-2" />
                       Requirements
                     </h4>
-                    <p className="text-purple-200 text-sm">{event._requirements}</p>
+                    <p className="text-purple-200 text-sm">{event.requirements}</p>
                   </div>
                 )}
               </div>

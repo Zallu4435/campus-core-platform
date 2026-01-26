@@ -92,7 +92,7 @@ export class DashboardMapper {
         const activities: ActivityItem[] = [];
 
         raw.recentAdmissions.forEach((admission) => {
-            const fullName = admission.personal?.fullName ||
+            const fullName = admission.personalInfo?.fullName ||
                 (admission.registerId?.firstName + ' ' + admission.registerId?.lastName) || 'Unknown';
             activities.push({
                 id: (admission._id as string) || '',

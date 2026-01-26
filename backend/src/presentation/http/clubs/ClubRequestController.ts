@@ -32,8 +32,8 @@ export class ClubRequestController implements IClubRequestController {
     const getClubRequestsRequestDTO: GetClubRequestsRequestDTO = {
       page: Number(page),
       limit: Number(limit),
-      status: String(status),
-      type: String(category),
+      status: status ? String(status) : undefined,
+      type: category ? String(category) : undefined,
       startDate: startDate ? String(startDate) : undefined,
       endDate: endDate ? String(endDate) : undefined,
       search: search ? String(search) : undefined,

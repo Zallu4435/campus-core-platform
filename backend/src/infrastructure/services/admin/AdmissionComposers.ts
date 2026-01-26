@@ -44,7 +44,7 @@ export function getAdminAdmissionsComposer(): IAdminAdmissionController {
     const getAdmissionByIdUseCase: IGetAdmissionByIdUseCase = new GetAdmissionByIdUseCase(repository, mapper, userService);
     const getAdmissionByTokenUseCase: IGetAdmissionByTokenUseCase = new GetAdmissionByTokenUseCase(repository);
     const approveAdmissionUseCase: IApproveAdmissionUseCase = new ApproveAdmissionUseCase(repository, emailService, config);
-    const rejectAdmissionUseCase: IRejectAdmissionUseCase = new RejectAdmissionUseCase(repository);
+    const rejectAdmissionUseCase: IRejectAdmissionUseCase = new RejectAdmissionUseCase(repository, emailService);
     const deleteAdmissionUseCase: IDeleteAdmissionUseCase = new DeleteAdmissionUseCase(repository);
     const confirmAdmissionOfferUseCase: IConfirmAdmissionOfferUseCase = new ConfirmAdmissionOfferUseCase(repository, userService, programService);
     const blockAdmissionUseCase: IBlockAdmissionUseCase = new BlockAdmissionUseCase(repository, userService);

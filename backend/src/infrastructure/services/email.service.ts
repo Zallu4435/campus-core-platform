@@ -5,6 +5,7 @@ import { config } from "../../config/config";
 import { IEmailService } from "../../application/auth/service/IEmailService";
 import {
   AdmissionOfferEmailParams,
+  AdmissionRejectionEmailParams,
   FacultyOfferEmailParams,
   FacultyCredentialsEmailParams,
   PasswordResetOtpEmailParams,
@@ -13,7 +14,7 @@ import {
 } from "../../application/auth/service/EmailServiceParams";
 
 
-class EmailService implements IEmailService { 
+class EmailService implements IEmailService {
   private transporter: nodemailer.Transporter;
 
   constructor() {
@@ -106,6 +107,39 @@ class EmailService implements IEmailService {
       html: htmlContent,
     });
 
+  }
+
+  async sendAdmissionRejectionEmail({
+    to,
+    name,
+    reason,
+  }: AdmissionRejectionEmailParams): Promise<void> {
+    const htmlContent = `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h2 style="color: #2a5885;">Update on Your Application</h2>
+                <p>Dear ${name},</p>
+                <p>Thank you for giving us the opportunity to review your application for admission to our university.</p>
+                <p>After careful consideration, we regret to inform you that we are unable to offer you admission at this time.</p>
+                
+                <div style="background-color: #f9f9f9; border-left: 4px solid #2a5885; padding: 15px; margin: 20px 0;">
+                    <p><strong>Reason:</strong> ${reason}</p>
+                </div>
+
+                <p>This decision was difficult, as we received many qualified applications this year.</p>
+                
+                <p>We wish you the very best in your future academic pursuits.</p>
+                
+                <p>Best regards,<br>
+                The Admissions Team</p>
+            </div>
+        `;
+
+    await this.transporter.sendMail({
+      from: `"Admissions Team" <${config.email.from}>`,
+      to,
+      subject: `Update on Your Admission Application`,
+      html: htmlContent,
+    });
   }
 
   async sendFacultyOfferEmail({

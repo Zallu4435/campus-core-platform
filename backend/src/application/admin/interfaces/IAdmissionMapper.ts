@@ -5,6 +5,6 @@ import { AdmissionRawData, AdmissionPersistenceData } from "../types/RepositoryT
 
 export interface IAdmissionMapper {
     toDomain(raw: AdmissionRawData): AdminAdmission | FullAdmissionDetails;
-    toDTO(domain: AdminAdmission | FullAdmissionDetails, blocked?: boolean): AdmissionResponseDTO | GetAdmissionByIdResponseDTO;
+    toDTO(domain: AdminAdmission | FullAdmissionDetails, blocked?: boolean, viewType?: 'list' | 'detail'): AdmissionResponseDTO | GetAdmissionByIdResponseDTO;
     toPersistence(domain: AdminAdmission | FullAdmissionDetails): AdmissionPersistenceData;
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { FiPlay, FiEdit, FiTrash2, FiUpload, FiEye, FiGrid, FiList, FiCalendar, FiClock, FiBookOpen, FiVideo, FiBriefcase } from 'react-icons/fi';
 import Header from '../../../components/admin/management/Header';
 import Pagination from '../../../components/admin/management/Pagination';
@@ -25,22 +25,24 @@ const VideoManagementPage = () => {
   const [videoToDelete, setVideoToDelete] = useState<Video | null>(null);
 
   useEffect(() => {
+    if (searchQuery === debouncedSearchQuery) return;
     const timer = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery);
-      setPage(1); 
-    }, 500); 
+      setPage(1);
+    }, 500);
 
     return () => clearTimeout(timer);
-  }, [searchQuery]);
+  }, [searchQuery, debouncedSearchQuery]);
 
   useEffect(() => {
+    if (JSON.stringify(filters) === JSON.stringify(debouncedFilters)) return;
     const timer = setTimeout(() => {
-      setDebouncedFilters(filters); 
-      setPage(1); 
+      setDebouncedFilters(filters);
+      setPage(1);
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [filters]);
+  }, [filters, debouncedFilters]);
 
   function slugToDisplayName(slug: string) {
     return slug
@@ -49,17 +51,19 @@ const VideoManagementPage = () => {
       .join(' ');
   }
 
-  const normalizedFilters = {
-    ...debouncedFilters,
-    category:
-      debouncedFilters.category && debouncedFilters.category !== 'all'
-        ? slugToDisplayName(debouncedFilters.category)
-        : '',
-    status:
-      debouncedFilters.status && debouncedFilters.status !== 'all'
-        ? slugToDisplayName(debouncedFilters.status)
-        : '',
-  };
+  const normalizedFilters = useMemo(() => {
+    return {
+      ...debouncedFilters,
+      category:
+        debouncedFilters.category && debouncedFilters.category !== 'all'
+          ? slugToDisplayName(debouncedFilters.category)
+          : '',
+      status:
+        debouncedFilters.status && debouncedFilters.status !== 'all'
+          ? slugToDisplayName(debouncedFilters.status)
+          : '',
+    };
+  }, [debouncedFilters]);
 
   const {
     diplomasData,
@@ -69,12 +73,12 @@ const VideoManagementPage = () => {
     handleSaveVideo,
     handleDeleteVideo,
     fetchVideoById,
-  } = useVideoManagement(page, ITEMS_PER_PAGE, normalizedFilters, debouncedSearchQuery, activeTab);
+  } = useVideoManagement(page, ITEMS_PER_PAGE, normalizedFilters, debouncedSearchQuery);
 
-  const filterOptions = {
+  const filterOptions = useMemo(() => ({
     status: STATUS_OPTIONS,
-    category: diplomasData?.diplomas.map(d => d.category) || [],
-  };
+    category: (diplomasData?.diplomas || []).map(d => d.category),
+  }), [diplomasData?.diplomas]);
 
   const debouncedFilterChange = (field: string, value: string) => {
     setFilters((prev) => ({ ...prev, [field]: value }));
@@ -83,15 +87,14 @@ const VideoManagementPage = () => {
   const handleResetFilters = () => {
     setFilters({ status: 'all', category: '', dateRange: 'all' });
     setSearchQuery('');
-    setPage(1);
   };
 
   const paginatedVideos = videosData?.videos || [];
   const totalPages = videosData?.totalPages || 1;
 
   const tabs = getTabs(
-    paginatedVideos.map(video => ({ ...video, _id: video.id })),
-    activeTab
+    activeTab,
+    videosData?.statusCounts
   );
 
   const handleTabClick = (index: number) => {
@@ -109,8 +112,6 @@ const VideoManagementPage = () => {
       ...prev,
       status: statusMap[newActiveTab] || 'all'
     }));
-
-    setPage(1);
   };
 
   const onSaveVideo = (videoData: FormData | Partial<VideoForEdit>) => {
@@ -286,7 +287,7 @@ const VideoManagementPage = () => {
                                 {video.title}
                               </div>
                               <div className="text-sm text-purple-300">
-                                 ID: {video.id.substring(0, 8)}
+                                ID: {video.id.substring(0, 8)}
                               </div>
                             </div>
                           </div>
@@ -347,15 +348,6 @@ const VideoManagementPage = () => {
                     ))}
                   </tbody>
                 </table>
-                <Pagination
-                  page={page}
-                  totalPages={totalPages}
-                  itemsCount={paginatedVideos.length}
-                  itemName="videos"
-                  onPageChange={setPage}
-                  onFirstPage={() => setPage(1)}
-                  onLastPage={() => setPage(totalPages)}
-                />
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -423,6 +415,10 @@ const VideoManagementPage = () => {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+            {paginatedVideos.length > 0 && (
+              <div className="px-6 pb-6 mt-auto">
                 <Pagination
                   page={page}
                   totalPages={totalPages}
@@ -436,49 +432,48 @@ const VideoManagementPage = () => {
             )}
           </div>
         </div>
-      </div>
 
-      <AddVideoModal
-        isOpen={showAddModal}
-        onClose={() => { setShowAddModal(false); setSelectedVideo(null); }}
-        selectedVideo={selectedVideo ? {
-          id: selectedVideo._id,
-          title: selectedVideo.title,
-          duration: selectedVideo.duration,
-          uploadedAt: selectedVideo.uploadedAt,
-          module: selectedVideo.module,
-          status: selectedVideo.status,
-          diplomaId: selectedVideo.diplomaId,
-          description: selectedVideo.description,
-          videoUrl: selectedVideo.videoUrl,
-        } : null}
-        onSave={onSaveVideo}
-        diplomas={(diplomasData?.diplomas || []).map(d => ({ id: d.id, title: d.title, category: d.category }))}
-      />
-      <VideoPreviewModal
-        isOpen={showPreviewModal}
-        onClose={() => setShowPreviewModal(false)}
-        video={selectedVideo}
-      />
+        <AddVideoModal
+          isOpen={showAddModal}
+          onClose={() => { setShowAddModal(false); setSelectedVideo(null); }}
+          selectedVideo={selectedVideo ? {
+            id: selectedVideo._id,
+            title: selectedVideo.title,
+            duration: selectedVideo.duration,
+            uploadedAt: selectedVideo.uploadedAt,
+            module: selectedVideo.module,
+            status: selectedVideo.status,
+            diplomaId: selectedVideo.diplomaId,
+            description: selectedVideo.description,
+            videoUrl: selectedVideo.videoUrl,
+          } : null}
+          onSave={onSaveVideo}
+          diplomas={(diplomasData?.diplomas || []).map(d => ({ id: d.id, title: d.title, category: d.category }))}
+        />
+        <VideoPreviewModal
+          isOpen={showPreviewModal}
+          onClose={() => setShowPreviewModal(false)}
+          video={selectedVideo}
+        />
 
 
-      <WarningModal
-        isOpen={showDeleteModal && !!videoToDelete}
-        onClose={() => setShowDeleteModal(false)}
-        onConfirm={() => {
-          if (videoToDelete) handleDeleteVideo(videoToDelete);
-          setShowDeleteModal(false);
-          setVideoToDelete(null);
-        }}
-        title="Delete Video"
-        message={`Are you sure you want to delete "${videoToDelete?.title}"? This action cannot be undone.`}
-        confirmText="Delete"
-        cancelText="Cancel"
-        type="danger"
-      />
+        <WarningModal
+          isOpen={showDeleteModal && !!videoToDelete}
+          onClose={() => setShowDeleteModal(false)}
+          onConfirm={() => {
+            if (videoToDelete) handleDeleteVideo(videoToDelete);
+            setShowDeleteModal(false);
+            setVideoToDelete(null);
+          }}
+          title="Delete Video"
+          message={`Are you sure you want to delete "${videoToDelete?.title}"? This action cannot be undone.`}
+          confirmText="Delete"
+          cancelText="Cancel"
+          type="danger"
+        />
 
-      <style>
-        {`
+        <style>
+          {`
           @keyframes floatingMist {
             0% {
               transform: translateY(0) translateX(0);
@@ -494,7 +489,8 @@ const VideoManagementPage = () => {
             }
           }
         `}
-      </style>
+        </style>
+      </div>
     </div>
   );
 };

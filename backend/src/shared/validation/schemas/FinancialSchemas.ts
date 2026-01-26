@@ -126,7 +126,7 @@ export const createChargeSchema = Joi.object({
         .messages({
             'any.required': 'Due date is required'
         }),
-    applicableFor: Joi.object()
+    applicableFor: Joi.string()
         .required()
         .messages({
             'any.required': 'Applicable for is required'
@@ -152,7 +152,7 @@ export const updateChargeBodySchema = Joi.object({
         }),
     term: Joi.string().optional(),
     dueDate: Joi.date().optional(),
-    applicableFor: Joi.object().optional()
+    applicableFor: Joi.string().optional()
 });
 
 export const deleteChargeSchema = Joi.object({

@@ -3,14 +3,19 @@ import { EventRequestDTO } from "../../../../application/events/dtos/EventBaseDT
 import { EventRequestData } from "../../../../domain/events/entities/EventTypes";
 
 interface PopulatedEvent {
-    id: string;
+    id?: string;
+    _id?: string;
     title: string;
+    description: string;
     eventType: string;
     date: string;
+    location: string;
+    participants: number;
 }
 
 interface PopulatedUser {
-    id: string;
+    id?: string;
+    _id?: string;
     firstName: string;
     lastName: string;
     email: string;
@@ -57,19 +62,19 @@ export class EventRequestMapper {
             throw new Error("Cannot map null data to DTO");
         }
 
-        const event = typeof data.eventId !== 'string'
+        const event = (data.eventId && typeof data.eventId !== 'string')
             ? data.eventId as unknown as PopulatedEvent
-            : { id: data.eventId, title: "", eventType: "", date: "" };
+            : { id: (data.eventId as string) || "", title: "", description: "", eventType: "", date: "", location: "", participants: 0 };
 
-        const user = typeof data.userId !== 'string'
+        const user = (data.userId && typeof data.userId !== 'string')
             ? data.userId as unknown as PopulatedUser
-            : { id: data.userId, firstName: "", lastName: "", email: "" };
+            : { id: (data.userId as string) || "", firstName: "", lastName: "", email: "" };
 
         return {
             id: data.id,
-            eventId: event.id || "",
+            eventId: event.id || (event._id ? event._id.toString() : "") || "",
             eventName: event.title || "",
-            userId: user.id || "",
+            userId: user.id || (user._id ? user._id.toString() : "") || "",
             userName: user.firstName ? `${user.firstName} ${user.lastName}` : "",
             userEmail: user.email || "",
             status: data.status,
@@ -77,7 +82,10 @@ export class EventRequestMapper {
             additionalInfo: data.additionalInfo || "",
             requestedDate: data.createdAt ? data.createdAt.toISOString() : "",
             proposedDate: event.date ? new Date(event.date).toISOString() : "",
+            proposedVenue: event.location || "",
             type: event.eventType || "",
+            description: event.description || "",
+            expectedParticipants: event.participants || 0,
         };
     }
 

@@ -58,26 +58,44 @@ export class ClubRequestMapper {
             throw new Error("Cannot map null data to DTO");
         }
 
-        const club = (typeof data.clubId !== 'string'
-            ? data.clubId
-            : { id: data.clubId, name: "", type: "", description: "" }) as PopulatedClub;
+        const club = typeof data.clubId !== 'string'
+            ? {
+                id: data.clubId.id || data.clubId._id?.toString() || "",
+                name: data.clubId.name || "",
+                type: data.clubId.type || "",
+                description: data.clubId.description || data.clubId.about || ""
+            } as PopulatedClub
+            : { id: data.clubId || "", name: "", type: "", description: "" } as PopulatedClub;
 
-        const user = (typeof data.userId !== 'string'
-            ? data.userId
-            : { id: data.userId, email: "", firstName: "", lastName: "" }) as PopulatedUser;
+        const user = typeof data.userId !== 'string'
+            ? {
+                id: data.userId.id || data.userId._id?.toString() || "",
+                email: data.userId.email || "",
+                firstName: data.userId.firstName || "",
+                lastName: data.userId.lastName || ""
+            }
+            : { id: data.userId || "", email: "", firstName: "", lastName: "" };
 
         return {
-            id: data.id,
+            id: data.id || data._id?.toString() || "",
+            _id: data.id || data._id?.toString() || "",
             userId: user.id || "",
             userName: user.firstName ? `${user.firstName} ${user.lastName}` : "",
             userEmail: user.email || "",
+            requestedBy: user.firstName ? `${user.firstName} ${user.lastName}` : user.email || "",
             clubId: club.id || "",
             clubName: club.name || "",
+            name: club.name || "",
             clubType: club.type || "",
+            type: club.type || "",
             clubDescription: club.description || club.about || "",
             status: data.status,
             createdAt: data.createdAt,
+            requestedAt: data.createdAt,
             updatedAt: data.updatedAt,
+            requestedId: data.id,
+            whyJoin: data.whyJoin,
+            additionalInfo: data.additionalInfo,
         };
     }
 

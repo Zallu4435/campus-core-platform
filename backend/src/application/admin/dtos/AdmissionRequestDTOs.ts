@@ -32,6 +32,7 @@ export interface ApproveAdmissionRequestDTO {
 
 export interface RejectAdmissionRequestDTO {
   id: string;
+  reason?: string;
 }
 
 export interface DeleteAdmissionRequestDTO {

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { eventService } from '../services/event.service';
-import { Event, EventRequest, Filters } from '../../domain/types/management/eventmanagement';
+import { Event, Filters, EventDTO, EventRequestDTO } from '../../domain/types/management/eventmanagement';
 
 export const useEventManagement = () => {
   const queryClient = useQueryClient();
@@ -56,9 +56,9 @@ export const useEventManagement = () => {
 
   const { data: eventsData, isLoading: isLoadingEvents, error: eventsError } = useQuery({
     queryKey: ['events', page, filters, searchTerm, limit],
-    queryFn: () => {
+    queryFn: async () => {
       const dateRange = getDateRangeFilter(filters.dateRange);
-      return eventService.getEvents(
+      const data = await eventService.getEvents(
         page,
         limit,
         filters.eventType !== 'All' ? filters.eventType : undefined,
@@ -67,15 +67,24 @@ export const useEventManagement = () => {
         searchTerm || undefined,
         filters.organizerType !== 'All' ? filters.organizerType : undefined
       );
+
+      if (data && data.events) {
+        data.events = data.events.map((event: EventDTO) => ({
+          ...event,
+          id: (event.id || event._id || '').toString(),
+          _id: (event._id || event.id || '').toString(),
+        })) as unknown as EventDTO[];
+      }
+      return data;
     },
-    enabled: activeTab === 'events', 
+    enabled: activeTab === 'events',
   });
 
   const { data: eventRequestsData, isLoading: isLoadingRequests, error: requestsError } = useQuery({
     queryKey: ['eventRequests', page, filters, searchTerm, limit],
-    queryFn: () => {
+    queryFn: async () => {
       const dateRange = getDateRangeFilter(filters.dateRange);
-      return eventService.getEventRequests(
+      const data = await eventService.getEventRequests(
         page,
         limit,
         filters.eventType !== 'All' ? filters.eventType : undefined,
@@ -84,8 +93,36 @@ export const useEventManagement = () => {
         searchTerm || undefined,
         filters.organizerType !== 'All' ? filters.organizerType : undefined
       );
+
+      if (data && data.data) {
+        data.data = data.data.map((req: EventRequestDTO) => ({
+          ...req,
+          id: req.id || req._id || '',
+          requestedId: req.id || req._id || '',
+          eventName: req.eventName || req.title || '',
+          requestedBy: req.requestedBy || req.userName || '',
+          requestedAt: req.requestedDate || '',
+          createdAt: req.requestedDate || '',
+          proposedDate: req.proposedDate || req.date || '',
+          proposedVenue: req.proposedVenue || req.location || '',
+          user: {
+            id: req.userId || '',
+            name: req.userName || '',
+            email: req.userEmail || '',
+          },
+          event: {
+            id: req.eventId || '',
+            title: req.eventName || req.title || '',
+            location: req.proposedVenue || req.location || '',
+            date: req.proposedDate || req.date || '',
+            description: req.description || '',
+            participants: req.expectedParticipants || 0,
+          }
+        })) as unknown as EventRequestDTO[];
+      }
+      return data;
     },
-    enabled: activeTab === 'requests', 
+    enabled: activeTab === 'requests',
   });
 
   const { mutateAsync: createEvent } = useMutation({
@@ -143,14 +180,47 @@ export const useEventManagement = () => {
   });
 
   const { mutateAsync: getEventDetails } = useMutation({
-    mutationFn: (id: string) => eventService.getEventDetails(id),
+    mutationFn: async (id: string) => {
+      const event = await eventService.getEventDetails(id);
+      return {
+        ...event,
+        id: event.id || event._id || '',
+        _id: event._id || event.id || '',
+      };
+    },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to fetch event details');
     },
   });
 
   const { mutateAsync: getEventRequestDetails } = useMutation({
-    mutationFn: (id: string) => eventService.getEventRequestDetails(id),
+    mutationFn: async (id: string) => {
+      const req = await eventService.getEventRequestDetails(id);
+      return {
+        ...req,
+        id: req.id || req._id || '',
+        requestedId: req.id || req._id || '',
+        eventName: req.eventName || req.title || '',
+        requestedBy: req.requestedBy || req.userName || '',
+        requestedAt: req.requestedDate || '',
+        createdAt: req.requestedDate || '',
+        proposedDate: req.proposedDate || req.date || '',
+        proposedVenue: req.proposedVenue || req.location || '',
+        user: {
+          id: req.userId || '',
+          name: req.userName || '',
+          email: req.userEmail || '',
+        },
+        event: {
+          id: req.eventId || '',
+          title: req.eventName || req.title || '',
+          location: req.proposedVenue || req.location || '',
+          date: req.proposedDate || req.date || '',
+          description: req.description || '',
+          participants: req.expectedParticipants || 0,
+        }
+      };
+    },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to fetch request details');
     },
@@ -158,46 +228,12 @@ export const useEventManagement = () => {
 
   const handleTabChange = (tab: 'events' | 'requests' | 'participants') => {
     setActiveTab(tab);
-    setPage(1); 
-
-    if (tab === 'events') {
-      queryClient.fetchQuery({
-        queryKey: ['events', page, filters, searchTerm, limit],
-        queryFn: () => {
-          const dateRange = getDateRangeFilter(filters.dateRange);
-          return eventService.getEvents(
-            page,
-            limit,
-            filters.eventType !== 'All' ? filters.eventType : undefined,
-            filters.status !== 'All' ? filters.status : undefined,
-            dateRange,
-            searchTerm || undefined,
-            filters.organizerType !== 'All' ? filters.organizerType : undefined
-          );
-        },
-      });
-    } else if (tab === 'requests') {
-      queryClient.fetchQuery({
-        queryKey: ['eventRequests', page, filters, searchTerm, limit],
-        queryFn: () => {
-          const dateRange = getDateRangeFilter(filters.dateRange);
-          return eventService.getEventRequests(
-            page,
-            limit,
-            filters.eventType !== 'All' ? filters.eventType : undefined,
-            filters.status !== 'All' ? filters.status : undefined,
-            dateRange,
-            searchTerm || undefined,
-            filters.organizerType !== 'All' ? filters.organizerType : undefined
-          );
-        },
-      }); 
-    }
+    setPage(1);
   };
-  console.log(getEventRequestDetails, 'getEventRequestDetails');  
+  console.log(getEventRequestDetails, 'getEventRequestDetails');
   return {
     events: eventsData?.events || [],
-    eventRequests: (eventRequestsData?.eventRequests || []).map((req: EventRequest) => ({ ...req, id: req.id })),
+    eventRequests: eventRequestsData?.data || [],
     totalPages: activeTab === 'events' ? eventsData?.totalPages || 0 : eventRequestsData?.totalPages || 0,
     page,
     setPage,
@@ -205,7 +241,7 @@ export const useEventManagement = () => {
     setSearchTerm,
     filters,
     setFilters,
-    isLoading: isLoadingEvents || isLoadingRequests ,
+    isLoading: isLoadingEvents || isLoadingRequests,
     error: eventsError || requestsError,
     createEvent,
     updateEvent,

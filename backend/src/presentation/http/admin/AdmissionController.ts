@@ -73,7 +73,8 @@ export class AdminAdmissionController implements IAdminAdmissionController {
 
   async rejectAdmission(httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const { id } = httpRequest.params || {};
-    const data = await this._rejectAdmissionUseCase.execute({ id });
+    const { reason } = httpRequest.body || {};
+    const data = await this._rejectAdmissionUseCase.execute({ id, reason });
     return this._httpSuccess.success_200(data);
   }
 

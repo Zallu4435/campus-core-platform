@@ -20,14 +20,14 @@ export interface UpdateSportResponseDTO {
 }
 
 export interface GetSportRequestsResponseDTO {
-    requests: SportRequestDTO[];
+    data: SportRequestDTO[];
     totalItems: number;
     totalPages: number;
     currentPage: number;
 }
 
 export interface GetSportRequestDetailsResponseDTO {
-    request: SportRequestDTO;
+    sportRequest: SportRequestDTO;
 }
 
 export interface ApproveSportRequestResponseDTO {

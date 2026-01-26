@@ -32,7 +32,7 @@ const ConfirmAdmission = () => {
         setAdmissionDetails({
           fullName: admissionData.personal.fullName,
           email: admissionData.personal.emailAddress,
-          program: admissionData.choiceOfStudy[0]?.program || 'Not specified',
+          program: admissionData.choiceOfStudy[0]?.programme || 'Not specified',
           status: admissionData.status
         });
         setIsLoading(false);
@@ -182,8 +182,8 @@ const ConfirmAdmission = () => {
           <button
             onClick={handleConfirmation}
             className={`px-4 py-2 rounded ${action === 'accept'
-                ? 'bg-green-500 hover:bg-green-600'
-                : 'bg-red-500 hover:bg-red-600'
+              ? 'bg-green-500 hover:bg-green-600'
+              : 'bg-red-500 hover:bg-red-600'
               } text-white`}
           >
             {action === 'accept' ? 'Accept Offer' : 'Decline Offer'}

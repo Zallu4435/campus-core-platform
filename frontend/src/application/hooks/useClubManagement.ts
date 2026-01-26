@@ -117,42 +117,6 @@ export const useClubManagement = () => {
   const handleTabChange = (tab: 'clubs' | 'requests' | 'members') => {
     setActiveTab(tab);
     setPage(1);
-
-    if (tab === 'clubs') {
-      queryClient.fetchQuery({
-        queryKey: ['clubs', page, filters, limit],
-        queryFn: () => {
-          const dateRange = getDateRangeFilter(filters.dateRange);
-          const category = filters.category !== 'All' ? filters.category.toLowerCase().replace(/\s+/g, '_') : undefined;
-          const status = filters.status !== 'All' ? filters.status.toLowerCase().replace(/\s+/g, '_') : undefined;
-
-          return clubService.getClubs(
-            page,
-            limit,
-            category,
-            status,
-            dateRange
-          );
-        },
-      });
-    } else if (tab === 'requests') {
-      queryClient.fetchQuery({
-        queryKey: ['clubRequests', page, filters, limit],
-        queryFn: () => {
-          const dateRange = getDateRangeFilter(filters.dateRange);
-          const category = filters.category !== 'All' ? filters.category.toLowerCase().replace(/\s+/g, '_') : undefined;
-          const status = filters.status !== 'All' ? filters.status.toLowerCase().replace(/\s+/g, '_') : undefined;
-
-          return clubService.getClubRequests(
-            page,
-            limit,
-            category,
-            status,
-            dateRange
-          );
-        },
-      });
-    }
   };
 
   const { mutateAsync: createClub } = useMutation({
@@ -212,9 +176,11 @@ export const useClubManagement = () => {
   return {
     clubs: clubsData?.clubs || [],
     clubRequests: clubRequestsData?.clubRequests || [],
+    totalClubs: clubsData?.totalItems || 0,
+    totalRequests: clubRequestsData?.totalItems || 0,
     totalPages:
       activeTab === 'clubs'
-        ? clubsData?.totalPages || 0  
+        ? clubsData?.totalPages || 0
         : activeTab === 'requests'
           ? clubRequestsData?.totalPages || 0
           : 0,

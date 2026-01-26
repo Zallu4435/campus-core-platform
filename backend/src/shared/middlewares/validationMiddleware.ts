@@ -39,10 +39,31 @@ export const validate = (schema: Joi.ObjectSchema, source: 'body' | 'query' | 'p
         }
 
         // Replace request data with validated (and stripped) data
-        req[source] = value;
+        updateRequestData(req, source, value);
         next();
     };
 };
+
+/**
+ * Helper to safely update request data (since some properties like query/params might be getters)
+ */
+const updateRequestData = (req: Request, source: 'body' | 'query' | 'params', value: any) => {
+    try {
+        req[source] = value;
+    } catch (error: any) {
+        // If the property is read-only (getter-only), mutate the existing object
+        if (source !== 'body' && req[source] && typeof req[source] === 'object') {
+            const target = req[source] as any;
+            // Clear existing keys
+            Object.keys(target).forEach(key => delete target[key]);
+            // Assign new values
+            Object.assign(target, value);
+        } else {
+            throw error;
+        }
+    }
+};
+
 
 /**
  * Validate Request - Multi-source validation
@@ -90,9 +111,9 @@ export const validateRequest = (schema: Joi.ObjectSchema) => {
         }
 
         // Update request with validated values
-        if (value.body) req.body = value.body;
-        if (value.params) req.params = value.params;
-        if (value.query) req.query = value.query;
+        if (value.body) updateRequestData(req, 'body', value.body);
+        if (value.params) updateRequestData(req, 'params', value.params);
+        if (value.query) updateRequestData(req, 'query', value.query);
 
         next();
     };

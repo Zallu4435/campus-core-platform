@@ -26,6 +26,8 @@ export interface StudentFinancialInfoResponseDTO {
 export type PaymentResponseDTO = {
   id: string;
   studentId: string;
+  studentName?: string;
+  studentEmail?: string;
   chargeId: string;
   amount: number;
   status: 'Completed' | 'Pending' | 'Failed';

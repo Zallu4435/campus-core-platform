@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { enquiryService } from '../services/enquiry.service';
-import { 
+import {
   CreateEnquiryData,
   Filters
 } from '../../domain/types/management/enquirymanagement';
@@ -25,16 +25,16 @@ export const useEnquiryManagement = () => {
     queryKey: ['enquiries', page, filters, searchQuery, customDateRange, limit],
     queryFn: () => {
       const status = filters.status !== 'All Statuses' ? filters.status : undefined;
-      let { startDate, endDate } = customDateRange;
-      startDate = startDate ? new Date(startDate).toISOString() : '';
-      endDate = endDate ? new Date(endDate).toISOString() : '';
+      const { startDate, endDate } = customDateRange;
+      const formattedStartDate = startDate ? new Date(startDate).toISOString() : undefined;
+      const formattedEndDate = endDate ? new Date(endDate).toISOString() : undefined;
       return enquiryService.getEnquiries(
         page,
         limit,
         status,
         searchQuery,
-        startDate,
-        endDate
+        formattedStartDate,
+        formattedEndDate
       );
     },
   });
@@ -81,10 +81,11 @@ export const useEnquiryManagement = () => {
   });
 
   const { mutateAsync: sendReply } = useMutation({
-    mutationFn: ({ id, replyMessage }: { id: string; replyMessage: string }) => 
+    mutationFn: ({ id, replyMessage }: { id: string; replyMessage: string }) =>
       enquiryService.sendReply(id, replyMessage),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['enquiries'] });
+      queryClient.invalidateQueries({ queryKey: ['enquiry-details'] });
       toast.success('Reply sent successfully');
     },
     onError: (error: Error) => {

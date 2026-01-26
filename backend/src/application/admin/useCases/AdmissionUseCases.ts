@@ -87,6 +87,8 @@ export class GetAdmissionsUseCase implements IGetAdmissionsUseCase {
         if (p.search?.trim()) {
             const q = p.search.trim();
             filter.$or = [
+                { "personalInfo.fullName": { $regex: q, $options: "i" } },
+                { "personalInfo.emailAddress": { $regex: q, $options: "i" } },
                 { "personal.fullName": { $regex: q, $options: "i" } },
                 { "personal.emailAddress": { $regex: q, $options: "i" } },
             ];
@@ -95,6 +97,8 @@ export class GetAdmissionsUseCase implements IGetAdmissionsUseCase {
         const skip = (p.page - 1) * p.limit;
 
         const proj = {
+            "personalInfo.fullName": 1,
+            "personalInfo.emailAddress": 1,
             "personal.fullName": 1,
             "personal.emailAddress": 1,
             createdAt: 1,
@@ -112,7 +116,7 @@ export class GetAdmissionsUseCase implements IGetAdmissionsUseCase {
                 const email = a.personal?.emailAddress;
                 const user = email ? await this._userService.findByEmail(email) : null;
                 const domain = this._mapper.toDomain(a);
-                return this._mapper.toDTO(domain, user?.blocked ?? false);
+                return this._mapper.toDTO(domain, user?.blocked ?? false, 'list');
             })
         );
 
@@ -202,7 +206,7 @@ export class ApproveAdmissionUseCase implements IApproveAdmissionUseCase {
             to: admission.personal.emailAddress,
             name: admission.personal.fullName,
             programDetails: params.additionalInfo?.programDetails || "",
-            startDate: admission.createdAt ? new Date(admission.createdAt).toDateString() : "",
+            startDate: params.additionalInfo?.startDate || (admission.createdAt ? new Date(admission.createdAt).toDateString() : ""),
             scholarshipInfo: params.additionalInfo?.scholarshipInfo || "",
             additionalNotes: params.additionalInfo?.additionalNotes || "",
             acceptUrl,
@@ -219,7 +223,10 @@ export class ApproveAdmissionUseCase implements IApproveAdmissionUseCase {
 }
 
 export class RejectAdmissionUseCase implements IRejectAdmissionUseCase {
-    constructor(private _admissionRepository: IAdmissionRepository) { }
+    constructor(
+        private _admissionRepository: IAdmissionRepository,
+        private _emailService: IEmailService
+    ) { }
 
     async execute(params: RejectAdmissionRequestDTO): Promise<RejectAdmissionResponseDTO> {
         const admission = await this._admissionRepository.findAdmissionById(params.id);
@@ -230,6 +237,14 @@ export class RejectAdmissionUseCase implements IRejectAdmissionUseCase {
         admission.rejectedBy = "admin";
 
         await this._admissionRepository.saveAdmission(admission);
+
+        if (admission.personal.emailAddress) {
+            await this._emailService.sendAdmissionRejectionEmail({
+                to: admission.personal.emailAddress,
+                name: admission.personal.fullName,
+                reason: params.reason || "Unable to offer admission at this time."
+            });
+        }
 
         return { message: "Admission rejected" };
     }
@@ -273,21 +288,28 @@ export class ConfirmAdmissionOfferUseCase implements IConfirmAdmissionOfferUseCa
         }
 
         if (params.action === "accept") {
-            const registerUser = await this._admissionRepository.findRegisterUserById(admission.registerId);
-            if (!registerUser) {
-                throw new AdminRegisterUserNotFoundError();
-            }
-
             const fullNameParts = admission.personal.fullName.split(" ");
             const firstName = fullNameParts[0];
             const lastName = fullNameParts.slice(1).join(" ") || "";
 
-            const newUser = await this._userService.createUser({
-                firstName,
-                lastName,
-                email: admission.personal.emailAddress,
-                password: registerUser.password,
-            });
+            let newUser;
+            const existingUser = await this._userService.findByEmail(admission.personal.emailAddress);
+
+            if (existingUser) {
+                newUser = { id: existingUser.id };
+            } else {
+                const registerUser = await this._admissionRepository.findRegisterUserById(admission.registerId);
+                if (!registerUser) {
+                    throw new AdminRegisterUserNotFoundError();
+                }
+
+                newUser = await this._userService.createUser({
+                    firstName,
+                    lastName,
+                    email: admission.personal.emailAddress,
+                    password: registerUser.password,
+                });
+            }
 
             if (admission.choiceOfStudy && admission.choiceOfStudy.length > 0) {
                 const currentYear = new Date().getFullYear();
@@ -303,6 +325,8 @@ export class ConfirmAdmissionOfferUseCase implements IConfirmAdmissionOfferUseCa
                         catalogYear,
                         credits: 20,
                     });
+                } else {
+                    // Missing degree or catalogYear, skipping enrollment
                 }
             }
 

@@ -23,8 +23,8 @@ class EnquiryService {
       if (limit) params.append('limit', limit.toString());
       if (status && status !== 'All Statuses') params.append('status', status);
       if (search) params.append('search', search);
-      params.append('startDate', startDate ?? '');
-      params.append('endDate', endDate ?? '');
+      if (startDate) params.append('startDate', startDate);
+      if (endDate) params.append('endDate', endDate);
       const response = await httpClient.get(`${this.baseUrl}?${params.toString()}`);
       return response.data.data;
     } catch (error: unknown) {

@@ -36,7 +36,7 @@ export class AdmissionRepository implements IAdmissionRepository {
 
     async getAdmissionByToken(admissionId: string, token: string): Promise<FullAdmissionDetails | null> {
         const admission = await AdmissionModel.findById(admissionId)
-            .select("personal choiceOfStudy status confirmationToken tokenExpiry")
+            .select("personalInfo choiceOfStudy status confirmationToken tokenExpiry")
             .lean() as unknown as IAdmissionSource;
 
         if (!admission) return null;

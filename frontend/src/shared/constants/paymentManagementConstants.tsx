@@ -12,15 +12,15 @@ export const TERMS = ['All Terms', 'Fall 2024', 'Spring 2025', 'Summer 2025'];
 
 export const paymentColumns = [
   {
-    header: 'Student ID',
-    key: 'studentId',
+    header: 'Student',
+    key: 'studentName',
     render: (payment: Payment) => (
       <div className="flex items-center text-gray-300">
         <FiCreditCard size={14} className="text-purple-400 mr-2" />
-        <span className="text-sm">{payment.studentId}</span>
+        <span className="text-sm font-medium">{payment.studentName || payment.studentId || 'N/A'}</span>
       </div>
     ),
-    width: '15%',
+    width: '20%',
   },
   {
     header: 'Date',
@@ -38,7 +38,7 @@ export const paymentColumns = [
     render: (payment: Payment) => (
       <div className="flex items-center text-gray-300">
         <FiCreditCard size={14} className="text-purple-400 mr-2" />
-        <span className="text-sm">{payment.method}</span>
+        <span className="text-sm">{payment.method?.charAt(0).toUpperCase() + payment.method?.slice(1)}</span>
       </div>
     ),
   },
@@ -170,7 +170,7 @@ export const scholarshipColumns = [
       </div>
     ),
   },
-]; 
+];
 
 export const getChargeColumns = (handleView: (charge: Charge) => void, handleEdit: (charge: Charge) => void, handleDelete: (charge: Charge) => void) => [
   {
@@ -256,14 +256,14 @@ export const computeDateRange = (range: string) => {
 };
 
 export const ghostParticles = Array(30)
-.fill(0)
-.map((_) => ({
-  size: Math.random() * 10 + 5,
-  top: Math.random() * 100,
-  left: Math.random() * 100,
-  animDuration: Math.random() * 10 + 15,
-  animDelay: Math.random() * 5,
-}));
+  .fill(0)
+  .map((_) => ({
+    size: Math.random() * 10 + 5,
+    top: Math.random() * 100,
+    left: Math.random() * 100,
+    animDuration: Math.random() * 10 + 15,
+    animDelay: Math.random() * 5,
+  }));
 
 export const formattedDate = (date: string) => {
   const dateObj = new Date(date);

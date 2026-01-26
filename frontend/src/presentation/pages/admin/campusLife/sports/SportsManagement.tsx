@@ -58,6 +58,7 @@ const AdminSportsManagement: React.FC = () => {
     approvePlayerRequest,
     rejectPlayerRequest,
     handleTabChange,
+    activeTab,
     teamDetails,
     handleViewTeam,
     handleEditTeam,
@@ -66,7 +67,7 @@ const AdminSportsManagement: React.FC = () => {
     handleViewRequest,
   } = useSportsManagement();
 
-  const [activeTab, setActiveTab] = useState<'teams' | 'requests'>('teams');
+  // use activeTab from useSportsManagement hook instead of local state
   const [showAddTeamModal, setShowAddTeamModal] = useState(false);
   const [showTeamDetailsModal, setShowTeamDetailsModal] = useState(false);
   const [showDeleteWarning, setShowDeleteWarning] = useState(false);
@@ -108,10 +109,8 @@ const AdminSportsManagement: React.FC = () => {
   };
 
   const handleTabChangeWithFilters = (tab: 'teams' | 'requests') => {
-    setActiveTab(tab);
     handleTabChange(tab);
     setFilters(resetFilters());
-    setPage(1);
   };
 
   const handleAddTeam = () => {
@@ -134,7 +133,7 @@ const AdminSportsManagement: React.FC = () => {
   const handleSaveTeam = async (data: TeamFormData) => {
     try {
       console.log('Original form data:', data);
-      
+
       const teamData = {
         title: data.title,
         type: data.type,
@@ -147,20 +146,19 @@ const AdminSportsManagement: React.FC = () => {
         headCoach: data.headCoach,
         homeGames: data.homeGames,
         record: data.record,
-        upcomingGames: data.upcomingGames?.map(game => ({ 
-          date: game.date, 
-          description: game.description 
+        upcomingGames: data.upcomingGames?.map(game => ({
+          date: game.date,
+          description: game.description
         })) || [],
         playerCount: data.participants || 0,
         createdAt: new Date().toISOString(),
-        logo: '',
         name: data.title,
         status: data.status,
         participants: data.participants || 0,
         formedOn: new Date().toISOString(),
         description: `Team: ${data.title}`,
       };
-      
+
       console.log('Team data being sent:', teamData);
 
       if (isEditing && teamDetails) {
@@ -499,48 +497,7 @@ const AdminSportsManagement: React.FC = () => {
           setShowRequestDetailsModal(false);
           setSelectedRequest(null);
         }}
-        request={requestDetails ? {
-          data: {
-            id: requestDetails.sportRequest.id,
-            status: requestDetails.sportRequest.status,
-            createdAt: requestDetails.sportRequest.createdAt,
-            updatedAt: requestDetails.sportRequest.updatedAt,
-            description: `Request to join ${requestDetails.sportRequest.sport.title}`,
-            additionalInfo: requestDetails.sportRequest.additionalInfo || '',
-            sport: {
-              id: requestDetails.sportRequest.sport.id,
-              name: requestDetails.sportRequest.sport.title,
-              type: requestDetails.sportRequest.sport.type,
-              description: `Team: ${requestDetails.sportRequest.sport.title}`,
-              expectedParticipants: requestDetails.sportRequest.sport.playerCount,
-            },
-            user: {
-              name: requestDetails.sportRequest.user.name,
-              email: requestDetails.sportRequest.user.email,
-            },
-          },
-          sportRequest: {
-            id: requestDetails.sportRequest.id,
-            status: requestDetails.sportRequest.status,
-            createdAt: requestDetails.sportRequest.createdAt,
-            updatedAt: requestDetails.sportRequest.updatedAt,
-            whyJoin: requestDetails.sportRequest.whyJoin,
-            additionalInfo: requestDetails.sportRequest.additionalInfo,
-            sport: {
-              id: requestDetails.sportRequest.sport.id,
-              title: requestDetails.sportRequest.sport.title,
-              type: requestDetails.sportRequest.sport.type,
-              headCoach: requestDetails.sportRequest.sport.headCoach,
-              playerCount: requestDetails.sportRequest.sport.playerCount,
-              division: requestDetails.sportRequest.sport.division,
-            },
-            user: {
-              id: requestDetails.sportRequest.user.id,
-              name: requestDetails.sportRequest.user.name,
-              email: requestDetails.sportRequest.user.email,
-            },
-          },
-        } : null}
+        request={requestDetails || null}
         onApprove={handleConfirmApprove}
         onReject={handleConfirmReject}
       />

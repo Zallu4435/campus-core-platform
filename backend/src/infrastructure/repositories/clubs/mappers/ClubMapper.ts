@@ -88,7 +88,9 @@ export class ClubMapper {
             color: data.color || CLUB_DEFAULTS.COLOR,
             icon: data.icon || CLUB_DEFAULTS.ICON,
             status: data.status,
-            memberCount: data.members?.length || 0,
+            memberCount: data.enteredMembers || data.members?.length || 0,
+            createdBy: data.createdBy,
+            createdAt: data.createdAt,
         };
     }
 

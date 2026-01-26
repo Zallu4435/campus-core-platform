@@ -7,7 +7,7 @@ import {
   IoBusinessOutline as Building,
 } from 'react-icons/io5';
 import { debounce } from 'lodash';
-import toast from 'react-hot-toast';
+import toast from 'react-hot-toast';  
 import Header from '../../../../components/admin/management/Header';
 import ApplicationsTable from '../../../../components/admin/management/ApplicationsTable';
 import Pagination from '../../../../components/admin/management/Pagination';
@@ -18,11 +18,11 @@ import ClubRequestDetailsModal from './ClubRequestDetailsModal';
 import { useClubManagement } from '../../../../../application/hooks/useClubManagement';
 import { Club, ClubRequest } from '../../../../../domain/types/management/clubmanagement';
 import { ClubActionConfig, ClubFormData, ItemAction } from '../../../../../domain/types/management/clubmanagement';
-import { 
-  adaptDomainClubToManagement, 
+import {
+  adaptDomainClubToManagement,
   adaptDomainClubRequestToManagement,
   isDomainClub,
-  isDomainClubRequest 
+  isDomainClubRequest
 } from '../../../../../domain/adapters/clubTypeAdapter';
 import { CATEGORIES, CLUB_STATUSES, REQUEST_STATUSES, DATE_RANGES, ICONS, COLORS, clubColumns, clubRequestColumns, isAxiosErrorWithApiError } from '../../../../../shared/constants/clubManagementConstants';
 import LoadingSpinner from '../../../../../shared/components/LoadingSpinner';
@@ -34,6 +34,8 @@ const AdminClubManagement: React.FC = () => {
   const {
     clubs,
     clubRequests,
+    totalClubs,
+    totalRequests,
     totalPages,
     page,
     setPage,
@@ -322,14 +324,14 @@ const AdminClubManagement: React.FC = () => {
             {
               icon: <Building />,
               title: 'Total Clubs',
-              value: clubs.length.toString(),
+              value: totalClubs.toString(),
               change: '+10%',
               isPositive: true,
             },
             {
               icon: <Edit />,
-              title: 'Pending Requests',
-              value: clubRequests.filter((r: ClubRequest) => r.status && r.status.toLowerCase() === 'pending').length.toString(),
+              title: 'Total Requests',
+              value: totalRequests.toString(),
               change: '+5%',
               isPositive: true,
             },
@@ -389,10 +391,10 @@ const AdminClubManagement: React.FC = () => {
                   {isLoading ? (
                     <LoadingSpinner />
                   ) : (
-                    <ApplicationsTable 
-                      data={clubs.map(adaptDomainClubToManagement)} 
-                      columns={clubColumns} 
-                      actions={clubActions} 
+                    <ApplicationsTable
+                      data={clubs.map(adaptDomainClubToManagement)}
+                      columns={clubColumns}
+                      actions={clubActions}
                     />
                   )}
                   <Pagination
@@ -462,18 +464,20 @@ const AdminClubManagement: React.FC = () => {
         initialData={
           selectedClub
             ? {
-                name: selectedClub.name,
-                type: selectedClub.type,
-                members: selectedClub.members,
-                icon: selectedClub.icon,
-                color: selectedClub.color,
-                status: selectedClub.status as 'active' | 'inactive',
-                role: selectedClub.role,
-                nextMeeting: selectedClub.nextMeeting,
-                about: selectedClub.about,
-                createdBy: isClub(selectedClub) ? selectedClub.createdBy || '' : selectedClub.requestedBy || '',
-                upcomingEvents: selectedClub.upcomingEvents,
-              }
+              name: selectedClub.name,
+              type: selectedClub.type,
+              members: isClub(selectedClub)
+                ? (Array.isArray(selectedClub.members) ? selectedClub.members.join(', ') : selectedClub.members || '')
+                : (selectedClub as ClubRequest).members || '',
+              icon: selectedClub.icon,
+              color: selectedClub.color,
+              status: selectedClub.status as 'active' | 'inactive',
+              role: selectedClub.role,
+              nextMeeting: selectedClub.nextMeeting,
+              about: selectedClub.about,
+              createdBy: isClub(selectedClub) ? (selectedClub as Club).createdBy || '' : (selectedClub as ClubRequest).requestedBy || '',
+              upcomingEvents: selectedClub.upcomingEvents,
+            }
             : undefined
         }
         isEditing={!!selectedClub}

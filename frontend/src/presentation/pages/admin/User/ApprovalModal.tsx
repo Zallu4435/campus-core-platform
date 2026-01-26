@@ -8,7 +8,21 @@ import {
   FiDollarSign,
   FiMessageSquare
 } from 'react-icons/fi';
+import { z } from 'zod';
 import { ApprovalModalProps } from '../../../../domain/types/management/usermanagement';
+
+const approvalSchema = z.object({
+  programDetails: z.string().min(1, 'Program details are required'),
+  startDate: z.string().min(1, 'Start date is required').refine((date) => {
+    const selectedDate = new Date(date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return selectedDate >= today;
+  }, 'Start date cannot be in the past'),
+  scholarshipInfo: z.string().optional(),
+  additionalNotes: z.string().optional(),
+});
+
 
 const ApprovalModal: React.FC<ApprovalModalProps> = ({
   isOpen,
@@ -37,9 +51,35 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
     };
   }, [isOpen]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onApprove(formData);
+
+    setErrors({});
+
+    const result = approvalSchema.safeParse(formData);
+
+    if (!result.success) {
+      const formattedErrors: Record<string, string> = {};
+      result.error.issues.forEach((issue) => {
+        if (issue.path[0]) {
+          formattedErrors[issue.path[0] as string] = issue.message;
+        }
+      });
+      setErrors(formattedErrors);
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await onApprove(formData);
+    } catch (error) {
+      console.error('Approval failed:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -108,16 +148,19 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
                 label="Program Details"
                 icon={<FiBookOpen className="text-blue-300" />}
                 required
+                error={errors.programDetails}
               >
                 <input
                   type="text"
                   value={formData.programDetails}
-                  onChange={(e) => setFormData({ ...formData, programDetails: e.target.value })}
-                  className="w-full bg-gray-800/80 border border-blue-500/30 rounded-lg p-3 pl-10
+                  onChange={(e) => {
+                    setFormData({ ...formData, programDetails: e.target.value });
+                    if (errors.programDetails) setErrors({ ...errors, programDetails: '' });
+                  }}
+                  className={`w-full bg-gray-800/80 border ${errors.programDetails ? 'border-red-500' : 'border-blue-500/30'} rounded-lg p-3 pl-10
                             text-white placeholder-blue-300/70 focus:outline-none focus:ring-2 
-                            focus:ring-blue-500/50 transition-all duration-300"
+                            ${errors.programDetails ? 'focus:ring-red-500/50' : 'focus:ring-blue-500/50'} transition-all duration-300`}
                   placeholder="Enter program/course details"
-                  required
                 />
               </FormField>
 
@@ -125,15 +168,19 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
                 label="Start Date"
                 icon={<FiCalendar className="text-blue-300" />}
                 required
+                error={errors.startDate}
               >
                 <input
                   type="date"
                   value={formData.startDate}
-                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                  className="w-full bg-gray-800/80 border border-blue-500/30 rounded-lg p-3 pl-10
+                  min={new Date().toISOString().split('T')[0]}
+                  onChange={(e) => {
+                    setFormData({ ...formData, startDate: e.target.value });
+                    if (errors.startDate) setErrors({ ...errors, startDate: '' });
+                  }}
+                  className={`w-full bg-gray-800/80 border ${errors.startDate ? 'border-red-500' : 'border-blue-500/30'} rounded-lg p-3 pl-10
                             text-white focus:outline-none focus:ring-2 
-                            focus:ring-blue-500/50 transition-all duration-300"
-                  required
+                            ${errors.startDate ? 'focus:ring-red-500/50' : 'focus:ring-blue-500/50'} transition-all duration-300`}
                 />
               </FormField>
 
@@ -172,23 +219,32 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
+                disabled={isSubmitting}
                 className="px-4 py-2.5 border border-blue-500/30 rounded-lg text-blue-200 
                           hover:bg-blue-500/10 transition-all duration-300 focus:outline-none 
-                          focus:ring-2 focus:ring-blue-500/50"
+                          focus:ring-2 focus:ring-blue-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                onClick={() => {
-                }}
+                disabled={isSubmitting}
                 className="px-5 py-2.5 rounded-lg text-white flex items-center space-x-2
                            bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600
                            border border-blue-500/50 transition-all duration-300 focus:outline-none 
-                           focus:ring-2 focus:ring-blue-500/50 shadow-lg"
+                           focus:ring-2 focus:ring-blue-500/50 shadow-lg disabled:opacity-70 disabled:cursor-not-allowed"
               >
-                <span>Approve Application</span>
-                <FiSend size={16} />
+                {isSubmitting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>Processing...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Approve Application</span>
+                    <FiSend size={16} />
+                  </>
+                )}
               </button>
             </div>
           </form>
@@ -225,11 +281,12 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
   );
 };
 
-const FormField = ({ label, icon, children, required = false }: {
+const FormField = ({ label, icon, children, required = false, error }: {
   label: string;
   icon: React.ReactNode;
   children: React.ReactNode;
   required?: boolean;
+  error?: string;
 }) => (
   <div className="relative">
     <label className="block text-sm font-medium text-blue-200 mb-1.5 flex items-center">
@@ -241,6 +298,7 @@ const FormField = ({ label, icon, children, required = false }: {
       </div>
       {children}
     </div>
+    {error && <p className="text-red-400 text-xs mt-1">{error}</p>}
   </div>
 );
 

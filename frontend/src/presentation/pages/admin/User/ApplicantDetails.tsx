@@ -22,7 +22,7 @@ import RejectModal from '../../../components/admin/RejectModal';
 import WarningModal from '../../../components/common/WarningModal';
 import { useUserManagement } from '../../../../application/hooks/useUserManagement';
 import { documentUploadService } from '../../../../application/services/documentUploadService';
-import { ApplicantDetailsProps } from '../../../../domain/types/management/usermanagement';
+import { ApplicantDetailsProps, AdmissionEducationSubject } from '../../../../domain/types/management/usermanagement';
 import { usePreventBodyScroll } from '../../../../shared/hooks/usePreventBodyScroll';
 import { formatDate } from '../../../../shared/utils/dateUtils';
 import { DocumentUpload, ProgrammeChoice } from '../../../../domain/types/application';
@@ -430,6 +430,7 @@ const ApplicantDetails: React.FC<ApplicantDetailsProps> = ({
                 <div className="bg-gray-800/80 p-4 rounded-lg border border-purple-500/30">
                   <h4 className="font-semibold text-purple-100 mb-3">International Education</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Basic Info */}
                     <InfoRow
                       label="School"
                       value={educationData.international.schoolName}
@@ -446,6 +447,67 @@ const ApplicantDetails: React.FC<ApplicantDetailsProps> = ({
                       label="Country"
                       value={educationData.international.country}
                     />
+                  </div>
+
+                  {/* Subjects */}
+                  {educationData.international.subjects && educationData.international.subjects.length > 0 && (
+                    <div className="mt-4 border-t border-purple-500/20 pt-4">
+                      <h5 className="text-purple-200 font-medium mb-2">Subjects</h5>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {educationData.international.subjects.map((subj: AdmissionEducationSubject, idx: number) => (
+                          <div key={idx} className="bg-gray-900/50 px-2 rounded border border-purple-500/10">
+                            <InfoRow label={subj.subject || subj.otherSubject || 'Subject'} value={subj.grade} />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Standardized Tests */}
+                  <div className="mt-4 border-t border-purple-500/20 pt-4 space-y-4">
+                    {educationData.international.ielts && (
+                      <div>
+                        <h5 className="text-purple-200 font-medium mb-2">IELTS ({educationData.international.ielts.date})</h5>
+                        <div className="grid grid-cols-3 gap-2 text-sm">
+                          <div className="bg-gray-900/50 px-2 rounded border border-purple-500/10">
+                            <InfoRow label="Overall" value={educationData.international.ielts.overall} />
+                          </div>
+                          <div className="bg-gray-900/50 px-2 rounded border border-purple-500/10">
+                            <InfoRow label="Reading" value={educationData.international.ielts.reading} />
+                          </div>
+                          <div className="bg-gray-900/50 px-2 rounded border border-purple-500/10">
+                            <InfoRow label="Writing" value={educationData.international.ielts.writing} />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {educationData.international.toefl && (
+                      <div>
+                        <h5 className="text-purple-200 font-medium mb-2">TOEFL ({educationData.international.toefl.date})</h5>
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <div className="bg-gray-900/50 px-2 rounded border border-purple-500/10">
+                            <InfoRow label="Type" value={educationData.international.toefl.type} />
+                          </div>
+                          <div className="bg-gray-900/50 px-2 rounded border border-purple-500/10">
+                            <InfoRow label="Score" value={educationData.international.toefl.grade} />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {educationData.international.ap && educationData.international.ap.subjects && (
+                      <div>
+                        <h5 className="text-purple-200 font-medium mb-2">AP Exams ({educationData.international.ap.date})</h5>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          {educationData.international.ap.subjects.map((subj: AdmissionEducationSubject, idx: number) => (
+                            <div key={idx} className="bg-gray-900/50 px-2 rounded border border-purple-500/10">
+                              <InfoRow label={subj.subject} value={subj.score} />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

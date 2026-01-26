@@ -25,7 +25,6 @@ export interface SportSummaryDTO {
     playerCount: number;
     status: SportStatus;
     formedOn?: string;
-    logo?: string;
     division: string;
     participants: number;
     icon: string;
@@ -44,5 +43,9 @@ export interface SportRequestDTO {
     whyJoin: string;
     additionalInfo: string;
     requestedDate: string;
+    updatedAt: string;
     type: string;
+    headCoach: string;
+    playerCount: number;
+    division: string;
 }

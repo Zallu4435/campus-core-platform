@@ -25,10 +25,9 @@ const TeamRequestDetailsModal: React.FC<TeamRequestDetailsModalProps> = ({
 }) => {
   usePreventBodyScroll(isOpen);
 
-  if (!isOpen || !request) return null;
+  if (!isOpen || !request || !request.sportRequest) return null;
 
   const { sport, user } = request.sportRequest;
-  if (!user) return null;
 
   const ghostParticles = Array(30)
     .fill(0)
@@ -73,7 +72,7 @@ const TeamRequestDetailsModal: React.FC<TeamRequestDetailsModalProps> = ({
                 <Trophy size={24} className="text-purple-300" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-purple-100">{sport.title}</h2>
+                <h2 className="text-2xl font-bold text-purple-100">{sport?.title || 'Unknown Sport'}</h2>
                 <p className="text-sm text-purple-300">Request ID: {request.sportRequest.id}</p>
                 <div className="flex items-center mt-2">
                   <RequestStatusBadge status={request.sportRequest.status as SportStatus} />

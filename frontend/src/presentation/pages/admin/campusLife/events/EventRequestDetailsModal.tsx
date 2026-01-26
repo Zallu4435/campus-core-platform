@@ -1,20 +1,20 @@
 import React from 'react';
-import { 
-  IoCloseOutline as X, 
-  IoCalendarOutline as Calendar, 
-  IoTimeOutline as Clock, 
-  IoLocationOutline as MapPin, 
-  IoPeopleOutline as Users, 
-  IoPersonOutline as User, 
+import {
+  IoCloseOutline as X,
+  IoCalendarOutline as Calendar,
+  IoTimeOutline as Clock,
+  IoLocationOutline as MapPin,
+  IoPeopleOutline as Users,
+  IoPersonOutline as User,
   IoInformationCircleOutline as Info,
   IoDocumentTextOutline as DocumentText,
   IoSparklesOutline as Sparkles,
-  IoHeartOutline as Heart,  
+  IoHeartOutline as Heart,
   IoMailOutline as Mail,
   IoCheckmarkOutline as Check,
   IoCloseCircleOutline as Reject
 } from 'react-icons/io5';
-import { 
+import {
   EventRequestDetailsModalProps,
   EventStatus,
 } from '../../../../../domain/types/management/eventmanagement';
@@ -30,7 +30,7 @@ const EventRequestDetailsModal: React.FC<EventRequestDetailsModalProps> = ({
   onReject,
 }) => {
   usePreventBodyScroll(isOpen);
-  
+
   if (!isOpen || !request) return null;
 
   return (
@@ -42,10 +42,10 @@ const EventRequestDetailsModal: React.FC<EventRequestDetailsModalProps> = ({
               <Sparkles size={24} className="text-white" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-purple-100">{request.event?.title || request.eventName}</h2>
+              <h2 className="text-xl font-bold text-purple-100">{request.event?.title || request.eventName || 'Untitled Request'}</h2>
               <p className="text-xs text-purple-300 mt-1">Request ID: {request.id}</p>
               <div className="flex items-center mt-1 space-x-2">
-                <RequestStatusBadge status={request.status as EventStatus} />
+                <RequestStatusBadge status={(request.status as EventStatus) || 'pending'} />
               </div>
             </div>
           </div>
@@ -62,8 +62,8 @@ const EventRequestDetailsModal: React.FC<EventRequestDetailsModalProps> = ({
             <RequestInfoCard icon={Mail} label="Email" value={request.user?.email || 'N/A'} />
             <RequestInfoCard icon={MapPin} label="Venue" value={request.event?.location || request.proposedVenue || 'N/A'} />
             <RequestInfoCard icon={Calendar} label="Event Date" value={request.event?.date ? formatDate(request.event.date) : (request.proposedDate ? formatDate(request.proposedDate) : 'N/A')} />
-            <RequestInfoCard icon={Clock} label="Requested At" value={formatDateTime(request.createdAt || request.requestedAt || '')} />
-            <RequestInfoCard icon={Users} label="Expected Participants" value={request.expectedParticipants?.toString() || 'N/A'} />
+            <RequestInfoCard icon={Clock} label="Requested At" value={formatDateTime(request.createdAt || request.requestedAt || (request as any).requestedDate || '')} />
+            <RequestInfoCard icon={Users} label="Expected Participants" value={request.expectedParticipants !== undefined ? request.expectedParticipants.toString() : (request.event?.participants?.toString() || 'N/A')} />
             <RequestInfoCard icon={DocumentText} label="Type" value={request.type || 'N/A'} />
             <RequestInfoCard icon={Info} label="Status" value={request.status} />
           </div>

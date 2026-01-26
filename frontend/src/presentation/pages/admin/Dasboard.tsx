@@ -202,7 +202,7 @@ const AdminDashboard = () => {
           <StatsCard
             title="Total Users"
             value={metrics ? formatNumber(metrics.totalUsers) : '0'}
-            subtitle="Students, Faculty & Staff"
+            subtitle="Students & Faculty"
             trend="+5%"
             icon={HiUsersIcon}
             bgGradient="bg-gradient-to-br from-purple-600 to-purple-800"

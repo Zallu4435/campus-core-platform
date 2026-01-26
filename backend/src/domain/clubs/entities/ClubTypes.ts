@@ -30,8 +30,8 @@ export interface ClubProps {
 
 export interface ClubRequestProps {
   id?: string;
-  clubId: string | { id: string; name: string; type: string; about: string; nextMeeting: string; enteredMembers: number };
-  userId: string | { id: string; firstName: string; lastName: string; email: string };
+  clubId: string | { id: string; _id?: { toString(): string }; name: string; type: string; about: string; nextMeeting: string; enteredMembers: number };
+  userId: string | { id: string; _id?: { toString(): string }; firstName: string; lastName: string; email: string };
   status?: ClubRequestStatus;
   whyJoin: string;
   additionalInfo?: string;
@@ -60,8 +60,9 @@ export interface ClubData {
 
 export interface ClubRequestData {
   id: string;
-  clubId: string | { id: string; name: string; type: string; about: string; nextMeeting: string; enteredMembers: number };
-  userId: string | { id: string; firstName: string; lastName: string; email: string };
+  _id?: string;
+  clubId: string | { id: string; _id?: { toString(): string }; name: string; type: string; about: string; nextMeeting: string; enteredMembers: number; description?: string };
+  userId: string | { id: string; _id?: { toString(): string }; firstName: string; lastName: string; email: string };
   status: ClubRequestStatus;
   whyJoin: string;
   additionalInfo: string;

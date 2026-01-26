@@ -108,7 +108,7 @@ export class SportsRepository extends BaseRepository<SportData, CreateSportReque
       const userIds = userMatches.map((u) => u._id);
 
       if (sportIds.length === 0 && userIds.length === 0) {
-        return { requests: [], totalItems: 0, totalPages: 0, currentPage: page };
+        return { data: [], totalItems: 0, totalPages: 0, currentPage: page };
       }
 
       query.$or = [];
@@ -140,7 +140,7 @@ export class SportsRepository extends BaseRepository<SportData, CreateSportReque
     const requestsData = requestsDocs.map(r => this.mapRawToData(r)) as unknown as SportRequestData[];
 
     return {
-      requests: SportRequestMapper.toDTOList(requestsData),
+      data: SportRequestMapper.toDTOList(requestsData),
       totalItems,
       totalPages,
       currentPage: page
@@ -173,7 +173,7 @@ export class SportsRepository extends BaseRepository<SportData, CreateSportReque
     const data = this.mapRawToData(doc);
 
     return {
-      request: SportRequestMapper.toDTO(data as unknown as SportRequestData)
+      sportRequest: SportRequestMapper.toDTO(data as unknown as SportRequestData)
     };
   }
 

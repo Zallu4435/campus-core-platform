@@ -38,11 +38,11 @@ export class ApproveClubRequestUseCase implements IApproveClubRequestUseCase {
 
     // 1. Get detailed request information
     const response = await this._clubsRepository.getClubRequestDetails({ id: params.id });
-    if (!response || !response.request) {
+    if (!response || !response.clubRequest) {
       throw new Error("Club request not found");
     }
 
-    const { request } = response;
+    const { clubRequest: request } = response;
 
     // 2. Validate current status
     if (request.status !== ClubRequestStatus.Pending) {
@@ -77,11 +77,11 @@ export class RejectClubRequestUseCase implements IRejectClubRequestUseCase {
 
     // 1. Get detailed request information
     const response = await this._clubsRepository.getClubRequestDetails({ id: params.id });
-    if (!response || !response.request) {
+    if (!response || !response.clubRequest) {
       throw new Error("Club request not found");
     }
 
-    const { request } = response;
+    const { clubRequest: request } = response;
 
     // 2. Validate current status
     if (request.status !== ClubRequestStatus.Pending) {
@@ -109,7 +109,7 @@ export class GetClubRequestDetailsUseCase implements IGetClubRequestDetailsUseCa
       throw new Error("Invalid club request ID");
     }
     const response = await this._clubsRepository.getClubRequestDetails(params);
-    if (!response || !response.request) {
+    if (!response || !response.clubRequest) {
       throw new Error("Club request not found");
     }
     return response;

@@ -12,14 +12,17 @@ export class AdmissionMapper implements IAdmissionMapper {
             registerId: source.registerId ? source.registerId.toString() : "",
             applicationId: source.applicationId || "",
             personal: {
-                fullName: source.personal?.fullName || "",
-                emailAddress: source.personal?.emailAddress || "",
-                phoneNumber: source.personal?.phoneNumber,
-                dateOfBirth: source.personal?.dateOfBirth,
-                gender: source.personal?.gender,
-                nationality: source.personal?.nationality
+                ...(source.personal || {}),
+                ...(source.personalInfo || {}),
+                fullName: source.personalInfo?.fullName || source.personal?.fullName || "",
+                emailAddress: source.personalInfo?.emailAddress || source.personal?.emailAddress || "",
+                phoneNumber: source.personalInfo?.phoneNumber || source.personal?.phoneNumber,
+                dateOfBirth: source.personalInfo?.dateOfBirth || source.personal?.dateOfBirth,
+                gender: source.personalInfo?.gender || source.personal?.gender,
+                nationality: source.personalInfo?.nationality || source.personal?.nationality
             },
             choiceOfStudy: Array.isArray(source.choiceOfStudy) ? source.choiceOfStudy.map((c) => ({
+                ...c,
                 programme: c.programme || "",
                 degree: c.degree,
                 catalogYear: c.catalogYear
@@ -29,10 +32,12 @@ export class AdmissionMapper implements IAdmissionMapper {
             otherInformation: source.otherInformation || {},
             documents: {
                 documents: Array.isArray(source.documents?.documents) ? source.documents!.documents!.map((d) => ({
+                    ...d,
                     id: d.id,
                     fileName: d.fileName,
                     fileType: d.fileType,
                     url: d.url || d.cloudinaryUrl,
+                    cloudinaryUrl: d.cloudinaryUrl, // Ensure this fallback works both ways or is explicit
                     path: d.path,
                     uploadedAt: d.uploadedAt instanceof Date ? d.uploadedAt : new Date(d.uploadedAt || Date.now())
                 })) : [],
@@ -49,7 +54,7 @@ export class AdmissionMapper implements IAdmissionMapper {
         return domain;
     }
 
-    toDTO(domain: AdminAdmission | FullAdmissionDetails, blocked?: boolean): AdmissionResponseDTO | GetAdmissionByIdResponseDTO {
+    toDTO(domain: AdminAdmission | FullAdmissionDetails, blocked?: boolean, viewType: 'list' | 'detail' = 'detail'): AdmissionResponseDTO | GetAdmissionByIdResponseDTO {
         // For list view (GetAdmissions), return simplified DTO
         const baseDTO = {
             _id: domain.id,
@@ -61,7 +66,7 @@ export class AdmissionMapper implements IAdmissionMapper {
         };
 
         // For detail view (GetAdmissionById), return full details
-        if ('registerId' in domain) {
+        if (viewType === 'detail') {
             return {
                 ...domain,
                 _id: domain.id,
@@ -81,7 +86,7 @@ export class AdmissionMapper implements IAdmissionMapper {
             confirmationToken: domain.confirmationToken,
             tokenExpiry: domain.tokenExpiry,
             // We generally update specific fields, not full overwrite usually, but if we do:
-            personal: domain.personal,
+            personalInfo: domain.personal,
             // ...
         };
     }

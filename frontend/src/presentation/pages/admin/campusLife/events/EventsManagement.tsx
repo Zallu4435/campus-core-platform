@@ -75,8 +75,8 @@ const AdminEventsManagement: React.FC = () => {
   const debouncedSearchChange = useCallback(
     debounce((query: string) => {
       setSearchTerm(query);
-      setPage(1); 
-    }, 500), 
+      setPage(1);
+    }, 500),
     [setSearchTerm, setPage]
   );
 
@@ -93,7 +93,7 @@ const AdminEventsManagement: React.FC = () => {
   const handleEditEvent = async (event: Event) => {
     try {
       const details = await getEventDetails(event.id);
-      setSelectedEvent({ ...details, id: details.id || details._id || '' });
+      setSelectedEvent(details);
       setShowAddEventModal(true);
     } catch (error) {
       console.error('Error fetching event details:', error);
@@ -132,11 +132,11 @@ const AdminEventsManagement: React.FC = () => {
       }
       setShowAddEventModal(false);
       setSelectedEvent(null);
-          } catch (error: unknown) {
-        console.error('handleSaveEvent - error:', error);
-        const errorMessage = error instanceof Error ? error.message : 'Failed to save event';
-        toast.error(errorMessage);
-      }
+    } catch (error: unknown) {
+      console.error('handleSaveEvent - error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save event';
+      toast.error(errorMessage);
+    }
   };
 
   const handleDeleteEvent = (id: string) => {
@@ -200,7 +200,7 @@ const AdminEventsManagement: React.FC = () => {
         ...prev,
         [field]: value || 'All',
       }));
-      setPage(1); 
+      setPage(1);
     }, 300),
     [setFilters, setPage]
   );
@@ -423,22 +423,21 @@ const AdminEventsManagement: React.FC = () => {
         }}
         onSubmit={handleSaveEvent}
         initialData={selectedEvent ? {
-          title: selectedEvent._title,
-          date: selectedEvent._date,
-          time: selectedEvent._time,
-          location: selectedEvent._location,
-          organizerType: selectedEvent._organizerType as "club" | "department" | "student" | "administration" | "external",
-          eventType: selectedEvent._eventType as "workshop" | "seminar" | "fest" | "competition" | "exhibition" | "conference" | "hackathon" | "cultural" | "sports" | "academic",
-          icon: selectedEvent._icon,
-          color: selectedEvent._color,
-          description: selectedEvent._description,
-          fullTime: selectedEvent._fullTime,
-          additionalInfo: selectedEvent._additionalInfo,
-          requirements: selectedEvent._requirements,
-          // status: selectedEvent._status, // Removed as it's not in EventFormData
-          maxParticipants: selectedEvent._maxParticipants,
-          registrationRequired: selectedEvent._registrationRequired,
-          organizer: selectedEvent._organizer,
+          title: selectedEvent.title,
+          date: selectedEvent.date,
+          time: selectedEvent.time,
+          location: selectedEvent.location,
+          organizerType: selectedEvent.organizerType as "club" | "department" | "student" | "administration" | "external",
+          eventType: selectedEvent.eventType as "workshop" | "seminar" | "fest" | "competition" | "exhibition" | "conference" | "hackathon" | "cultural" | "sports" | "academic",
+          icon: selectedEvent.icon,
+          color: selectedEvent.color,
+          description: selectedEvent.description,
+          fullTime: selectedEvent.fullTime,
+          additionalInfo: selectedEvent.additionalInfo,
+          requirements: selectedEvent.requirements,
+          maxParticipants: selectedEvent.maxParticipants,
+          registrationRequired: selectedEvent.registrationRequired,
+          organizer: selectedEvent.organizer,
         } : undefined}
         isEditing={!!selectedEvent}
       />

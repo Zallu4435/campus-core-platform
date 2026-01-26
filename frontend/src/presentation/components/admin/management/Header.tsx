@@ -53,12 +53,15 @@ const Header: React.FC<HeaderProps> = ({
         </div>
 
         <div className="container px-6 py-8 relative z-10">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-8">
-            <div>
-              <h1 className="text-3xl font-bold text-white text-shadow-lg">{title}</h1>
-              <p className="text-purple-300 mt-1 text-shadow-sm">{subtitle}</p>
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-8 mb-8">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-3xl font-bold text-white text-shadow-lg truncate">{title}</h1>
+              <p className="text-purple-300 mt-2 text-shadow-sm leading-relaxed max-w-2xl">{subtitle}</p>
             </div>
-            <div className="flex flex-wrap gap-3">
+            <div className={`grid gap-4 shrink-0 ${stats.length === 1 ? 'grid-cols-1' :
+                stats.length === 2 ? 'grid-cols-1 sm:grid-cols-2' :
+                  'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3'
+              }`}>
               {stats.map((stat, index) => (
                 <StatCard
                   key={index}
@@ -72,7 +75,7 @@ const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
 
-          <div className="flex flex-col md:flex-row md:items-center gap-4 justify-between">
+          <div className="flex flex-col md:flex-row md:items-center gap-6 justify-between pt-6 border-t border-purple-500/10">
             <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
               {tabs.map((tab, index) => (
                 <TabButton
@@ -199,17 +202,23 @@ interface StatCardProps {
 
 const StatCard: React.FC<StatCardProps> = ({ icon, title, value, change, isPositive }) => (
   <div
-    className="bg-gray-800/50 backdrop-blur-sm p-4 rounded-lg border border-purple-500/30 flex items-center space-x-4 min-w-[150px] shadow-lg hover:shadow-purple-500/10 transition-all duration-300 hover:bg-gray-800/70 group"
+    className="bg-gray-800/40 backdrop-blur-md p-4 rounded-xl border border-purple-500/20 flex items-center space-x-4 min-w-[180px] shadow-xl hover:shadow-purple-500/20 transition-all duration-300 hover:bg-gray-800/60 group"
     role="region"
     aria-label={`${title} stat`}
   >
-    <div className="w-10 h-10 rounded-full bg-purple-600/30 flex items-center justify-center text-purple-300 group-hover:bg-purple-600/40 transition-all duration-300 border border-purple-500/30 shadow-inner">
-      {icon}
+    <div className="w-12 h-12 rounded-xl bg-purple-600/20 flex items-center justify-center text-purple-300 group-hover:bg-purple-600/30 transition-all duration-300 border border-purple-500/20 shadow-inner">
+      <div className="transform group-hover:scale-110 transition-transform duration-300">
+        {icon}
+      </div>
     </div>
-    <div>
-      <p className="text-xs text-purple-300">{title}</p>
-      <p className="text-xl font-bold text-white">{value}</p>
-      <p className={`text-xs ${isPositive ? 'text-green-400' : 'text-rose-400'}`}>{change}</p>
+    <div className="flex-1 min-w-0">
+      <p className="text-[10px] uppercase tracking-wider font-semibold text-purple-400 mb-0.5">{title}</p>
+      <p className="text-2xl font-bold text-white leading-none">{value}</p>
+      <div className="flex items-center mt-1.5">
+        <span className={`text-xs font-medium px-1.5 py-0.5 rounded-md ${isPositive ? 'bg-green-500/10 text-green-400' : 'bg-rose-500/10 text-rose-400'}`}>
+          {change}
+        </span>
+      </div>
     </div>
   </div>
 );
@@ -224,8 +233,8 @@ interface TabButtonProps {
 const TabButton: React.FC<TabButtonProps> = ({ label, active, icon, onClick }) => (
   <button
     className={`flex items-center space-x-2 px-4 py-2.5 rounded-lg transition-all duration-300 ${active
-        ? 'bg-purple-600/30 text-white font-medium shadow-lg border border-purple-500/50 backdrop-blur-sm'
-        : 'text-purple-300 hover:bg-gray-800/60 hover:border-purple-500/30 hover:border backdrop-blur-sm'
+      ? 'bg-purple-600/30 text-white font-medium shadow-lg border border-purple-500/50 backdrop-blur-sm'
+      : 'text-purple-300 hover:bg-gray-800/60 hover:border-purple-500/30 hover:border backdrop-blur-sm'
       }`}
     onClick={onClick}
     role="tab"

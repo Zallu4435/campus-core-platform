@@ -2,7 +2,7 @@ import { Types } from "mongoose";
 
 export interface IPaymentSource {
     _id: Types.ObjectId | string;
-    studentId: Types.ObjectId | string;
+    studentId: Types.ObjectId | string | { _id: string; firstName?: string; lastName?: string; name?: string; email: string };
     description: string;
     amount: number;
     method: string;
@@ -26,7 +26,7 @@ export interface IChargeSource {
     applicableFor: string | Record<string, unknown>;
     createdAt?: Date | string;
     updatedAt?: Date | string;
-    createdBy?: Types.ObjectId | string;
+    createdBy?: string | { _id: string; firstName: string; lastName: string; email: string };
     [key: string]: unknown;
 }
 

@@ -15,7 +15,7 @@ const admissionController = getAdminAdmissionsComposer();
 
 admissionRouter.post(
     "/:id/confirm/:action",
-    validate(confirmAdmissionSchema),
+    validate(confirmAdmissionSchema, 'query'),
     (req, res, next) => {
         expressAdapter(req, res, next, admissionController.confirmAdmissionOffer.bind(admissionController));
     }

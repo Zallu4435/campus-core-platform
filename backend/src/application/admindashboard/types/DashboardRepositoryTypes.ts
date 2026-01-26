@@ -54,7 +54,7 @@ export interface PopulatedUserFields {
 export interface RecentAdmissionRaw {
     _id: Types.ObjectId | string;
     status?: string;
-    personal?: { fullName?: string };
+    personalInfo?: { fullName?: string };
     registerId?: PopulatedUserFields;
     createdAt?: Date;
 }

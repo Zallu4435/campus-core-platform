@@ -1,5 +1,5 @@
 import { FiVideo } from 'react-icons/fi';
-import { Diploma, Video } from '../../domain/types/management/videomanagement';
+import { Diploma } from '../../domain/types/management/videomanagement';
 
 export const ITEMS_PER_PAGE = 10;
 
@@ -7,19 +7,19 @@ export const STATUS_OPTIONS = ['All Status', 'Published', 'Draft'];
 
 export const getCategoryOptions = (diplomasData: { diplomas: Diploma[] }) => diplomasData?.diplomas.map((d: Diploma) => d.category) || [];
 
-export const getTabs = (filteredVideos: Video[], activeTab: string) => [
+export const getTabs = (activeTab: string, counts?: { all: number; published: number; drafts: number }) => [
   {
-    label: `All Videos (${filteredVideos.length})`,
+    label: `All Videos (${counts?.all || 0})`,
     icon: <FiVideo size={16} />,
     active: activeTab === 'all',
   },
   {
-    label: `Published (${filteredVideos.filter(v => v.status === 'Published').length})`,
+    label: `Published (${counts?.published || 0})`,
     icon: <FiVideo size={16} />,
     active: activeTab === 'published',
   },
   {
-    label: `Drafts (${filteredVideos.filter(v => v.status === 'Draft').length})`,
+    label: `Drafts (${counts?.drafts || 0})`,
     icon: <FiVideo size={16} />,
     active: activeTab === 'drafts',
   },

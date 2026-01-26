@@ -3,13 +3,18 @@ import { SportRequestDTO } from "../../../../application/sports/dtos/SportBaseDT
 import { SportRequestData } from "../../../../domain/sports/entities/SportTypes";
 
 interface PopulatedSport {
-    id: string;
+    _id?: string;
+    id?: string;
     title: string;
     type: string;
+    headCoach?: string;
+    participants?: number;
+    division?: string;
 }
 
 interface PopulatedUser {
-    id: string;
+    _id?: string;
+    id?: string;
     firstName?: string;
     lastName?: string;
     email: string;
@@ -21,13 +26,8 @@ export class SportRequestMapper {
             throw new Error("Cannot map null data to domain entity");
         }
 
-        const sportId = typeof data.sportId === 'string'
-            ? data.sportId
-            : data.sportId.id;
-
-        const userId = typeof data.userId === 'string'
-            ? data.userId
-            : data.userId.id;
+        const sportId = !data.sportId ? "" : (typeof data.sportId === 'string' ? data.sportId : (data.sportId.id || (data.sportId as any)._id || ""));
+        const userId = !data.userId ? "" : (typeof data.userId === 'string' ? data.userId : (data.userId.id || (data.userId as any)._id || ""));
 
         return new SportRequest({
             id: data.id,
@@ -64,26 +64,30 @@ export class SportRequestMapper {
             throw new Error("Cannot map null data to DTO");
         }
 
-        const sport = typeof data.sportId !== 'string'
+        const sport = data.sportId && typeof data.sportId !== 'string'
             ? data.sportId as unknown as PopulatedSport
-            : { id: data.sportId, title: "", type: "" };
+            : { id: (data.sportId as string) || "", title: "", type: "" };
 
-        const user = typeof data.userId !== 'string'
+        const user = data.userId && typeof data.userId !== 'string'
             ? data.userId as unknown as PopulatedUser
-            : { id: data.userId, email: "" };
+            : { id: (data.userId as string) || "", email: "" };
 
         return {
             id: data.id,
-            sportId: sport.id || "",
+            sportId: sport.id || sport._id || "",
             sportTitle: sport.title || "",
-            userId: user.id || "",
-            userName: user.firstName ? `${user.firstName} ${user.lastName}` : "",
+            userId: user.id || user._id || "",
+            userName: user.firstName ? `${user.firstName} ${user.lastName || ""}`.trim() : (user.email || ""),
             userEmail: user.email || "",
             status: data.status,
             whyJoin: data.whyJoin,
             additionalInfo: data.additionalInfo || "",
             requestedDate: data.createdAt ? data.createdAt.toISOString() : "",
+            updatedAt: data.updatedAt ? data.updatedAt.toISOString() : "",
             type: sport.type || "",
+            headCoach: sport.headCoach || "",
+            playerCount: sport.participants || 0,
+            division: sport.division || "",
         };
     }
 

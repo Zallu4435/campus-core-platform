@@ -57,6 +57,46 @@ export interface AdmissionDetails {
   [key: string]: unknown;
 }
 
+export interface AdmissionEducationSubject {
+  subject: string;
+  otherSubject?: string;
+  grade: string;
+  score?: string; // For AP
+}
+
+export interface AdmissionIelts {
+  date: string;
+  overall: string;
+  reading: string;
+  writing: string;
+  listening?: string;
+  speaking?: string;
+}
+
+export interface AdmissionToefl {
+  date: string;
+  grade: string;
+  type: string;
+}
+
+export interface AdmissionAp {
+  date: string;
+  subjects: AdmissionEducationSubject[];
+}
+
+export interface AdmissionInternationalEducation {
+  schoolName: string;
+  country: string;
+  from: string;
+  to: string;
+  examination: string;
+  subjects?: AdmissionEducationSubject[];
+  ielts?: AdmissionIelts;
+  toefl?: AdmissionToefl;
+  ap?: AdmissionAp;
+  [key: string]: unknown;
+}
+
 export interface AdmissionApiResponse {
   data: {
     admissions: AdmissionDetails[];
@@ -67,9 +107,7 @@ export interface AdmissionApiResponse {
 }
 
 export interface AdmissionDetailsResponse {
-  data: {
-    admission: AdmissionDetails;
-  };
+  data: AdmissionDetails;
 }
 
 export interface Filters {

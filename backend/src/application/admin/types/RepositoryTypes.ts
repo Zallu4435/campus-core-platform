@@ -23,14 +23,16 @@ export interface AdmissionFilter {
         $lte?: Date;
     };
     $or?: Array<{
+        "personalInfo.fullName"?: { $regex: string; $options: string };
+        "personalInfo.emailAddress"?: { $regex: string; $options: string };
         "personal.fullName"?: { $regex: string; $options: string };
         "personal.emailAddress"?: { $regex: string; $options: string };
+        _id?: string;
+        "documents.documents"?: {
+            $elemMatch: { id: string };
+        };
+        [key: string]: unknown;
     }>;
-    _id?: string;
-    "documents.documents"?: {
-        $elemMatch: { id: string };
-    };
-    [key: string]: unknown;
 }
 
 /**
@@ -39,6 +41,8 @@ export interface AdmissionFilter {
  */
 export interface AdmissionProjection {
     _id?: 1 | 0;
+    "personalInfo.fullName"?: 1 | 0;
+    "personalInfo.emailAddress"?: 1 | 0;
     "personal.fullName"?: 1 | 0;
     "personal.emailAddress"?: 1 | 0;
     createdAt?: 1 | 0;

@@ -28,8 +28,8 @@ class NotificationService {
 
   async getNotificationDetails(id: string): Promise<Notification> {
     try {
-      const response = await httpClient.get<{ data: Notification }>(`/admin/notifications/${id}`);
-      return response.data.data;
+      const response = await httpClient.get<{ data: { notification: Notification } }>(`/admin/notifications/${id}`);
+      return response.data.data.notification;
     } catch (error: unknown) {
       if (isAxiosErrorWithApiError(error)) {
         throw new Error(error.response?.data?.error || error.response?.data?.message || 'Failed to fetch notification details');

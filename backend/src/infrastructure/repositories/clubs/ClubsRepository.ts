@@ -81,8 +81,12 @@ export class ClubsRepository extends BaseRepository<ClubData, CreateClubRequestD
     }
 
     const clubQuery: Record<string, unknown> = {};
+    let clubIds: Types.ObjectId[] = [];
+    let applicationShouldFilterByClubs = false;
+
     if (type && type.toLowerCase() !== "all") {
       clubQuery.type = { $regex: `^${type}$`, $options: "i" };
+      applicationShouldFilterByClubs = true;
     }
 
     if (search && search.trim() !== "") {
@@ -90,23 +94,30 @@ export class ClubsRepository extends BaseRepository<ClubData, CreateClubRequestD
         { name: { $regex: search, $options: "i" } },
         { type: { $regex: search, $options: "i" } },
       ];
-    }
+      applicationShouldFilterByClubs = true;
 
-    const matchingClubs = await ClubModel.find(clubQuery).select("_id").lean();
-    const clubIds = matchingClubs.map((club) => club._id);
-
-    if (search && search.trim() !== "") {
-      const userMatches = await mongoose.model('User').find({ email: { $regex: search, $options: "i" } }).select("_id").lean();
+      const userMatches = await mongoose.model('User').find({
+        $or: [
+          { email: { $regex: search, $options: "i" } },
+          { firstName: { $regex: search, $options: "i" } },
+          { lastName: { $regex: search, $options: "i" } }
+        ]
+      }).select("_id").lean();
       const userIds = userMatches.map((u) => u._id);
 
+      const matchingClubs = await ClubModel.find(clubQuery).select("_id").lean();
+      clubIds = matchingClubs.map((club) => club._id);
+
       if (clubIds.length === 0 && userIds.length === 0) {
-        return { data: [], totalItems: 0, totalPages: 0, currentPage: page };
+        return { clubRequests: [], totalItems: 0, totalPages: 0, currentPage: page };
       }
 
       query.$or = [];
       if (clubIds.length > 0) (query.$or as Array<Record<string, unknown>>).push({ clubId: { $in: clubIds } });
       if (userIds.length > 0) (query.$or as Array<Record<string, unknown>>).push({ userId: { $in: userIds } });
-    } else if (clubIds.length > 0) {
+    } else if (applicationShouldFilterByClubs) {
+      const matchingClubs = await ClubModel.find(clubQuery).select("_id").lean();
+      clubIds = matchingClubs.map((club) => club._id);
       query.clubId = { $in: clubIds };
     }
 
@@ -122,7 +133,7 @@ export class ClubsRepository extends BaseRepository<ClubData, CreateClubRequestD
     const skip = (page - 1) * limit;
 
     const requestDocs = await ClubRequestModel.find(query)
-      .populate("clubId", "name type description")
+      .populate("clubId", "name type description about nextMeeting enteredMembers")
       .populate("userId", "firstName lastName email")
       .sort({ updatedAt: -1, createdAt: -1 })
       .skip(skip)
@@ -132,7 +143,7 @@ export class ClubsRepository extends BaseRepository<ClubData, CreateClubRequestD
     const requestData = requestDocs.map(r => this.mapRawToData(r));
 
     return {
-      data: ClubRequestMapper.toDTOList(requestData as unknown as ClubRequestData[]),
+      clubRequests: ClubRequestMapper.toDTOList(requestData as unknown as ClubRequestData[]),
       totalItems,
       totalPages,
       currentPage: page,
@@ -171,7 +182,7 @@ export class ClubsRepository extends BaseRepository<ClubData, CreateClubRequestD
     const data = this.mapRawToData(doc);
 
     return {
-      request: ClubRequestMapper.toDTO(data as unknown as ClubRequestData)
+      clubRequest: ClubRequestMapper.toDTO(data as unknown as ClubRequestData)
     };
   }
 }

@@ -17,18 +17,15 @@ export const getAdmissionByTokenSchema = Joi.object({
 });
 
 export const approveAdmissionSchema = Joi.object({
-    additionalInfo: Joi.object({
-        scholarshipInfo: Joi.string().allow('').optional(),
-        programDetails: Joi.string().allow('').optional(),
-        additionalNotes: Joi.string().allow('').optional(),
-    }).optional()
+    programDetails: Joi.string().allow('').optional(),
+    startDate: Joi.string().allow('').optional(),
+    scholarshipInfo: Joi.string().allow('').optional(),
+    additionalNotes: Joi.string().allow('').optional(),
 });
 
-// rejectAdmissionSchema can be empty if no body is required, or maybe a reason?
-// Looking at RejectAdmissionRequestDTO, it only needs ID (from params).
-// But usually there might be a reason. Let's check DTO.
-// Actually RequestDTO only has id. So schema might strictly forbid body or just be empty.
-export const rejectAdmissionSchema = Joi.object({});
+export const rejectAdmissionSchema = Joi.object({
+    reason: Joi.string().allow('').optional()
+});
 
 export const confirmAdmissionSchema = Joi.object({
     token: Joi.string().required()

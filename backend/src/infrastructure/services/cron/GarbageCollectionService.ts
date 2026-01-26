@@ -28,6 +28,8 @@ export class GarbageCollectionService {
             } catch (error) {
                 Logger.error('[GarbageCollection] Error during cleanup cycle:', error);
             }
+        }, {
+            timezone: "UTC"
         });
     }
 

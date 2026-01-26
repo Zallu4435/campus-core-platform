@@ -190,6 +190,10 @@ export class SendEnquiryReplyUseCase implements ISendEnquiryReplyUseCase {
         adminName: ENQUIRY_CONSTANTS.MESSAGES.SUPPORT_TEAM_NAME
       });
 
+      // Update enquiry status to RESOLVED after successful reply
+      const updatedEnquiry = enquiry.updateStatus(EnquiryStatus.RESOLVED);
+      await this._enquiryRepository.update(params.id, updatedEnquiry);
+
       return {
         success: true,
         message: ENQUIRY_CONSTANTS.MESSAGES.REPLY_SUCCESS,

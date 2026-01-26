@@ -25,7 +25,13 @@ export interface VideoSummaryDTO {
     };
 }
 
-export interface GetVideosResponseDTO extends PaginatedResponseDTO<VideoSummaryDTO> { }
+export interface GetVideosResponseDTO extends PaginatedResponseDTO<VideoSummaryDTO> {
+    statusCounts: {
+        all: number;
+        published: number;
+        drafts: number;
+    };
+}
 
 export interface GetVideoByIdResponseDTO {
     video: IVideo;

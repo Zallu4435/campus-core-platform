@@ -1,5 +1,6 @@
 export interface Notification {
   _id: string;
+  id?: string;
   title: string;
   message: string;
   recipientType: 'individual' | 'all_students' | 'all_faculty' | 'all' | string;
@@ -7,7 +8,7 @@ export interface Notification {
   recipientName?: string;
   createdBy: string;
   createdAt: string;
-  status: 'sent' | 'failed' | string;
+  status: 'sent' | 'failed' | 'delivered' | 'read' | string;
   isRead: boolean;
   type?: 'course' | 'assignment' | 'general' | 'default';
   [key: string]: unknown;
@@ -57,7 +58,7 @@ export interface InfoCardProps {
   icon: React.ComponentType<{ size?: number | string; className?: string }>;
   label: string;
   value: string;
-} 
+}
 
 export interface NotificationApiResponse {
   notifications: Notification[];

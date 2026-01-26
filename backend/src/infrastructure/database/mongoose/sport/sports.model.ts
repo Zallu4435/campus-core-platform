@@ -35,7 +35,6 @@ const teamSchema = new Schema<ISportDocument>(
       enum: Object.values(SportStatus),
       default: SportStatus.Active,
     },
-    logo: { type: String },
   },
   { timestamps: true }
 );

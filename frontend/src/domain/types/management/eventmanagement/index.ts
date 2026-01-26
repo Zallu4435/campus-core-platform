@@ -1,47 +1,37 @@
 export interface Event {
   id: string;
+  _id?: string;
   title: string;
   date: string;
   time: string;
   location: string;
+  organizer: string;
   organizerType: string;
   eventType: string;
+  status: string;
+  timeframe: string;
   icon: string;
   color: string;
   description: string;
   fullTime: boolean;
   additionalInfo?: string;
   requirements?: string;
-  status: string;
   maxParticipants: number;
   registrationRequired: boolean;
+  participants: number;
   createdAt: string;
-  organizer: string;
+  updatedAt: string;
+}
 
-  _id?: string;
-  _title?: string;
-  _date?: string;
-  _time?: string;
-  _location?: string;
-  _organizerType?: string;
-  _eventType?: string;
-  _icon?: string;
-  _color?: string;
-  _description?: string;
-  _fullTime?: boolean;
-  _additionalInfo?: string;
-  _requirements?: string;
-  _status?: string;
-  _maxParticipants?: number;
-  _registrationRequired?: boolean;
-  _organizer?: string;
-  _participants?: number;
-  _timeframe?: string;
+export interface EventDTO extends Omit<Event, 'id'> {
+  id?: string;
+  _id: string;
 }
 
 export interface EventRequest {
   id: string;
-  requestedId?: string; 
+  _id?: string;
+  requestedId?: string;
   eventId?: string;
   eventName?: string;
   requestedBy?: string;
@@ -51,50 +41,39 @@ export interface EventRequest {
   proposedVenue?: string;
   status: string;
   requestedAt?: string;
-  description: string;
+  description?: string;
   expectedParticipants?: number;
   createdAt?: string;
   updatedAt?: string;
   whyJoin?: string;
   additionalInfo?: string;
-  
-  event?: {
-    id: string;
-    title: string;
-    description: string;
-    date: string;
-    location: string;
-  };
+
+  event?: Event;
   user?: {
     id: string;
     name: string;
     email: string;
   };
+}
 
-  _id?: string;
-  _title?: string;
-  _date?: string;
-  _time?: string;
-  _location?: string;
-  _organizerType?: string;
-  _eventType?: string;
-  _icon?: string;
-  _color?: string;
-  _description?: string;
-  _fullTime?: boolean;
-  _additionalInfo?: string;
-  _requirements?: string;
-  _status?: string;
-  _maxParticipants?: number;
-  _registrationRequired?: boolean;
-  _organizer?: string;
-  _participants?: number;
-  _timeframe?: string;
+export interface EventRequestDTO extends Omit<EventRequest, 'id' | 'event' | 'user'> {
+  id?: string;
+  _id: string;
+  userName?: string;
+  userEmail?: string;
+  userId?: string;
+  title?: string;
+  date?: string;
+  location?: string;
+  description?: string;
+  proposedVenue?: string;
+  expectedParticipants?: number;
+  requestedDate?: string;
 }
 
 export interface EventApiResponse {
   data: {
-    events: Event[];
+    events: EventDTO[];
     totalPages: number;
     currentPage: number;
     totalItems: number;
@@ -104,7 +83,7 @@ export interface EventApiResponse {
 // API Response for event requests
 export interface EventRequestsApiResponse {
   data: {
-    eventRequests: EventRequest[];
+    data: EventRequestDTO[];
     totalPages: number;
     currentPage: number;
     totalItems: number;
@@ -112,14 +91,14 @@ export interface EventRequestsApiResponse {
 }
 
 export interface EventServiceResponse {
-  events: Event[];
+  events: EventDTO[];
   totalPages: number;
   currentPage: number;
   totalItems: number;
 }
 
 export interface EventRequestsServiceResponse {
-  eventRequests: EventRequest[];
+  data: EventRequestDTO[];
   totalPages: number;
   currentPage: number;
   totalItems: number;
@@ -127,13 +106,13 @@ export interface EventRequestsServiceResponse {
 
 export interface EventApiResponseSingle {
   data: {
-    event: Event;
+    event: EventDTO;
   };
 }
 
 export interface EventRequestApiResponseSingle {
   data: {
-    eventRequest: EventRequest;
+    eventRequest: EventRequestDTO;
   };
 }
 
@@ -144,7 +123,7 @@ export type OrganizerType = 'department' | 'club' | 'student' | 'faculty' | 'adm
 export interface EventDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  event: Event | EventRequest | null;
+  event: Event | null;
   onEdit?: (event: Event) => void;
 }
 
@@ -356,7 +335,7 @@ export interface IconOption {
 
 export interface ColorOption {
   color: string;
-} 
+}
 
 export interface Filters {
   eventType: string;

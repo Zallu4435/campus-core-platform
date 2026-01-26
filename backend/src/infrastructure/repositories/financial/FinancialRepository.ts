@@ -135,6 +135,33 @@ export class FinancialRepository implements IFinancialRepository {
 
         const totalPages = Math.ceil(total / limit);
 
+        // Store original IDs to recover if population fails
+        const originalIds = new Map(payments.map(p => [p._id.toString(), p.studentId]));
+
+        // First pass: Populate from User collection
+        await mongoose.model('User').populate(payments, {
+            path: 'studentId',
+            select: 'firstName lastName email'
+        });
+
+        // Identify ones that weren't found in User collection (studentId became null or stayed as ID)
+        const unpopulated = payments.filter(p => {
+            const current = p.studentId;
+            return !current || typeof current !== 'object' || !('firstName' in current || 'lastName' in current);
+        });
+
+        if (unpopulated.length > 0) {
+            // Restore IDs and try Register collection
+            unpopulated.forEach(p => {
+                p.studentId = originalIds.get(p._id.toString())!;
+            });
+
+            await mongoose.model('Register').populate(unpopulated, {
+                path: 'studentId',
+                select: 'firstName lastName email'
+            });
+        }
+
         return {
             data: payments.map((payment) => {
                 const paymentEntity = FinancialMapper.toPayment(payment);
@@ -147,9 +174,28 @@ export class FinancialRepository implements IFinancialRepository {
     }
 
     async getOnePayment(paymentId: string) {
-        const payment = await PaymentModel.findById(paymentId).lean() as unknown as IPaymentSource;
+        let payment = await PaymentModel.findById(paymentId)
+            .lean() as unknown as IPaymentSource;
+
         if (!payment) {
             throw new Error(FinancialErrorType.PaymentNotFound);
+        }
+
+        const originalStudentId = payment.studentId;
+
+        // Try User first
+        await mongoose.model('User').populate(payment, {
+            path: 'studentId',
+            select: 'firstName lastName email'
+        });
+
+        // If not found, try Register
+        if (!payment.studentId || typeof payment.studentId !== 'object' || !('firstName' in (payment.studentId as any))) {
+            payment.studentId = originalStudentId;
+            await mongoose.model('Register').populate(payment, {
+                path: 'studentId',
+                select: 'firstName lastName email'
+            });
         }
 
         const paymentEntity = FinancialMapper.toPayment(payment);
@@ -417,6 +463,7 @@ export class FinancialRepository implements IFinancialRepository {
 
         const total = await ChargeModel.countDocuments(query);
         const charges = await ChargeModel.find(query)
+            .populate('createdBy', 'firstName lastName email')
             .sort({ createdAt: -1 })
             .skip((page - 1) * limit)
             .limit(limit)

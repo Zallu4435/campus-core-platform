@@ -46,9 +46,20 @@ export class GetVideosUseCase implements IGetVideosUseCase {
 
         const query = await this.buildQuery(params);
 
-        const [videos, totalItems] = await Promise.all([
+        // Calculate counts for tabs
+        // We want counts to be relative to the category filter if provided
+        const countQuery: VideoFilter = {};
+        if (params.category && params.category !== 'all') {
+            const diploma = await this._videoRepository.findDiplomaByCategory(params.category);
+            if (diploma) countQuery.diplomaId = diploma.id;
+        }
+
+        const [videos, totalItems, allCount, publishedCount, draftsCount] = await Promise.all([
             this._videoRepository.findVideos(query, page, limit),
-            this._videoRepository.countVideos(query)
+            this._videoRepository.countVideos(query),
+            this._videoRepository.countVideos(countQuery),
+            this._videoRepository.countVideos({ ...countQuery, status: 'Published' }),
+            this._videoRepository.countVideos({ ...countQuery, status: 'Draft' })
         ]);
 
         const mappedVideos = this.mapVideosToDTO(videos);
@@ -59,6 +70,11 @@ export class GetVideosUseCase implements IGetVideosUseCase {
             totalItems,
             totalPages,
             currentPage: page,
+            statusCounts: {
+                all: allCount,
+                published: publishedCount,
+                drafts: draftsCount
+            }
         };
 
         return { data: result, success: true };

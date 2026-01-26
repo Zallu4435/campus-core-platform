@@ -5,7 +5,7 @@ import { toast } from 'react-hot-toast';
 import { DiplomaForHook, VideoForHook } from '../../domain/types/management/videomanagement';
 
 
-export const useVideoManagement = (page: number, itemsPerPage: number, filters: { status: string; category: string; dateRange: string; startDate?: string; endDate?: string }, searchQuery: string, activeTab: string) => {
+export const useVideoManagement = (page: number, itemsPerPage: number, filters: { status: string; category: string; dateRange: string; startDate?: string; endDate?: string }, searchQuery: string) => {
   const queryClient = useQueryClient();
 
   const { data: diplomasData, isLoading: isLoadingDiplomas } = useQuery<{ diplomas: DiplomaForHook[] }, Error>({
@@ -16,14 +16,14 @@ export const useVideoManagement = (page: number, itemsPerPage: number, filters: 
     },
   });
 
-  const { data: videosData, isLoading: isLoadingVideos } = useQuery<{ videos: VideoForHook[]; totalPages: number }, Error>({
-    queryKey: ['videos', page, filters, searchQuery, activeTab],
+  const { data: videosData, isLoading: isLoadingVideos } = useQuery<{ videos: VideoForHook[]; totalPages: number; statusCounts: { all: number; published: number; drafts: number } }, Error>({
+    queryKey: ['videos', page, filters, searchQuery],
     queryFn: () => diplomaBackendService.getVideos(
-      filters.category || '', 
-      page, 
-      itemsPerPage, 
+      filters.category || '',
+      page,
+      itemsPerPage,
       filters.status || undefined,
-      searchQuery || undefined,
+      (searchQuery && searchQuery !== 'all') ? searchQuery.trim() : undefined,
       filters.dateRange || undefined,
       filters.startDate,
       filters.endDate
@@ -81,29 +81,29 @@ export const useVideoManagement = (page: number, itemsPerPage: number, filters: 
     try {
       if (videoData instanceof FormData) {
         const videoId = videoData.get('videoId') || videoData.get('id');
-        
+
         if (videoId) {
-          await updateVideoMutation.mutateAsync({ 
-            videoId: videoId.toString(), 
-            videoData 
+          await updateVideoMutation.mutateAsync({
+            videoId: videoId.toString(),
+            videoData
           });
         } else {
           const category = videoData.get('category');
           if (!category) {
             throw new Error('Please select a category for the new video');
           }
-          await createVideoMutation.mutateAsync({ 
-            category: category.toString(), 
-            videoData 
+          await createVideoMutation.mutateAsync({
+            category: category.toString(),
+            videoData
           });
         }
       } else {
         if (!videoData.id) {
           throw new Error('Video ID is required for updates');
         }
-        await updateVideoMutation.mutateAsync({ 
-          videoId: videoData.id, 
-          videoData 
+        await updateVideoMutation.mutateAsync({
+          videoId: videoData.id,
+          videoData
         });
       }
     } catch (error) {

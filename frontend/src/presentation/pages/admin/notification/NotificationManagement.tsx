@@ -22,6 +22,7 @@ import LoadingSpinner from '../../../components/common/LoadingSpinner';
 const NotificationManagement: React.FC = () => {
   const {
     notifications,
+    pageNotifications,
     totalPages,
     page,
     setPage,
@@ -66,7 +67,7 @@ const NotificationManagement: React.FC = () => {
   const handleViewNotification = async (notification: Notification) => {
     try {
       const details = await getNotificationDetails(notification._id);
-      setSelectedNotification(details?.notification as Notification | null);
+      setSelectedNotification(details);
       setShowNotificationDetailsModal(true);
     } catch (error) {
       console.error('Error fetching notification details:', error);
@@ -183,14 +184,14 @@ const NotificationManagement: React.FC = () => {
             {
               icon: <Group />,
               title: 'Total Notifications',
-              value: notifications.length.toString(),
+              value: (notifications?.length || 0).toString(),
               change: '+10%',
               isPositive: true,
             },
             {
               icon: <User />,
               title: 'Sent Notifications',
-              value: notifications.filter((n) => n.status.toLowerCase() === 'sent').length.toString(),
+              value: (notifications || []).filter((n) => n.status.toLowerCase() === 'sent').length.toString(),
               change: '+5%',
               isPositive: true,
             },
@@ -228,13 +229,13 @@ const NotificationManagement: React.FC = () => {
                 Add Notification
               </button>
 
-              {notifications.length > 0 && (
+              {pageNotifications.length > 0 && (
                 <>
-                  <ApplicationsTable data={notifications} columns={notificationColumns} actions={notificationActions} />
+                  <ApplicationsTable data={pageNotifications} columns={notificationColumns} actions={notificationActions} />
                   <Pagination
                     page={page}
                     totalPages={totalPages}
-                    itemsCount={notifications.length}
+                    itemsCount={pageNotifications.length}
                     itemName="notifications"
                     onPageChange={(newPage) => setPage(newPage)}
                     onFirstPage={() => setPage(1)}

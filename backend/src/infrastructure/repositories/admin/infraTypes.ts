@@ -4,6 +4,15 @@ export interface IAdmissionSource {
     _id: Types.ObjectId | string;
     registerId?: Types.ObjectId | string;
     applicationId?: string;
+    personalInfo?: {
+        fullName?: string;
+        emailAddress?: string;
+        phoneNumber?: string;
+        dateOfBirth?: Date | string;
+        gender?: string;
+        nationality?: string;
+        [key: string]: unknown;
+    };
     personal?: {
         fullName?: string;
         emailAddress?: string;

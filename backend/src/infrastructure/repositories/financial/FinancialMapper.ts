@@ -1,3 +1,4 @@
+import { Types } from 'mongoose';
 import {
     Payment,
     Charge,
@@ -8,9 +9,37 @@ import { IPaymentSource, IChargeSource, IFinancialInfoAggregated } from "./infra
 
 export class FinancialMapper {
     static toPayment(raw: IPaymentSource): Payment {
+        let studentId = '';
+        let studentName: string | undefined = undefined;
+        let studentEmail: string | undefined = undefined;
+
+        if (raw.studentId && typeof raw.studentId === 'object') {
+            const studentObj = raw.studentId;
+
+            // Check if it's a populated student object vs a Types.ObjectId
+            if ('email' in studentObj || 'firstName' in studentObj || 'lastName' in studentObj || 'name' in studentObj) {
+                const populated = studentObj as { _id: string | Types.ObjectId; firstName?: string; lastName?: string; name?: string; email?: string };
+                studentId = populated._id.toString();
+
+                if (populated.firstName || populated.lastName) {
+                    studentName = `${populated.firstName || ''} ${populated.lastName || ''}`.trim();
+                } else if (populated.name) {
+                    studentName = populated.name;
+                }
+                studentEmail = populated.email;
+            } else {
+                // It's likely a Types.ObjectId
+                studentId = studentObj.toString();
+            }
+        } else {
+            studentId = raw.studentId?.toString() || '';
+        }
+
         return Payment.create({
             id: raw._id.toString(),
-            studentId: raw.studentId.toString(),
+            studentId,
+            studentName,
+            studentEmail,
             chargeId: raw.chargeId?.toString() || '',
             amount: raw.amount,
             status: raw.status as 'Completed' | 'Pending' | 'Failed',
@@ -37,6 +66,13 @@ export class FinancialMapper {
             applicableFor = raw.applicableFor || {};
         }
 
+        const creatorInfo = typeof raw.createdBy === 'object' && raw.createdBy !== null
+            ? raw.createdBy as { _id: string | Types.ObjectId; firstName: string; lastName: string; email: string }
+            : null;
+
+        const creatorId = creatorInfo ? creatorInfo._id.toString() : (raw.createdBy?.toString() || '');
+        const creatorName = creatorInfo ? `${creatorInfo.firstName} ${creatorInfo.lastName}`.trim() : undefined;
+
         return Charge.create({
             id: raw._id.toString(),
             title: raw.title,
@@ -45,7 +81,8 @@ export class FinancialMapper {
             term: raw.term,
             dueDate: new Date(raw.dueDate),
             applicableFor,
-            createdBy: raw.createdBy?.toString() || '',
+            createdBy: creatorId,
+            creatorName, // We need to add this to the entity create props
             status: raw.status,
             createdAt: new Date(raw.createdAt || Date.now()),
             updatedAt: new Date(raw.updatedAt || Date.now()),

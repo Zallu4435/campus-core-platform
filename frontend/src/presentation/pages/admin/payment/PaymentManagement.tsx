@@ -19,7 +19,7 @@ import EmptyState from '../../../../shared/components/EmptyState';
 
 
 const PaymentManagement: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'payments' | 'financialAid' | 'scholarships'>('payments');
+  const [activeTab, setActiveTab] = useState<'payments'>('payments');
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<Filters>({ status: 'All Statuses', term: 'All Terms', startDate: '', endDate: '', dateRange: 'all' });
   const [page, setPage] = useState(1);
@@ -51,19 +51,13 @@ const PaymentManagement: React.FC = () => {
       studentId: searchQuery || undefined,
     },
     searchQuery,
-    activeTab
+    'payments'
   );
 
 
   const fetchData = useCallback(async () => {
-    try {
-      if (activeTab === 'financialAid') {
-      } else if (activeTab === 'scholarships') {
-      }
-    } catch (err) {
-      console.error('Failed to fetch data:', err);
-    }
-  }, [activeTab]); 
+    // No additional data fetching needed outside of usePaymentsManagement hook for now
+  }, []);
 
   useEffect(() => {
     fetchData();
@@ -166,7 +160,7 @@ const PaymentManagement: React.FC = () => {
     },
   ];
 
-  if (activeTab === 'payments' && error) {
+  if (error) {
     return <ErrorMessage message={error instanceof Error ? error.message : String(error)} />;
   }
 
@@ -199,7 +193,7 @@ const PaymentManagement: React.FC = () => {
               {
                 icon: <FiDollarSign />,
                 title: 'Total Payments',
-                value: (activeTab === 'payments' ? payments.length : 0).toString(),
+                value: payments.length.toString(),
                 change: '+4.5%',
                 isPositive: true,
               },
@@ -212,9 +206,7 @@ const PaymentManagement: React.FC = () => {
               },
             ]}
             tabs={[
-              { label: 'Payments', icon: <FiDollarSign size={16} />, active: activeTab === 'payments' },
-              { label: 'Financial Aid', icon: <FiFileText size={16} />, active: activeTab === 'financialAid' },
-              { label: 'Scholarships', icon: <FiAward size={16} />, active: activeTab === 'scholarships' },
+              { label: 'Payments', icon: <FiDollarSign size={16} />, active: true },
             ]}
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
@@ -226,9 +218,7 @@ const PaymentManagement: React.FC = () => {
             }}
             debouncedFilterChange={debouncedFilterChange}
             handleResetFilters={handleResetFilters}
-            onTabClick={(index) => {
-              const tabMap = ['payments', 'financialAid', 'scholarships'];
-              setActiveTab(tabMap[index] as 'payments' | 'financialAid' | 'scholarships');
+            onTabClick={() => {
               setPage(1);
             }}
           />
@@ -242,8 +232,8 @@ const PaymentManagement: React.FC = () => {
                 <LoadingSpinner />
               </div>
             ) : null}
-            <div className={`px-6 py-5 ${activeTab === 'payments' && isLoading ? 'opacity-50 pointer-events-none select-none' : ''}`}>
-              {activeTab === 'payments' && (
+            <div className={`px-6 py-5 ${isLoading ? 'opacity-50 pointer-events-none select-none' : ''}`}>
+              {(
                 <div className="mb-4 flex justify-start space-x-4">
                   <button
                     onClick={() => setShowAddChargeModal(true)}
@@ -261,7 +251,7 @@ const PaymentManagement: React.FC = () => {
                   </button>
                 </div>
               )}
-              {activeTab === 'payments' && payments.length > 0 ? (
+              {payments.length > 0 ? (
                 <>
                   <ApplicationsTable
                     data={payments.map((item: Payment) => ({ ...item, _id: item._id || item.id }))}
@@ -280,9 +270,9 @@ const PaymentManagement: React.FC = () => {
                 </>
               ) : (
                 <EmptyState
-                  icon={activeTab === 'payments' ? <FiDollarSign size={32} className="text-purple-400" /> : activeTab === 'financialAid' ? <FiFileText size={32} className="text-purple-400" /> : <FiAward size={32} className="text-purple-400" />}
-                  title={`No ${activeTab === 'payments' ? 'Payments' : activeTab === 'financialAid' ? 'Financial Aid Applications' : 'Scholarship Applications'} Found`}
-                  message={`There are no ${activeTab === 'payments' ? 'payments' : activeTab === 'financialAid' ? 'financial aid applications' : 'scholarship applications'} matching your current filters. Try adjusting your search criteria.`}
+                  icon={<FiDollarSign size={32} className="text-purple-400" />}
+                  title="No Payments Found"
+                  message="There are no payments matching your current filters. Try adjusting your search criteria."
                 />
               )}
             </div>

@@ -48,58 +48,45 @@ export const useNotificationManagement = () => {
 
   useEffect(() => {
     if (notificationsData && notificationsData.notifications) {
+      const normalized = notificationsData.notifications.map(n => ({
+        ...n,
+        _id: n._id || n.id || '',
+      }));
       setAllNotifications((prev) => {
         const ids = new Set(prev.map((n) => n._id));
-        const newOnes = notificationsData.notifications.filter((n) => !ids.has(n._id));
-        return page === 1 ? notificationsData.notifications : [...prev, ...newOnes];
+        const newOnes = normalized.filter((n) => !ids.has(n._id));
+        return page === 1 ? normalized : [...prev, ...newOnes];
       });
       setHasMore(page < (notificationsData.totalPages || 1));
     }
   }, [notificationsData, page]);
 
   const fetchNextPage = useCallback(async () => {
-    if (isLoadingMore || !hasMore) return;
-    setIsLoadingMore(true);
-    try {
-      const nextPage = page + 1;
-      const data = await notificationService.getNotifications({
-        isAdmin,
-        page: nextPage,
-        limit,
-        recipientType: filters.recipientType !== 'All' ? filters.recipientType.toLowerCase().replace(/\s+/g, '_') : undefined,
-        status: filters.status !== 'All' ? filters.status.toLowerCase() : undefined,
-        dateRange: filters.dateRange !== 'All' ? filters.dateRange : undefined,
-        search: filters.search ? filters.search : undefined,
-      });
-      if (data && data.notifications && data.notifications.length > 0) {
-        setAllNotifications((prev) => {
-          const ids = new Set(prev.map((n) => n._id));
-          const newOnes = data.notifications.filter((n) => !ids.has(n._id));
-          return [...prev, ...newOnes];
-        });
-        setPage(nextPage);
-        setHasMore(nextPage < (data.totalPages || 1));
-      } else {
-        setHasMore(false);
-      }
-    } catch (err) {
-      setHasMore(false);
-    } finally {
-      setIsLoadingMore(false);
-    }
-  }, [isLoadingMore, hasMore, page, filters, isAdmin]);
+    if (isFetching || !hasMore) return;
+    setPage(prev => prev + 1);
+  }, [isFetching, hasMore]);
 
   const { data: selectedNotification, isLoading: isLoadingNotificationDetails } = useQuery({
     queryKey: ['notificationDetails', selectedNotificationId],
-    queryFn: () => {
+    queryFn: async () => {
       if (!selectedNotificationId) return null;
-      return notificationService.getNotificationDetails(selectedNotificationId);
+      const data = await notificationService.getNotificationDetails(selectedNotificationId);
+      return {
+        ...data,
+        _id: data._id || data.id || '',
+      };
     },
     enabled: !!selectedNotificationId,
   });
 
   const { mutateAsync: getNotificationDetails } = useMutation({
-    mutationFn: (id: string) => notificationService.getNotificationDetails(id),
+    mutationFn: async (id: string) => {
+      const data = await notificationService.getNotificationDetails(id);
+      return {
+        ...data,
+        _id: data._id || data.id || '',
+      };
+    },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to fetch notification details');
     },
@@ -131,9 +118,9 @@ export const useNotificationManagement = () => {
     mutationFn: (id: string) => notificationService.markAsRead(id),
     onMutate: async (id: string) => {
       // Optimistically update the local state
-      setAllNotifications(prev => 
-        prev.map(notification => 
-          notification._id === id 
+      setAllNotifications(prev =>
+        prev.map(notification =>
+          notification._id === id
             ? { ...notification, isRead: true }
             : notification
         )
@@ -154,9 +141,9 @@ export const useNotificationManagement = () => {
     mutationFn: () => notificationService.markAllAsRead(),
     onMutate: async () => {
       // Optimistically update all unread notifications
-      setAllNotifications(prev => 
-        prev.map(notification => 
-          !notification.isRead 
+      setAllNotifications(prev =>
+        prev.map(notification =>
+          !notification.isRead
             ? { ...notification, isRead: true }
             : notification
         )
@@ -175,6 +162,10 @@ export const useNotificationManagement = () => {
 
   return {
     notifications: allNotifications,
+    pageNotifications: (notificationsData?.notifications || []).map(n => ({
+      ...n,
+      _id: n._id || n.id || '',
+    })),
     totalPages: notificationsData?.totalPages || 0,
     page,
     setPage,
@@ -191,7 +182,7 @@ export const useNotificationManagement = () => {
     isLoadingNotificationDetails,
     fetchNextPage,
     hasMore,
-    isLoadingMore,
+    isLoadingMore: isFetching && page > 1,
     setSelectedNotificationId,
   };
 };

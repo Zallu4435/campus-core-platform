@@ -4,6 +4,8 @@ export class Payment {
     constructor(
         public readonly id: string,
         public readonly studentId: string,
+        public readonly studentName: string | undefined,
+        public readonly studentEmail: string | undefined,
         public readonly chargeId: string,
         public readonly amount: number,
         public readonly status: 'Completed' | 'Pending' | 'Failed',
@@ -18,6 +20,8 @@ export class Payment {
     static create(props: {
         id: string;
         studentId: string;
+        studentName?: string;
+        studentEmail?: string;
         chargeId: string;
         amount: number;
         status: 'Completed' | 'Pending' | 'Failed';
@@ -31,6 +35,8 @@ export class Payment {
         return new Payment(
             props.id,
             props.studentId,
+            props.studentName,
+            props.studentEmail,
             props.chargeId,
             props.amount,
             props.status,
@@ -47,6 +53,8 @@ export class Payment {
         return {
             id: this.id,
             studentId: this.studentId,
+            studentName: this.studentName,
+            studentEmail: this.studentEmail,
             chargeId: this.chargeId,
             amount: this.amount,
             status: this.status,
@@ -70,6 +78,7 @@ export class Charge {
         public readonly dueDate: Date,
         public readonly applicableFor: Record<string, unknown>,
         public readonly createdBy: string,
+        public readonly creatorName: string | undefined,
         public readonly status: string,
         public readonly createdAt: Date,
         public readonly updatedAt: Date
@@ -84,6 +93,7 @@ export class Charge {
         dueDate: Date;
         applicableFor: Record<string, unknown>;
         createdBy: string;
+        creatorName?: string;
         status?: string;
         createdAt: Date;
         updatedAt: Date;
@@ -97,6 +107,7 @@ export class Charge {
             props.dueDate,
             props.applicableFor,
             props.createdBy,
+            props.creatorName,
             props.status || 'Active',
             props.createdAt,
             props.updatedAt
@@ -113,6 +124,8 @@ export class Charge {
             dueDate: this.dueDate.toISOString(),
             applicableFor: this.applicableFor,
             createdBy: this.createdBy,
+            creatorName: this.creatorName,
+            status: this.status,
             createdAt: this.createdAt.toISOString(),
             updatedAt: this.updatedAt.toISOString(),
         };

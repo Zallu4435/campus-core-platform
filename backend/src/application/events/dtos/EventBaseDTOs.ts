@@ -49,6 +49,7 @@ export interface EventRequestDTO {
     id: string;
     eventId: string;
     eventName: string;
+    description: string;
     userId: string;
     userName: string;
     userEmail: string;
@@ -57,5 +58,7 @@ export interface EventRequestDTO {
     additionalInfo: string;
     requestedDate: string;
     proposedDate: string;
+    proposedVenue: string;
     type: string;
+    expectedParticipants: number;
 }

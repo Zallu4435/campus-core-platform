@@ -29,7 +29,7 @@ class UserService {
   async getAdmissionDetails(id: string): Promise<AdmissionDetails> {
     try {
       const response = await httpClient.get<AdmissionDetailsResponse>(`/admin/admissions/${id}`);
-      return response.data.data.admission;
+      return response.data.data;
     } catch (error: unknown) {
       if (isAxiosErrorWithApiError(error)) {
         throw new Error(error.response?.data?.error || 'Failed to fetch admission details');

@@ -48,10 +48,10 @@ const PaymentDetailsModal: React.FC<PaymentDetailsModalProps> = ({ isOpen, onClo
 
         <div className="overflow-y-auto max-h-[calc(90vh-200px)] p-6 space-y-6 custom-scrollbar">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-            <InfoCard icon={User} label="Student ID" value={payment.studentId ?? 'N/A'} />
+            <InfoCard icon={User} label="Student" value={payment.studentName || payment.studentId || 'N/A'} />
             <InfoCard icon={Calendar} label="Date" value={formatDateTime(payment.date)} />
             <InfoCard icon={DollarSign} label="Amount" value={`$${payment.amount?.toFixed(2)}`} />
-            <InfoCard icon={CreditCard} label="Method" value={payment.method} />
+            <InfoCard icon={CreditCard} label="Method" value={payment.method?.charAt(0).toUpperCase() + payment.method?.slice(1)} />
             <InfoCard icon={FileText} label="Description" value={payment.description} />
             <InfoCard icon={FileText} label="Status" value={payment.status} />
           </div>
@@ -72,13 +72,20 @@ const PaymentDetailsModal: React.FC<PaymentDetailsModalProps> = ({ isOpen, onClo
 
           {payment.metadata && Object.keys(payment.metadata).length > 0 && (
             <div className="bg-gray-800/80 border border-purple-600/30 rounded-lg p-4 shadow-sm">
-              <div className="flex items-center mb-2">
+              <div className="flex items-center mb-4 border-b border-purple-600/20 pb-2">
                 <FileText size={18} className="text-purple-400" />
-                <span className="ml-2 text-sm font-medium text-gray-300">Metadata</span>
+                <span className="ml-2 text-sm font-medium text-gray-300">Payment Metadata</span>
               </div>
-              <pre className="text-white text-sm overflow-x-auto">
-                {JSON.stringify(payment.metadata, null, 2)}
-              </pre>
+              <div className="grid grid-cols-1 gap-3">
+                {Object.entries(payment.metadata).map(([key, value]) => (
+                  <div key={key} className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 border-b border-gray-700/30 pb-2 last:border-0">
+                    <span className="text-xs font-medium text-purple-300 uppercase tracking-wider">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
+                    <span className="text-sm text-gray-100 font-mono break-all sm:text-right">
+                      {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>

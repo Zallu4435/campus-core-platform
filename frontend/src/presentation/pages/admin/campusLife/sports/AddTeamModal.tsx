@@ -65,9 +65,9 @@ const AddTeamModal: React.FC<AddTeamModalProps> = ({
 
   React.useEffect(() => {
     if (isOpen && initialData) {
-      reset({ ...initialData } as any);
+      reset({ ...initialData } as TeamFormData);
     } else if (isOpen && !isEditing) {
-      reset(DEFAULT_TEAM_FORM_VALUES as any);
+      reset(DEFAULT_TEAM_FORM_VALUES as TeamFormData);
     }
   }, [isOpen, initialData, isEditing, reset]);
 
@@ -143,9 +143,8 @@ const AddTeamModal: React.FC<AddTeamModalProps> = ({
                         <input
                           {...field}
                           type="text"
-                          className={`w-full px-4 py-3 bg-gray-900/60 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
-                            errors.title ? 'border-red-500' : 'border-purple-600/30'
-                          }`}
+                          className={`w-full px-4 py-3 bg-gray-900/60 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${errors.title ? 'border-red-500' : 'border-purple-600/30'
+                            }`}
                           placeholder="Enter team name"
                         />
                       )}
@@ -164,9 +163,8 @@ const AddTeamModal: React.FC<AddTeamModalProps> = ({
                       render={({ field }) => (
                         <select
                           {...field}
-                          className={`w-full px-4 py-3 bg-gray-900/60 border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
-                            errors.type ? 'border-red-500' : 'border-purple-600/30'
-                          }`}
+                          className={`w-full px-4 py-3 bg-gray-900/60 border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${errors.type ? 'border-red-500' : 'border-purple-600/30'
+                            }`}
                         >
                           <option value="">Select Sport</option>
                           {sportTypes.filter(sport => sport !== 'All Sports').map(sport => (
@@ -189,9 +187,8 @@ const AddTeamModal: React.FC<AddTeamModalProps> = ({
                       render={({ field }) => (
                         <select
                           {...field}
-                          className={`w-full px-4 py-3 bg-gray-900/60 border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
-                            errors.category ? 'border-red-500' : 'border-purple-600/30'
-                          }`}
+                          className={`w-full px-4 py-3 bg-gray-900/60 border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${errors.category ? 'border-red-500' : 'border-purple-600/30'
+                            }`}
                         >
                           <option value="">Select Category</option>
                           {teamCategories.map(category => (
@@ -215,9 +212,8 @@ const AddTeamModal: React.FC<AddTeamModalProps> = ({
                         <input
                           {...field}
                           type="text"
-                          className={`w-full px-4 py-3 bg-gray-900/60 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
-                            errors.organizer ? 'border-red-500' : 'border-purple-600/30'
-                          }`}
+                          className={`w-full px-4 py-3 bg-gray-900/60 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${errors.organizer ? 'border-red-500' : 'border-purple-600/30'
+                            }`}
                           placeholder="Organizer name"
                         />
                       )}
@@ -236,9 +232,8 @@ const AddTeamModal: React.FC<AddTeamModalProps> = ({
                       render={({ field }) => (
                         <select
                           {...field}
-                          className={`w-full px-4 py-3 bg-gray-900/60 border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
-                            errors.organizerType ? 'border-red-500' : 'border-purple-600/30'
-                          }`}
+                          className={`w-full px-4 py-3 bg-gray-900/60 border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${errors.organizerType ? 'border-red-500' : 'border-purple-600/30'
+                            }`}
                         >
                           {ORGANIZER_TYPE_OPTIONS.map((option) => (
                             <option key={option.value} value={option.value}>
@@ -271,9 +266,8 @@ const AddTeamModal: React.FC<AddTeamModalProps> = ({
                       render={({ field }) => (
                         <select
                           {...field}
-                          className={`w-full px-4 py-3 bg-gray-900/60 border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
-                            errors.division ? 'border-red-500' : 'border-purple-600/30'
-                          }`}
+                          className={`w-full px-4 py-3 bg-gray-900/60 border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${errors.division ? 'border-red-500' : 'border-purple-600/30'
+                            }`}
                         >
                           <option value="">Select Division</option>
                           {divisions.map(division => (
@@ -296,9 +290,8 @@ const AddTeamModal: React.FC<AddTeamModalProps> = ({
                       render={({ field }) => (
                         <select
                           {...field}
-                          className={`w-full px-4 py-3 bg-gray-900/60 border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
-                            errors.headCoach ? 'border-red-500' : 'border-purple-600/30'
-                          }`}
+                          className={`w-full px-4 py-3 bg-gray-900/60 border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${errors.headCoach ? 'border-red-500' : 'border-purple-600/30'
+                            }`}
                         >
                           <option value="">Select Coach</option>
                           {coaches.filter(coach => coach !== 'All Coaches').map(coach => (
@@ -324,9 +317,8 @@ const AddTeamModal: React.FC<AddTeamModalProps> = ({
                           type="number"
                           min="0"
                           onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                          className={`w-full px-4 py-3 bg-gray-900/60 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
-                            errors.homeGames ? 'border-red-500' : 'border-purple-600/30'
-                          }`}
+                          className={`w-full px-4 py-3 bg-gray-900/60 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${errors.homeGames ? 'border-red-500' : 'border-purple-600/30'
+                            }`}
                         />
                       )}
                     />
@@ -346,9 +338,8 @@ const AddTeamModal: React.FC<AddTeamModalProps> = ({
                           {...field}
                           type="text"
                           placeholder="0-0-0"
-                          className={`w-full px-4 py-3 bg-gray-900/60 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
-                            errors.record ? 'border-red-500' : 'border-purple-600/30'
-                          }`}
+                          className={`w-full px-4 py-3 bg-gray-900/60 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${errors.record ? 'border-red-500' : 'border-purple-600/30'
+                            }`}
                         />
                       )}
                     />
@@ -388,9 +379,8 @@ const AddTeamModal: React.FC<AddTeamModalProps> = ({
                             <input
                               {...field}
                               type="datetime-local"
-                              className={`w-full px-4 py-3 bg-gray-900/60 border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
-                                errors.upcomingGames?.[index]?.date ? 'border-red-500' : 'border-purple-600/30'
-                              }`}
+                              className={`w-full px-4 py-3 bg-gray-900/60 border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${errors.upcomingGames?.[index]?.date ? 'border-red-500' : 'border-purple-600/30'
+                                }`}
                             />
                           )}
                         />
@@ -421,9 +411,8 @@ const AddTeamModal: React.FC<AddTeamModalProps> = ({
                               {...field}
                               type="text"
                               placeholder="vs Team Name - Location"
-                              className={`w-full px-4 py-3 bg-gray-900/60 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
-                                errors.upcomingGames?.[index]?.description ? 'border-red-500' : 'border-purple-600/30'
-                              }`}
+                              className={`w-full px-4 py-3 bg-gray-900/60 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${errors.upcomingGames?.[index]?.description ? 'border-red-500' : 'border-purple-600/30'
+                                }`}
                             />
                           )}
                         />
@@ -454,11 +443,10 @@ const AddTeamModal: React.FC<AddTeamModalProps> = ({
                           key={icon}
                           type="button"
                           onClick={() => setValue('icon', icon)}
-                          className={`w-10 h-10 text-xl rounded-lg transition-colors ${
-                            watchedIcon === icon
+                          className={`w-10 h-10 text-xl rounded-lg transition-colors ${watchedIcon === icon
                               ? 'bg-purple-600/30 border-purple-600/50'
                               : 'bg-gray-900/60 border-gray-700/50 hover:bg-gray-800/60'
-                          }`}
+                            }`}
                         >
                           {icon}
                         </button>
@@ -475,11 +463,10 @@ const AddTeamModal: React.FC<AddTeamModalProps> = ({
                           key={color}
                           type="button"
                           onClick={() => setValue('color', color)}
-                          className={`w-10 h-10 rounded-lg transition-all ${
-                            watchedColor === color
+                          className={`w-10 h-10 rounded-lg transition-all ${watchedColor === color
                               ? 'ring-2 ring-purple-500 ring-offset-2 ring-offset-gray-900'
                               : 'hover:ring-1 hover:ring-purple-500/50'
-                          }`}
+                            }`}
                           style={{ backgroundColor: color }}
                         />
                       ))}
@@ -489,7 +476,7 @@ const AddTeamModal: React.FC<AddTeamModalProps> = ({
                   <div className="p-4 bg-gray-900/60 rounded-lg border border-purple-600/30">
                     <div className="text-sm font-medium text-purple-300 mb-2">Preview</div>
                     <div className="flex items-center gap-3">
-                      <div 
+                      <div
                         className="w-8 h-8 rounded-lg flex items-center justify-center text-lg"
                         style={{ backgroundColor: `${watchedColor}20`, border: `1px solid ${watchedColor}` }}
                       >

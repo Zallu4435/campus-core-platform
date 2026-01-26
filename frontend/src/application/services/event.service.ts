@@ -1,4 +1,4 @@
-import { EventApiResponse, EventRequest, EventApiResponseSingle, EventRequestApiResponseSingle, Event, EventServiceResponse, EventRequestsServiceResponse, EventRequestsApiResponse } from '../../domain/types/management/eventmanagement';
+import { EventApiResponse, EventApiResponseSingle, EventRequestApiResponseSingle, Event, EventServiceResponse, EventRequestsServiceResponse, EventRequestsApiResponse, EventDTO, EventRequestDTO } from '../../domain/types/management/eventmanagement';
 import httpClient from '../../frameworks/api/httpClient';
 import { isAxiosErrorWithApiError } from '../../shared/types/apiError';
 
@@ -48,10 +48,10 @@ class EventService {
     }
   }
 
-  async getEventDetails(id: string): Promise<Event> {
+  async getEventDetails(id: string): Promise<EventDTO> {
     try {
       const response = await httpClient.get<EventApiResponseSingle>(`/admin/events/${id}`);
-      return response.data.data.event;
+      return response.data.data.event as unknown as EventDTO;
     } catch (error: unknown) {
       if (isAxiosErrorWithApiError(error)) {
         throw new Error(error.response?.data?.error || error.response?.data?.message || 'Failed to fetch event details');
@@ -162,10 +162,10 @@ class EventService {
     }
   }
 
-  async getEventRequestDetails(id: string): Promise<EventRequest> {
+  async getEventRequestDetails(id: string): Promise<EventRequestDTO> {
     try {
       const response = await httpClient.get<EventRequestApiResponseSingle>(`/admin/event-requests/${id}`);
-      return response.data.data.eventRequest;
+      return response.data.data.eventRequest as unknown as EventRequestDTO;
     } catch (error: unknown) {
       if (isAxiosErrorWithApiError(error)) {
         throw new Error(error.response?.data?.error || error.response?.data?.message || 'Failed to fetch event request details');

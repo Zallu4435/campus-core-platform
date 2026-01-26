@@ -43,28 +43,28 @@ export class ApproveSportRequestUseCase implements IApproveSportRequestUseCase {
     }
 
     const response = await this._sportsRepository.getSportRequestDetails({ id: params.id });
-    if (!response || !response.request) {
+    if (!response || !response.sportRequest) {
       throw new Error("Sport request not found");
     }
 
-    const { request } = response;
+    const { sportRequest } = response;
 
-    if (request.status !== SportRequestStatus.Pending) {
-      throw new Error(`Sport request is already ${request.status}`);
+    if (sportRequest.status !== SportRequestStatus.Pending) {
+      throw new Error(`Sport request is already ${sportRequest.status}`);
     }
 
     // Atomically update request status
     await this._sportsRepository.updateSportRequestStatus(params.id, SportRequestStatus.Approved);
 
     // Increment participants
-    if (request.sportId) {
-      await this._sportsRepository.incrementSportParticipants(request.sportId);
+    if (sportRequest.sportId) {
+      await this._sportsRepository.incrementSportParticipants(sportRequest.sportId);
     }
 
     // Trigger notification
-    if (request.userId) {
-      const sportTitle = request.sportTitle || 'a sport';
-      await this._sportsRepository.sendRequestApprovalNotification('sport', params.id, request.userId, sportTitle);
+    if (sportRequest.userId) {
+      const sportTitle = sportRequest.sportTitle || 'a sport';
+      await this._sportsRepository.sendRequestApprovalNotification('sport', params.id, sportRequest.userId, sportTitle);
     }
 
     return { message: "Sport request approved successfully" };
@@ -80,23 +80,23 @@ export class RejectSportRequestUseCase implements IRejectSportRequestUseCase {
     }
 
     const response = await this._sportsRepository.getSportRequestDetails({ id: params.id });
-    if (!response || !response.request) {
+    if (!response || !response.sportRequest) {
       throw new Error("Sport request not found");
     }
 
-    const { request } = response;
+    const { sportRequest } = response;
 
-    if (request.status !== SportRequestStatus.Pending) {
-      throw new Error(`Sport request is already ${request.status}`);
+    if (sportRequest.status !== SportRequestStatus.Pending) {
+      throw new Error(`Sport request is already ${sportRequest.status}`);
     }
 
     // Atomically update request status
     await this._sportsRepository.updateSportRequestStatus(params.id, SportRequestStatus.Rejected);
 
     // Trigger notification
-    if (request.userId) {
-      const sportTitle = request.sportTitle || 'a sport';
-      await this._sportsRepository.sendRequestRejectionNotification('sport', params.id, request.userId, sportTitle);
+    if (sportRequest.userId) {
+      const sportTitle = sportRequest.sportTitle || 'a sport';
+      await this._sportsRepository.sendRequestRejectionNotification('sport', params.id, sportRequest.userId, sportTitle);
     }
 
     return { message: "Sport request rejected successfully" };
@@ -111,7 +111,7 @@ export class GetSportRequestDetailsUseCase implements IGetSportRequestDetailsUse
       throw new Error("Invalid sport request ID");
     }
     const response = await this._sportsRepository.getSportRequestDetails(params);
-    if (!response || !response.request) {
+    if (!response || !response.sportRequest) {
       throw new Error("Sport request not found");
     }
     return response;

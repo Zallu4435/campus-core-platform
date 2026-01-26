@@ -1,4 +1,4 @@
-    
+
 export interface AdmissionOfferEmailParams {
     to: string;
     name: string;
@@ -9,6 +9,12 @@ export interface AdmissionOfferEmailParams {
     acceptUrl: string;
     rejectUrl: string;
     expiryDays: number;
+}
+
+export interface AdmissionRejectionEmailParams {
+    to: string;
+    name: string;
+    reason: string;
 }
 
 export interface FacultyOfferEmailParams {

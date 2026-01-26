@@ -42,21 +42,31 @@ export interface ClubSummaryData {
     icon: string;
     status: string;
     memberCount: number;
+    createdBy?: string;
+    createdAt?: Date;
     image?: string;
 }
 
 export interface ClubRequestSummaryData {
     id: string;
+    _id?: string;
     userId: string;
     userName: string;
     userEmail: string;
+    requestedBy: string;
     clubId: string;
     clubName: string;
+    name?: string;
     clubType: string;
+    type?: string;
     clubDescription?: string;
     status: string;
     createdAt: Date;
+    requestedAt?: Date;
     updatedAt: Date;
+    requestedId?: string;
+    whyJoin?: string;
+    additionalInfo?: string;
 }
 export interface ClubSummaryDTO extends ClubSummaryData { }
 
