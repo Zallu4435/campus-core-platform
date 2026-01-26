@@ -22,6 +22,9 @@ export default function AssignmentManagement() {
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState('all');
     const [filterSubject, setFilterSubject] = useState('all');
+    const [submissionSearch, setSubmissionSearch] = useState('');
+    const [submissionStatus, setSubmissionStatus] = useState('all');
+    const [debouncedSubmissionSearch, setDebouncedSubmissionSearch] = useState('');
 
     useEffect(() => {
         const handler = setTimeout(() => {
@@ -29,6 +32,13 @@ export default function AssignmentManagement() {
         }, 400);
         return () => clearTimeout(handler);
     }, [searchTerm]);
+
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedSubmissionSearch(submissionSearch);
+        }, 400);
+        return () => clearTimeout(handler);
+    }, [submissionSearch]);
 
     const {
         assignments,
@@ -47,7 +57,13 @@ export default function AssignmentManagement() {
         isUpdating,
         isDeleting,
         isReviewing
-    } = useAssignmentManagement({ searchTerm: debouncedSearchTerm, filterStatus, filterSubject });
+    } = useAssignmentManagement({
+        searchTerm: debouncedSearchTerm,
+        filterStatus,
+        filterSubject,
+        submissionSearch: debouncedSubmissionSearch,
+        submissionStatus
+    });
 
     const handleReview = async (submissionId: string, reviewData: {
         marks: number;
@@ -167,6 +183,11 @@ export default function AssignmentManagement() {
                                         setShowReviewModal={() => { }}
                                         isLoading={isLoading}
                                         isReviewing={isReviewing}
+                                        searchTerm={submissionSearch}
+                                        setSearchTerm={setSubmissionSearch}
+                                        filterStatus={submissionStatus}
+                                        setFilterStatus={setSubmissionStatus}
+                                        error={error}
                                     />
                                 </div>
                             )}

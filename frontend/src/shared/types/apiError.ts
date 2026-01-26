@@ -6,6 +6,10 @@ export interface ApiErrorResponse {
   code?: string;
   details?: unknown;
   statusCode?: number;
+  body?: {
+    error?: string;
+    message?: string;
+  };
   [key: string]: string | number | boolean | unknown | undefined;
 }
 

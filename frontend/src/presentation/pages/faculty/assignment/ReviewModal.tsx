@@ -84,11 +84,11 @@ export default function ReviewModal({ submission, saveReview, onClose, isLoading
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
                   <div className="bg-gradient-to-r from-purple-500 to-pink-500 h-12 w-12 rounded-2xl flex items-center justify-center text-white text-lg font-bold shadow-lg">
-                    {submission.studentName.split(' ').map(n => n[0]).join('')}
+                    {submission.studentName?.split(' ').map(n => n[0]).join('') || '??'}
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">{submission.studentName}</h3>
-                    <p className="text-indigo-600 font-medium text-sm">{submission.studentId}</p>
+                    <p className="text-sm text-pink-600 font-medium">{submission.studentId || 'N/A'}</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -164,11 +164,10 @@ export default function ReviewModal({ submission, saveReview, onClose, isLoading
                       key={option.value}
                       type="button"
                       onClick={() => setStatus(option.value as 'reviewed' | 'pending' | 'needs_correction')}
-                      className={`relative px-4 py-3 rounded-2xl text-white font-medium transition-all transform hover:scale-105 animate-fadeInUp ${
-                        status === option.value
+                      className={`relative px-4 py-3 rounded-2xl text-white font-medium transition-all transform hover:scale-105 animate-fadeInUp ${status === option.value
                           ? `bg-gradient-to-r ${option.color} shadow-lg`
                           : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                      }`}
+                        }`}
                       style={{ animationDelay: `${index * 0.1}s` }}
                     >
                       {option.label}

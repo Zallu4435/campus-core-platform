@@ -8,7 +8,8 @@ import {
   IGetSubmissionsUseCase,
   IGetSubmissionByIdUseCase,
   IReviewSubmissionUseCase,
-  IGetAnalyticsUseCase
+  IGetAnalyticsUseCase,
+  IServeAssignmentFileUseCase
 } from "../../../application/assignments/useCases/IAssignmentUseCases";
 import { AssignmentStatus, SubmissionStatus } from '../../../domain/assignments/enums/AssignmentEnums';
 import { FileDTO } from '../../../application/assignments/dtos/AssignmentDTOs';
@@ -26,7 +27,8 @@ export class AssignmentController implements IAssignmentController {
     private _getSubmissionsUseCase: IGetSubmissionsUseCase,
     private _getSubmissionByIdUseCase: IGetSubmissionByIdUseCase,
     private _reviewSubmissionUseCase: IReviewSubmissionUseCase,
-    private _getAnalyticsUseCase: IGetAnalyticsUseCase
+    private _getAnalyticsUseCase: IGetAnalyticsUseCase,
+    private _serveAssignmentFileUseCase: IServeAssignmentFileUseCase
   ) {
     this._httpSuccess = new HttpSuccess();
     this._httpErrors = new HttpErrors();
@@ -132,6 +134,19 @@ export class AssignmentController implements IAssignmentController {
 
   async getAnalytics(_httpRequest: IHttpRequest): Promise<IHttpResponse> {
     const data = await this._getAnalyticsUseCase.execute();
+    return this._httpSuccess.success_200(data);
+  }
+
+  async serveFile(httpRequest: IHttpRequest): Promise<IHttpResponse> {
+    const { id } = httpRequest.params;
+    const { fileName } = httpRequest.query;
+    if (!id || !fileName) {
+      return this._httpErrors.error_400('Assignment ID and file name are required');
+    }
+    const data = await this._serveAssignmentFileUseCase.execute({
+      assignmentId: id,
+      fileName: fileName as string
+    });
     return this._httpSuccess.success_200(data);
   }
 }

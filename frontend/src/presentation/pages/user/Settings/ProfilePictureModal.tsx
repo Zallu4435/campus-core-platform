@@ -64,8 +64,8 @@ export const ProfilePictureModal = ({
     }
   };
 
-  const handleCropApply = (croppedImageData: string) => {
-    onImageUpdate(croppedImageData as unknown as File);
+  const handleCropApply = (file: File) => {
+    onImageUpdate(file);
     onClose();
     resetModal();
   };
@@ -203,7 +203,7 @@ export const ProfilePictureModal = ({
             selectedImage={selectedImage || ''}
             cropData={cropData}
             onCropChange={setCropData}
-            onCropApply={handleCropApply as any}
+            onCropApply={handleCropApply}
             onCancel={handleCancel}
             onChooseDifferent={handleChooseDifferent}
           />

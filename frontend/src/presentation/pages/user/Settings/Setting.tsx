@@ -14,39 +14,27 @@ import {
 } from 'react-icons/fi';
 import ProfileSettings from './ProfileSettings';
 import Sidebar from './Sidebar';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { RootState } from '../../../../appStore/store';
 import { useNavigate } from 'react-router-dom';
-import { logout } from '../../../../appStore/authSlice';
+import { useLogout, useLogoutAll } from '../../../../application/hooks/useAuthQueries';
 import PreferenceSettings from './PreferenceSettings';
-import { socketRef } from '../../canvas/chat/ChatComponent';
-import httpClient from '../../../../frameworks/api/httpClient';
 
 const UniversityDashboard = () => {
   const [activeTab, setActiveTab] = useState('profile');
 
-  const dispatch = useDispatch();
+  const { mutate: logoutMutation } = useLogout();
+  const { mutate: logoutAllMutation } = useLogoutAll();
   const navigate = useNavigate();
 
   const user = useSelector((state: RootState) => state.auth.user);
 
   const handleLogout = () => {
-    if (socketRef.current) {
-      socketRef.current.disconnect();
-      socketRef.current = null;
-    }
-    dispatch(logout());
-    navigate('/login');
+    logoutMutation();
   };
 
-  const handleLogoutAll = async () => {
-    try {
-      await httpClient.post('/auth/logout-all');
-      dispatch(logout());
-      navigate('/login');
-    } catch (err) {
-      console.error('Logout all error:', err);
-    }
+  const handleLogoutAll = () => {
+    logoutAllMutation();
   };
 
   const handleBackToDashboard = () => {
@@ -210,9 +198,9 @@ const UniversityDashboard = () => {
                 <FaHome className="w-4 h-4" />
                 <span className="font-medium text-sm">Dashboard</span>
               </button>
-              
+
               <div className="h-6 w-px bg-slate-200"></div>
-              
+
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-sky-100 rounded-lg flex items-center justify-center">
                   <FiSettings className="w-4 h-4 text-sky-600" />
@@ -233,10 +221,10 @@ const UniversityDashboard = () => {
       </div>
 
       <div className="pt-16 flex w-full min-h-screen">
-        <Sidebar 
-          activeTab={activeTab} 
-          setActiveTab={setActiveTab} 
-          onLogout={handleLogout} 
+        <Sidebar
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          onLogout={handleLogout}
           onLogoutAll={handleLogoutAll}
           user={user}
         />

@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { RootState } from '../../../../appStore/store';
 import { useNavigate } from 'react-router-dom';
-import { logout } from '../../../../appStore/authSlice';
 import FacultySidebar from './FacultySidebar';
+import { useLogout } from '../../../../application/hooks/useAuthQueries';
 import ProfileSettings from '../../user/Settings/ProfileSettings';
 import FacultyNotificationSettings from './FacultyNotificationSettings';
 import LoadingSpinner from '../../../../shared/components/LoadingSpinner';
@@ -11,9 +11,9 @@ import ErrorMessage from '../../../../shared/components/ErrorMessage';
 
 export default function FacultySettings() {
   const [activeTab, setActiveTab] = useState('profile');
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
   const user = useSelector((state: RootState) => state.auth.user);
+  const { mutate: logoutMutation } = useLogout();
+  const navigate = useNavigate();
   const authError = useSelector((state: RootState) => state.auth?.error);
   const isAuthLoading = useSelector((state: RootState) => state.auth?.loading);
 
@@ -31,8 +31,7 @@ export default function FacultySettings() {
   }
 
   const handleLogout = () => {
-    dispatch(logout());
-    navigate('/login');
+    logoutMutation();
   };
 
   const handleBackToDashboard = () => {
@@ -118,7 +117,18 @@ export default function FacultySettings() {
               </button>
               <div className="h-6 w-px bg-slate-200"></div>
               <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center overflow-hidden">
+                  {user?.profilePicture ? (
+                    <img
+                      src={user.profilePicture}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-purple-700 font-bold text-sm">
+                      {user?.firstName?.charAt(0) || 'F'}
+                    </span>
+                  )}
                 </div>
                 <h1 className="text-xl font-bold text-slate-800">Faculty Settings</h1>
               </div>

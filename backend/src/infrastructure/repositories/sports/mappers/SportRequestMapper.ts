@@ -26,8 +26,13 @@ export class SportRequestMapper {
             throw new Error("Cannot map null data to domain entity");
         }
 
-        const sportId = !data.sportId ? "" : (typeof data.sportId === 'string' ? data.sportId : (data.sportId.id || (data.sportId as any)._id || ""));
-        const userId = !data.userId ? "" : (typeof data.userId === 'string' ? data.userId : (data.userId.id || (data.userId as any)._id || ""));
+        const sportId = typeof data.sportId === 'string'
+            ? data.sportId
+            : (data.sportId.id || data.sportId._id?.toString() || "");
+
+        const userId = typeof data.userId === 'string'
+            ? data.userId
+            : (data.userId.id || data.userId._id?.toString() || "");
 
         return new SportRequest({
             id: data.id,
@@ -64,13 +69,25 @@ export class SportRequestMapper {
             throw new Error("Cannot map null data to DTO");
         }
 
-        const sport = data.sportId && typeof data.sportId !== 'string'
-            ? data.sportId as unknown as PopulatedSport
-            : { id: (data.sportId as string) || "", title: "", type: "" };
+        const sport = typeof data.sportId !== 'string'
+            ? {
+                id: data.sportId.id || data.sportId._id?.toString() || "",
+                title: data.sportId.title || "",
+                type: data.sportId.type || "",
+                headCoach: data.sportId.headCoach,
+                participants: data.sportId.participants,
+                division: data.sportId.division
+            } as PopulatedSport
+            : { id: data.sportId || "", title: "", type: "" } as PopulatedSport;
 
-        const user = data.userId && typeof data.userId !== 'string'
-            ? data.userId as unknown as PopulatedUser
-            : { id: (data.userId as string) || "", email: "" };
+        const user = typeof data.userId !== 'string'
+            ? {
+                id: data.userId.id || data.userId._id?.toString() || "",
+                email: data.userId.email || "",
+                firstName: data.userId.firstName,
+                lastName: data.userId.lastName
+            } as PopulatedUser
+            : { id: data.userId || "", email: "" } as PopulatedUser;
 
         return {
             id: data.id,

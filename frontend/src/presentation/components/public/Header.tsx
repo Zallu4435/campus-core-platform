@@ -13,6 +13,7 @@ interface HeaderProps {
   layoutType?: 'public' | 'ug' | 'department';
   hideNavLinks?: boolean;
   hideSettings?: boolean;
+  profilePicture?: string;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -22,6 +23,7 @@ export const Header: React.FC<HeaderProps> = ({
   layoutType = 'public',
   hideNavLinks = false,
   hideSettings = false,
+  profilePicture,
 }) => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -92,7 +94,15 @@ export const Header: React.FC<HeaderProps> = ({
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
                 className="flex items-center bg-white/30 px-3 lg:px-4 py-2 rounded-lg text-white font-semibold hover:bg-white/40 transition shadow text-sm lg:text-base"
               >
-                <FaUserCircle className="w-4 h-4 lg:w-5 lg:h-5 mr-1 lg:mr-2" />
+                {profilePicture ? (
+                  <img
+                    src={profilePicture}
+                    alt={userName}
+                    className="w-4 h-4 lg:w-5 lg:h-5 mr-1 lg:mr-2 rounded-full object-cover"
+                  />
+                ) : (
+                  <FaUserCircle className="w-4 h-4 lg:w-5 lg:h-5 mr-1 lg:mr-2" />
+                )}
                 <span className="hidden sm:inline">{userName || 'User'}</span>
                 <IoMdArrowDropdown className="w-4 h-4 lg:w-5 lg:h-5 ml-1" />
               </button>

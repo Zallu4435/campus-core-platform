@@ -1,6 +1,7 @@
 import { AdmissionApiResponse, AdmissionDetails, AdmissionDetailsResponse } from '../../domain/types/management/usermanagement';
 import httpClient from '../../frameworks/api/httpClient';
 import { isAxiosErrorWithApiError } from '../../shared/types/apiError';
+import { formatErrorMessage } from '../../shared/utils/errorFormatter';
 
 class UserService {
   async getAdmissions(
@@ -20,7 +21,8 @@ class UserService {
       return response.data.data;
     } catch (error: unknown) {
       if (isAxiosErrorWithApiError(error)) {
-        throw new Error(error.response?.data?.error || 'Failed to fetch admissions');
+        const remoteError = error.response?.data?.error || 'Failed to fetch admissions';
+        throw new Error(formatErrorMessage(remoteError));
       }
       throw new Error('Failed to fetch admissions');
     }
@@ -32,7 +34,8 @@ class UserService {
       return response.data.data;
     } catch (error: unknown) {
       if (isAxiosErrorWithApiError(error)) {
-        throw new Error(error.response?.data?.error || 'Failed to fetch admission details');
+        const remoteError = error.response?.data?.error || 'Failed to fetch admission details';
+        throw new Error(formatErrorMessage(remoteError));
       }
       throw new Error('Failed to fetch admission details');
     }
@@ -48,7 +51,8 @@ class UserService {
       await httpClient.post(`/admin/admissions/${id}/approve`, data);
     } catch (error: unknown) {
       if (isAxiosErrorWithApiError(error)) {
-        throw new Error(error.response?.data?.error || 'Failed to approve admission');
+        const remoteError = error.response?.data?.error || 'Failed to approve admission';
+        throw new Error(formatErrorMessage(remoteError));
       }
       throw new Error('Failed to approve admission');
     }
@@ -59,7 +63,8 @@ class UserService {
       await httpClient.post(`/admin/admissions/${id}/reject`, { reason });
     } catch (error: unknown) {
       if (isAxiosErrorWithApiError(error)) {
-        throw new Error(error.response?.data?.error || 'Failed to reject admission');
+        const remoteError = error.response?.data?.error || 'Failed to reject admission';
+        throw new Error(formatErrorMessage(remoteError));
       }
       throw new Error('Failed to reject admission');
     }
@@ -70,7 +75,8 @@ class UserService {
       await httpClient.delete(`/admin/admissions/${id}`);
     } catch (error: unknown) {
       if (isAxiosErrorWithApiError(error)) {
-        throw new Error(error.response?.data?.error || 'Failed to delete admission');
+        const remoteError = error.response?.data?.error || 'Failed to delete admission';
+        throw new Error(formatErrorMessage(remoteError));
       }
       throw new Error('Failed to delete admission');
     }
@@ -82,7 +88,8 @@ class UserService {
       return response.data.data;
     } catch (error: unknown) {
       if (isAxiosErrorWithApiError(error)) {
-        throw new Error(error.response?.data?.error || 'Failed to block/unblock admission');
+        const remoteError = error.response?.data?.error || 'Failed to block/unblock admission';
+        throw new Error(formatErrorMessage(remoteError));
       }
       throw new Error('Failed to block/unblock admission');
     }

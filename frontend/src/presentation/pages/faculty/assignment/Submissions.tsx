@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import ReactDOM from 'react-dom';
 import { FaSearch, FaDownload, FaEye, FaCheck, FaClock, FaExclamationTriangle, FaUsers, FaFileAlt, FaCode, FaCalculator, FaFlask, FaLanguage, FaHistory, FaGlobe, FaBook } from 'react-icons/fa';
 import ReviewModal from './ReviewModal';
@@ -17,6 +17,14 @@ const extractFileInfo = (file: string | { fileName: string; fileUrl: string; fil
   }
 };
 
+const formatFileSize = (bytes: number) => {
+  if (!bytes || bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+};
+
 const getSubjectIcon = (subject: string) => {
   const subjectIcons: { [key: string]: React.ReactElement } = {
     'Computer Science': <FaCode />,
@@ -27,6 +35,7 @@ const getSubjectIcon = (subject: string) => {
     'English': <FaLanguage />,
     'History': <FaHistory />,
     'Geography': <FaGlobe />,
+    'Web Development': <FaGlobe />,
     'default': <FaBook />
   };
   return subjectIcons[subject] || subjectIcons.default;
@@ -36,50 +45,17 @@ export default function Submissions({
   assignment,
   onReview,
   setShowReviewModal,
-  isReviewing
+  isReviewing,
+  submissions,
+  isLoading,
+  searchTerm,
+  setSearchTerm,
+  filterStatus,
+  setFilterStatus,
+  error
 }: SubmissionsProps) {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'reviewed' | 'late' | 'needs_correction'>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
-  const [submissions, setSubmissions] = useState<Submission[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm);
-    }, 500);
-
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [searchTerm]);
-
-  const fetchSubmissions = useCallback(async () => {
-    if (!assignment?.id) return;
-
-    setIsLoading(true);
-    setError(null);
-    try {
-      const data = await assignmentService.getSubmissions(assignment.id!, {
-        search: debouncedSearchTerm,
-        status: filterStatus !== 'all' ? filterStatus : undefined,
-      });
-      setSubmissions((data?.submissions) || []);
-    } catch (err) {
-      setSubmissions([]);
-      const message = err instanceof Error ? err.message : 'Failed to fetch submissions.';
-      setError(message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [assignment?.id, debouncedSearchTerm, filterStatus]);
-
-  useEffect(() => {
-    fetchSubmissions();
-  }, [fetchSubmissions]);
 
   const handleReview = (submission: Submission) => {
     setSelectedSubmission(submission);
@@ -94,7 +70,6 @@ export default function Submissions({
   }) => {
     await onReview(submissionId, reviewData);
     setSelectedSubmission(null);
-    fetchSubmissions();
     setShowReviewModal(false);
   };
 
@@ -192,10 +167,10 @@ export default function Submissions({
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               {[
-                { label: 'Total Submissions', value: assignment.totalSubmissions, icon: FaUsers, color: 'from-blue-500 to-indigo-600' },
-                { label: 'Submitted', value: assignment.totalSubmissions, icon: FaFileAlt, color: 'from-green-500 to-emerald-600' },
-                { label: 'Reviewed', value: assignment.totalSubmissions, icon: FaCheck, color: 'from-purple-500 to-indigo-600' },
-                { label: 'Late', value: assignment.totalSubmissions, icon: FaClock, color: 'from-red-500 to-pink-600' }
+                { label: 'Total Submissions', value: submissions.length, icon: FaUsers, color: 'from-blue-500 to-indigo-600' },
+                { label: 'Submitted', value: submissions.filter(s => s.status === 'pending').length, icon: FaFileAlt, color: 'from-green-500 to-emerald-600' },
+                { label: 'Reviewed', value: submissions.filter(s => s.status === 'reviewed').length, icon: FaCheck, color: 'from-purple-500 to-indigo-600' },
+                { label: 'Late', value: submissions.filter(s => s.isLate).length, icon: FaClock, color: 'from-red-500 to-pink-600' }
               ].map((stat, index) => (
                 <div key={stat.label} className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-lg hover:shadow-xl transition-all transform hover:scale-105 group animate-fadeInUp" style={{ animationDelay: `${index * 0.1}s` }}>
                   <div className="flex items-center justify-between mb-3">
@@ -210,7 +185,7 @@ export default function Submissions({
                   <div className="mt-3 w-full bg-gray-200 rounded-full h-2">
                     <div
                       className={`h-full bg-gradient-to-r ${stat.color} rounded-full transition-all duration-1000`}
-                      style={{ width: `${Math.min((stat.value / assignment.totalSubmissions) * 100, 100)}%` }}
+                      style={{ width: `${submissions.length > 0 ? (stat.value / submissions.length) * 100 : 0}%` }}
                     ></div>
                   </div>
                 </div>
@@ -240,7 +215,7 @@ export default function Submissions({
             <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl blur opacity-20 group-hover:opacity-30 transition-opacity"></div>
             <select
               value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value as 'all' | 'pending' | 'reviewed' | 'late' | 'needs_correction')}
+              onChange={(e) => setFilterStatus(e.target.value)}
               className="relative px-4 py-3 bg-white rounded-2xl border-2 border-gray-100 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent text-gray-700 font-medium shadow-lg hover:shadow-xl transition-all"
             >
               <option value="all">All Statuses</option>
@@ -301,7 +276,7 @@ export default function Submissions({
                     <div className="flex items-center space-x-3">
                       {/* No selection checkbox */}
                       <div className="bg-gradient-to-r from-purple-500 to-pink-500 h-12 w-12 rounded-2xl flex items-center justify-center text-white text-lg font-bold shadow-lg">
-                        {submission.studentName.split(' ').map(n => n[0]).join('')}
+                        {submission.studentName?.split(' ').map(n => n[0]).join('') || '??'}
                       </div>
                     </div>
 
@@ -315,7 +290,7 @@ export default function Submissions({
                     <h3 className="font-bold text-pink-800 text-xl mb-1 group-hover:text-pink-600 transition-colors">
                       {submission.studentName}
                     </h3>
-                    <p className="text-pink-600 font-medium text-sm mb-2">{submission.studentId.slice(0, 7)}</p>
+                    <p className="text-pink-600 font-medium text-sm mb-2">{submission.studentId?.slice(0, 7) || 'N/A'}</p>
 
                     <div className="flex items-center space-x-3">
                       <span className="text-sm text-gray-600">
@@ -405,11 +380,11 @@ export default function Submissions({
                       <td className="px-8 py-6">
                         <div className="flex items-center space-x-4">
                           <div className="bg-gradient-to-r from-indigo-500 to-purple-600 h-12 w-12 rounded-2xl flex items-center justify-center text-white text-sm font-bold shadow-lg">
-                            {submission.studentName.split(' ').map(n => n[0]).join('')}
+                            {submission.studentName?.split(' ').map(n => n[0]).join('') || '??'}
                           </div>
                           <div>
                             <p className="font-bold text-gray-900 text-lg">{submission.studentName}</p>
-                            <p className="text-sm text-pink-600 font-medium">{submission.studentId}</p>
+                            <p className="text-sm text-pink-600 font-medium">{submission.studentId || 'N/A'}</p>
                           </div>
                         </div>
                       </td>
@@ -491,7 +466,9 @@ export default function Submissions({
             fileName: selectedSubmission.files && selectedSubmission.files.length > 0
               ? extractFileInfo(selectedSubmission.files[0]).fileName
               : 'No file',
-            fileSize: 'Unknown',
+            fileSize: selectedSubmission.files && selectedSubmission.files.length > 0
+              ? formatFileSize(extractFileInfo(selectedSubmission.files[0]).fileSize || 0)
+              : 'N/A',
           }}
           saveReview={handleReviewSubmit}
           onClose={handleCloseReview}

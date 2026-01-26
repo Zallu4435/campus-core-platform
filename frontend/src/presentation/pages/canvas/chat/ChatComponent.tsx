@@ -45,7 +45,7 @@ export const ChatComponent: React.FC = () => {
   const [messagesPage, setMessagesPage] = useState(1);
   const [allMessages, setAllMessages] = useState<Message[]>([]);
   const [chatsPage, setChatsPage] = useState(1);
-  const [hasMoreChats, ] = useState(true);
+  const [hasMoreChats,] = useState(true);
   const [loadingMoreChats, setLoadingMoreChats] = useState(false);
   const scrollState = useRef({
     shouldScrollToBottom: true,
@@ -147,13 +147,13 @@ export const ChatComponent: React.FC = () => {
       setHasMoreMessages(true);
       setOldestMessageTimestamp(null);
     }
-    
+
     setSelectedChatId(chatId);
     setReplyToMessage(null);
-    
-    const chatArray: Chat[] = Array.isArray(chats) ? chats as Chat[] : ((chats as unknown as { data: Chat[] })?.data as Chat[] || []);
+
+    const chatArray: Chat[] = Array.isArray(chats) ? chats : [];
     if (!chatId || !chatArray) return;
-    
+
     try {
       await chatMutations.markMessagesAsRead.mutateAsync(chatId);
       scrollToBottom();
@@ -386,7 +386,7 @@ export const ChatComponent: React.FC = () => {
     if (selectedChatId) {
       setTimeout(() => {
         scrollToBottom();
-      }, 200); 
+      }, 200);
     }
   }, [selectedChatId]);
 
@@ -450,7 +450,7 @@ export const ChatComponent: React.FC = () => {
 
     const handleNewMessage = (message: Message) => {
       const normalizedMessage = { ...message, id: message.id || message._id };
-      
+
       if (normalizedMessage.chatId === selectedChatId && normalizedMessage.id) {
         const validMessage: Message = {
           ...normalizedMessage,
@@ -470,7 +470,7 @@ export const ChatComponent: React.FC = () => {
           chatMutations.markMessagesAsRead.mutateAsync(selectedChatId!);
         }
       }
-      
+
       queryClient.invalidateQueries({ queryKey: ['chats'] });
     };
 
@@ -507,14 +507,14 @@ export const ChatComponent: React.FC = () => {
     setHasMoreMessages(true);
   };
 
-  useEffect(() => {    
+  useEffect(() => {
     const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-    const socketUrl = apiBaseUrl.replace('/api', '') + '/chat';    
-    
+    const socketUrl = apiBaseUrl.replace('/api', '') + '/chat';
+
     const socket = io(socketUrl, {
       path: '/socket.io',
       transports: ['websocket', 'polling'],
-      withCredentials: true, 
+      withCredentials: true,
     });
     socketRef.current = socket;
 
@@ -542,7 +542,7 @@ export const ChatComponent: React.FC = () => {
       socket.disconnect();
       socketRef.current = null;
     };
-  }, []); 
+  }, []);
 
 
   useEffect(() => {
@@ -832,7 +832,7 @@ export const ChatComponent: React.FC = () => {
                           onDelete={handleDeleteMessage}
                           onEdit={handleEditMessage}
                           onReply={handleReplyToMessage}
-                          onForward={() => {}}
+                          onForward={() => { }}
                           currentUserId={currentUserId || ''}
                         />
                       );
@@ -909,7 +909,7 @@ export const ChatComponent: React.FC = () => {
                 chat={flatChat}
                 currentUser={currentUser}
                 onUpdateGroup={handleUpdateGroup}
-                onAddMembers={() => {}}
+                onAddMembers={() => { }}
                 onRemoveMember={handleRemoveMember}
                 onMakeAdmin={handleMakeAdmin}
                 onRemoveAdmin={handleRemoveAdmin}
@@ -936,7 +936,7 @@ export const ChatComponent: React.FC = () => {
                   chat={flatChat}
                   currentUser={currentUser}
                   onUpdateGroup={handleUpdateGroup}
-                  onAddMembers={() => {}}
+                  onAddMembers={() => { }}
                   onRemoveMember={handleRemoveMember}
                   onMakeAdmin={handleMakeAdmin}
                   onRemoveAdmin={handleRemoveAdmin}

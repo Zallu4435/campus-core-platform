@@ -5,8 +5,8 @@ import { ISiteSectionSource } from './infraTypes';
 import { SiteSectionMapper } from './mappers/SiteSectionMapper';
 
 export class UserSiteSectionRepository implements IUserSiteSectionRepository {
-  private buildQuery(filter: SiteSectionFilter): any {
-    const query: any = {};
+  private buildQuery(filter: SiteSectionFilter): Record<string, unknown> {
+    const query: Record<string, unknown> = {};
 
     if (filter.sectionKey) {
       query.sectionKey = filter.sectionKey;

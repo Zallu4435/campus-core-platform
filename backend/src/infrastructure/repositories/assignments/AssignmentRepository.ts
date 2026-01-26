@@ -30,8 +30,24 @@ export class AssignmentRepository implements IAssignmentRepository {
       AssignmentModel.countDocuments(query)
     ]);
 
+    const assignmentIds = docs.map(doc => doc._id.toString());
+    const stats = assignmentIds.length > 0 ? await this.getSubmissionsStats(assignmentIds) : [];
+    const statsMap = new Map(stats.map(s => [s._id, s]));
+
+    const assignments = docs.map(doc => {
+      const docStats = statsMap.get(doc._id.toString());
+      const domain = AssignmentMapper.toDomain(doc);
+      if (docStats) {
+        domain.updateStats(
+          docStats.totalSubmissions,
+          docStats.gradedSubmissions > 0 ? docStats.totalMarks / docStats.gradedSubmissions : 0
+        );
+      }
+      return domain;
+    });
+
     return {
-      assignments: docs.map(doc => AssignmentMapper.toDomain(doc)),
+      assignments,
       total,
       page,
       limit
@@ -170,14 +186,33 @@ export class AssignmentRepository implements IAssignmentRepository {
     }
     const averageSubmissionTimeHours = countWithTime > 0 ? totalHours / countWithTime : 0;
 
-    const subjectDistribution: Record<string, number> = {};
+    const subjectDistribution: Record<string, { count: number; submissions: number }> = {};
     for (const a of assignments) {
-      subjectDistribution[a.subject] = (subjectDistribution[a.subject] || 0) + 1;
+      if (!subjectDistribution[a.subject]) {
+        subjectDistribution[a.subject] = { count: 0, submissions: 0 };
+      }
+      subjectDistribution[a.subject].count++;
     }
 
-    const statusDistribution: Record<string, number> = {};
+    const statusDistribution: Record<string, { count: number; submissions: number }> = {};
+    for (const a of assignments) {
+      if (!statusDistribution[a.status]) {
+        statusDistribution[a.status] = { count: 0, submissions: 0 };
+      }
+      statusDistribution[a.status].count++;
+    }
+
+    // Map submissions to subjects and statuses
     for (const s of submissions) {
-      statusDistribution[s.status] = (statusDistribution[s.status] || 0) + 1;
+      const assignment = assignmentMap.get(s.assignmentId.toString());
+      if (assignment) {
+        if (subjectDistribution[assignment.subject]) {
+          subjectDistribution[assignment.subject].submissions++;
+        }
+        if (statusDistribution[assignment.status]) {
+          statusDistribution[assignment.status].submissions++;
+        }
+      }
     }
 
     const recentSubmissionsDocs = await SubmissionModel.find().sort({ submittedDate: -1 }).limit(5).lean() as unknown as ISubmissionSource[];

@@ -314,7 +314,7 @@ const UserManagement: React.FC = () => {
             debouncedSearchChange(query);
           }}
           searchPlaceholder="Search by name or email..."
-          filters={filters as any}
+          filters={filters}
           filterOptions={{
             status: STATUSES,
             program: PROGRAMS,

@@ -1,6 +1,7 @@
 import httpClient from '../../frameworks/api/httpClient';
 import { ProfileData, PasswordChangeData } from '../../domain/types/settings/user';
 import { isAxiosErrorWithApiError } from '../../shared/types/apiError';
+import { formatErrorMessage } from '../../shared/utils/errorFormatter';
 
 class ProfileService {
   async updateProfile(data: ProfileData): Promise<void> {
@@ -8,7 +9,11 @@ class ProfileService {
       await httpClient.put('/profile', data);
     } catch (error: unknown) {
       if (isAxiosErrorWithApiError(error)) {
-        throw new Error(error.response?.data?.error || error.response?.data?.message || 'Failed to update profile');
+        const remoteError = error.response?.data?.error ||
+          error.response?.data?.body?.error ||
+          error.response?.data?.message ||
+          'Failed to update profile';
+        throw new Error(formatErrorMessage(remoteError));
       }
       throw new Error('Failed to update profile');
     }
@@ -19,7 +24,11 @@ class ProfileService {
       await httpClient.post('/profile/password', data);
     } catch (error: unknown) {
       if (isAxiosErrorWithApiError(error)) {
-        throw new Error(error.response?.data?.error || error.response?.data?.message || 'Failed to change password');
+        const remoteError = error.response?.data?.error ||
+          error.response?.data?.body?.error ||
+          error.response?.data?.message ||
+          'Failed to change password';
+        throw new Error(formatErrorMessage(remoteError));
       }
       throw new Error('Failed to change password');
     }
@@ -33,7 +42,11 @@ class ProfileService {
       return response.data.url;
     } catch (error: unknown) {
       if (isAxiosErrorWithApiError(error)) {
-        throw new Error(error.response?.data?.error || error.response?.data?.message || 'Failed to update profile picture');
+        const remoteError = error.response?.data?.error ||
+          error.response?.data?.body?.error ||
+          error.response?.data?.message ||
+          'Failed to update profile picture';
+        throw new Error(formatErrorMessage(remoteError));
       }
       throw new Error('Failed to update profile picture');
     }

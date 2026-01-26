@@ -11,12 +11,34 @@ export const assignmentService = {
       ? '?' + new URLSearchParams(filteredParams as any).toString()
       : '';
     const response = await httpClient.get(`/faculty/assignments${queryString}`);
-    return response.data.data;
+    const data = response.data.data;
+    if (data && Array.isArray(data.data)) {
+      data.data = data.data.map((item: any) => ({
+        ...item,
+        _id: item._id || item.id,
+        id: item.id || item._id
+      }));
+    }
+    return data;
   },
 
   getAssignmentById: async (id: string) => {
     const response = await httpClient.get(`/faculty/assignments/${id}`);
-    return response.data.data;
+    const data = response.data.data;
+    if (data) {
+      const assignment = data.assignment || data;
+      const normalizedAssignment = {
+        ...assignment,
+        _id: assignment._id || assignment.id,
+        id: assignment.id || assignment._id
+      };
+      if (data.assignment) {
+        data.assignment = normalizedAssignment;
+      } else {
+        return normalizedAssignment;
+      }
+    }
+    return data;
   },
 
   createAssignment: async (assignment: NewAssignment) => {
@@ -26,7 +48,7 @@ export const assignmentService = {
     formData.append('dueDate', assignment.dueDate);
     formData.append('maxMarks', assignment.maxMarks);
     formData.append('description', assignment.description);
-    
+
     assignment.files.forEach((file) => {
       formData.append(`files`, file);
     });
@@ -82,7 +104,15 @@ export const assignmentService = {
       ? '?' + new URLSearchParams(filteredParams).toString()
       : '';
     const response = await httpClient.get(`/faculty/assignments/${assignmentId}/submissions${queryString}`);
-    return response.data.data;
+    const data = response.data.data;
+    if (data && Array.isArray(data.data)) {
+      data.data = data.data.map((item: any) => ({
+        ...item,
+        _id: item._id || item.id,
+        id: item.id || item._id
+      }));
+    }
+    return data;
   },
 
   getSubmissionById: async (assignmentId: string, submissionId: string) => {
@@ -123,17 +153,17 @@ export const assignmentService = {
   downloadSubmissionFile: async (fileUrl: string, fileName: string) => {
     try {
       const blob = await assignmentService.getFileDownloadUrl(fileUrl, fileName);
-      
+
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.download = fileName;
       link.style.display = 'none';
-      
+
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       setTimeout(() => window.URL.revokeObjectURL(url), 1000);
       return blob;
     } catch (error: unknown) {

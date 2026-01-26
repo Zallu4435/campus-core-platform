@@ -1,6 +1,7 @@
 import { toast } from 'react-hot-toast';
 import { RefObject } from 'react';
 import { Chat, ChatMutations, Message, User } from '../../../../../domain/types/canvas/chat';
+import { Socket } from 'socket.io-client';
 
 export const handleScroll = (
   e: React.UIEvent<HTMLDivElement>,
@@ -53,7 +54,7 @@ export const handleChatSelect = async (
   setMessagesPage(1);
   setHasMoreMessages(true);
   setReplyToMessage(null);
-  const chatArray = Array.isArray(chats) ? chats : (chats && typeof chats === 'object' && 'data' in chats ? (chats as any).data : []);
+  const chatArray = Array.isArray(chats) ? chats : [];
   if (!chatId || !chatArray) return;
   try {
     setOldestMessageTimestamp(null);
@@ -210,7 +211,7 @@ export const handleSendMessage = async (
 export const handleTyping = (
   isTyping: boolean,
   selectedChatId: string | null,
-  socketRef: RefObject<any>
+  socketRef: RefObject<Socket | null>
 ) => {
   if (!selectedChatId || !socketRef.current) return;
   socketRef.current.emit('typing', { chatId: selectedChatId, isTyping });

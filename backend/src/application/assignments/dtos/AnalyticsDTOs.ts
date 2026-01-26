@@ -17,8 +17,8 @@ export interface AnalyticsData {
     totalSubmissions: number;
     submissionRate: number;
     averageSubmissionTimeHours: number;
-    subjectDistribution: Record<string, number>;
-    statusDistribution: Record<string, number>;
+    subjectDistribution: Record<string, { count: number; submissions: number }>;
+    statusDistribution: Record<string, { count: number; submissions: number }>;
     recentSubmissions: AnalyticsRecentSubmission[];
     topPerformers: AnalyticsTopPerformer[];
 }

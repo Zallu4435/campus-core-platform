@@ -44,6 +44,7 @@ const AdminLayout = () => {
           <AdminHeader
             adminName={fullName}
             adminRole="System Administrator"
+            profilePicture={user?.profilePicture}
             notificationCount={5}
             onLogout={handleLogout}
             collapsed={collapsed}

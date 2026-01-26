@@ -117,4 +117,5 @@ export interface Filters {
   startDate?: string;
   endDate?: string;
   search?: string;
+  [key: string]: string | undefined;
 }

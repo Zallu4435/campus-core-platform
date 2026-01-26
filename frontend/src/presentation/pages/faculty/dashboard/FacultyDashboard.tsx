@@ -1,167 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  HiX, HiUsers, HiDocumentText,
-  HiTrendingUp, HiPlay, HiPlus,
-  HiClock, HiCheckCircle, HiExclamationCircle,
-  HiChevronRight
+  HiUsers, HiDocumentText,
+  HiPlay, HiPlus,
+  HiClock, HiExclamationCircle,
 } from 'react-icons/hi';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart as RechartsPieChart, Pie, Cell } from 'recharts';
 import { useFacultyDashboard } from '../../../../application/hooks/useFacultyDashboard';
-import { StatsCardProps, ChartCardProps, ActionCardProps, InfoCardProps, StatusCardProps, ToastProps } from '../../../../domain/types/dashboard/faculty';
+import StatsCard from './components/StatsCard';
+import ChartCard from './components/ChartCard';
+import ActionCard from './components/ActionCard';
+import InfoCard from './components/InfoCard';
+import StatusCard from './components/StatusCard';
+import LoadingSkeleton from './components/LoadingSkeleton';
+import Toast from './components/Toast';
 
-const StatsCard: React.FC<StatsCardProps> = ({ title, value, trend, icon: Icon, color = 'blue' }) => {
-  const colorClasses: Record<string, string> = {
-    blue: 'bg-blue-50 text-blue-600 border-blue-200',
-    green: 'bg-green-50 text-green-600 border-green-200',
-    orange: 'bg-orange-50 text-orange-600 border-orange-200',
-    red: 'bg-red-50 text-red-600 border-red-200'
-  };
 
-  return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-gray-600 mb-1">{title}</p>
-          <p className="text-2xl font-bold text-gray-900">{value}</p>
-          {trend !== undefined && (
-            <p className={`text-sm flex items-center mt-1 ${trend > 0 ? 'text-green-600' : 'text-red-600'}`}>
-              <HiTrendingUp className="w-4 h-4 mr-1" />
-              {trend > 0 ? '+' : ''}{trend}%
-            </p>
-          )}
-        </div>
-        <div className={`p-3 rounded-full ${colorClasses[color]}`}>
-          <Icon className="w-6 h-6" />
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const ChartCard: React.FC<ChartCardProps> = ({ title, children, className = '' }) => {
-  return (
-    <div className={`bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200 ${className}`}>
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3>
-      {children}
-    </div>
-  );
-};
-
-const ActionCard: React.FC<ActionCardProps> = ({ title, description, icon: Icon, onClick, color = 'blue' }) => {
-  const gradientClasses: Record<string, string> = {
-    blue: 'bg-gradient-to-r from-purple-500 to-pink-500',
-    green: 'bg-gradient-to-r from-green-400 to-emerald-500',
-    orange: 'bg-gradient-to-r from-orange-400 to-yellow-500',
-    red: 'bg-gradient-to-r from-red-500 to-pink-500',
-  };
-
-  return (
-    <button
-      onClick={onClick}
-      className={`rounded-3xl p-6 w-full shadow-2xl border border-pink-100 text-white flex flex-col justify-between items-start transition-all duration-200 transform hover:scale-105 hover:brightness-110 focus:outline-none ${gradientClasses[color]}`}
-      style={{ minHeight: '170px' }}
-    >
-      <div className="flex items-center justify-between w-full mb-3">
-        <div className="bg-white/30 rounded-xl p-2 flex items-center justify-center">
-          <Icon className="w-8 h-8" />
-        </div>
-        <HiChevronRight className="w-5 h-5 opacity-70" />
-      </div>
-      <h3 className="text-lg font-semibold mb-1 text-white drop-shadow-lg">{title}</h3>
-      <p className="text-sm opacity-90 text-white/90">{description}</p>
-    </button>
-  );
-};
-
-const InfoCard: React.FC<InfoCardProps> = ({ title, children, expandable = false }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-        {expandable && (
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="text-gray-500 hover:text-gray-700 transition-colors"
-          >
-            <HiChevronRight className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
-          </button>
-        )}
-      </div>
-      <div className={`transition-all duration-200 ${expandable && !isExpanded ? 'max-h-20 overflow-hidden' : ''}`}>
-        {children}
-      </div>
-    </div>
-  );
-};
-
-const StatusCard: React.FC<StatusCardProps> = ({ title, status, message, timestamp }) => {
-  const statusColors: Record<string, string> = {
-    success: 'bg-green-100 text-green-800',
-    warning: 'bg-orange-100 text-orange-800',
-    error: 'bg-red-100 text-red-800',
-    info: 'bg-blue-100 text-blue-800'
-  };
-
-  const statusIcons: Record<string, React.ComponentType<{ className?: string }>> = {
-    success: HiCheckCircle,
-    warning: HiExclamationCircle,
-    error: HiExclamationCircle,
-    info: HiClock
-  };
-
-  const StatusIcon = statusIcons[status];
-
-  return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow duration-200">
-      <div className="flex items-start space-x-3">
-        <div className={`p-2 rounded-full ${statusColors[status]}`}>
-          <StatusIcon className="w-4 h-4" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-gray-900 truncate">{title}</p>
-          <p className="text-sm text-gray-500 mt-1">{message}</p>
-          <p className="text-xs text-gray-400 mt-1">{timestamp}</p>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const LoadingSkeleton: React.FC<{ className?: string }> = ({ className = '' }) => {
-  return (
-    <div className={`animate-pulse bg-gray-200 rounded ${className}`}></div>
-  );
-};
-
-const Toast: React.FC<ToastProps> = ({ message, type = 'success', onClose }) => {
-  const typeColors: Record<string, string> = {
-    success: 'bg-green-50 border-green-200 text-green-800',
-    error: 'bg-red-50 border-red-200 text-red-800',
-    warning: 'bg-orange-50 border-orange-200 text-orange-800',
-    info: 'bg-blue-50 border-blue-200 text-blue-800'
-  };
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      onClose();
-    }, 3000);
-    return () => clearTimeout(timer);
-  }, [onClose]);
-
-  return (
-    <div className={`fixed top-4 right-4 p-4 rounded-lg border shadow-lg z-50 ${typeColors[type]}`}>
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-medium">{message}</p>
-        <button onClick={onClose} className="ml-4 text-gray-500 hover:text-gray-700">
-          <HiX className="w-4 h-4" />
-        </button>
-      </div>
-    </div>
-  );
-};
 
 const FacultyDashboard: React.FC = () => {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' | 'info' } | null>(null);

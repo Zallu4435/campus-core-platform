@@ -3,7 +3,19 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { assignmentService } from '../services/assignmentService';
 import { Assignment, NewAssignment, Submission } from '../../../../../domain/types/faculty/assignment';
 
-export const useAssignmentManagement = ({ searchTerm, filterStatus, filterSubject }: { searchTerm: string, filterStatus: string, filterSubject: string }) => {
+export const useAssignmentManagement = ({
+    searchTerm,
+    filterStatus,
+    filterSubject,
+    submissionSearch,
+    submissionStatus
+}: {
+    searchTerm: string,
+    filterStatus: string,
+    filterSubject: string,
+    submissionSearch?: string,
+    submissionStatus?: string
+}) => {
     const queryClient = useQueryClient();
     const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
     const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
@@ -19,8 +31,13 @@ export const useAssignmentManagement = ({ searchTerm, filterStatus, filterSubjec
     });
 
     const { data: submissions, isLoading: isLoadingSubmissions } = useQuery({
-        queryKey: ['submissions', selectedAssignment?._id],
-        queryFn: () => selectedAssignment ? assignmentService.getSubmissions(selectedAssignment._id) : Promise.resolve([]),
+        queryKey: ['submissions', selectedAssignment?._id, submissionSearch, submissionStatus],
+        queryFn: () => selectedAssignment
+            ? assignmentService.getSubmissions(selectedAssignment._id, {
+                search: submissionSearch,
+                status: submissionStatus !== 'all' ? submissionStatus : undefined
+            })
+            : Promise.resolve({ data: [], total: 0 }),
         enabled: !!selectedAssignment
     });
 
@@ -63,7 +80,12 @@ export const useAssignmentManagement = ({ searchTerm, filterStatus, filterSubjec
                 status: 'reviewed' | 'pending' | 'needs_correction';
                 isLate: boolean;
             };
-        }) => assignmentService.reviewSubmission(assignmentId, submissionId, reviewData)
+        }) => assignmentService.reviewSubmission(assignmentId, submissionId, reviewData),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['submissions'] });
+            queryClient.invalidateQueries({ queryKey: ['analytics'] });
+            queryClient.invalidateQueries({ queryKey: ['assignments'] });
+        }
     });
 
     const handleCreateAssignment = useCallback(async (data: NewAssignment) => {
@@ -109,8 +131,8 @@ export const useAssignmentManagement = ({ searchTerm, filterStatus, filterSubjec
 
 
     return {
-        assignments: assignments?.assignments || [],
-        submissions: submissions?.submissions || [],
+        assignments: assignments?.data || [],
+        submissions: submissions?.data || [],
         analytics,
         selectedAssignment,
         selectedSubmission,

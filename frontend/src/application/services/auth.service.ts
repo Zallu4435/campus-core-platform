@@ -91,6 +91,17 @@ class AuthService {
       throw new Error('Failed to logout');
     }
   }
+
+  async logoutAll(): Promise<void> {
+    try {
+      await httpClient.post('/auth/logout-all');
+    } catch (error: unknown) {
+      if (isAxiosErrorWithApiError(error)) {
+        throw new Error(error.response?.data?.error || 'Failed to logout from all devices');
+      }
+      throw new Error('Failed to logout from all devices');
+    }
+  }
 }
 
 export const authService = new AuthService();

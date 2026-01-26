@@ -43,3 +43,7 @@ export interface IReviewSubmissionUseCase {
 export interface IGetAnalyticsUseCase {
   execute(): Promise<AnalyticsData>;
 }
+
+export interface IServeAssignmentFileUseCase {
+  execute(params: { assignmentId: string; fileName: string }): Promise<{ pdfData: string; fileName: string; contentType: string }>;
+}

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
+import { Outlet, useLocation } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import { RootState } from '../../appStore/store';
-import { logout } from '../../appStore/authSlice';
+import { useLogout } from '../../application/hooks/useAuthQueries';
 import Sidebar from '../components/faculty/Sidebar';
 import Header from '../components/faculty/Header';
 
@@ -10,9 +10,8 @@ export default function FacultyLayout() {
   const [activeTab, setActiveTab] = useState('Dashboard');
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
-  
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
+  const { mutate: logoutMutation } = useLogout();
+
 
   useEffect(() => {
     const pathToTabMap: { [key: string]: string } = {
@@ -45,8 +44,7 @@ export default function FacultyLayout() {
   const currentDate = 'Thursday, May 16, 2025';
 
   const handleLogout = () => {
-    dispatch(logout());
-    navigate('/login');
+    logoutMutation();
   };
 
   const handleSidebarCollapse = (isCollapsed: boolean) => {
@@ -72,7 +70,13 @@ export default function FacultyLayout() {
         />
         <div className={`flex-1 transition-all duration-300 ease-in-out ${collapsed ? 'ml-20' : 'ml-72'} overflow-hidden`}>
           <div className="sticky top-0 z-50">
-            <Header currentDate={currentDate} facultyName={fullName} onLogout={handleLogout} setActiveTab={setActiveTab} />
+            <Header
+              currentDate={currentDate}
+              facultyName={fullName}
+              profilePicture={user?.profilePicture}
+              onLogout={handleLogout}
+              setActiveTab={setActiveTab}
+            />
           </div>
           <main className="h-[calc(100vh-70px)] overflow-auto mt-20">
             <Outlet context={{ activeTab, setActiveTab }} />

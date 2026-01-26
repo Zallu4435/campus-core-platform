@@ -128,4 +128,5 @@ export interface HeaderProps {
     facultyName: string;
     onLogout: () => void;
     setActiveTab?: (tab: string) => void;
+    profilePicture?: string;
 }

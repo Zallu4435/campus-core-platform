@@ -1,23 +1,23 @@
 import { IconType } from "react-icons";
 
 export interface ProfileData {
-  id?: string;
-  firstName: string;
-  lastName?: string;
-  email: string;
-  phone?: string;
-  profilePicture?: string;
-  studentId?: string;
-  facultyId?: string;
-  passwordChangedAt?: string;
-  createdAt?: string;
-  updatedAt?: string;
+    id?: string;
+    firstName: string;
+    lastName?: string;
+    email: string;
+    phone?: string;
+    profilePicture?: string;
+    studentId?: string;
+    facultyId?: string;
+    passwordChangedAt?: string;
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 export interface PasswordChangeData {
-  currentPassword: string;
-  newPassword: string;
-  confirmPassword: string;
+    currentPassword: string;
+    newPassword: string;
+    confirmPassword: string;
 }
 
 export interface ImageCropperProps {
@@ -38,11 +38,9 @@ export interface ImageCropperProps {
 export interface PasswordChangeModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onPasswordChange: (passwords: {
-        currentPassword: string;
-        newPassword: string;
-        confirmPassword: string;
-    }) => void;
+    onPasswordChange: (passwords: PasswordChangeData) => void;
+    isLoading?: boolean;
+    error?: Error | null;
 }
 
 export interface Theme {

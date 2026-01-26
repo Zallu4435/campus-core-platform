@@ -5,6 +5,7 @@ interface AdminHeaderProps {
   adminName?: string;
   adminRole?: string;
   notificationCount?: number;
+  profilePicture?: string;
   onLogout?: () => void;
   collapsed?: boolean;
 }
@@ -12,6 +13,7 @@ interface AdminHeaderProps {
 const AdminHeader: React.FC<AdminHeaderProps> = ({
   adminName = 'Admin User',
   adminRole = 'System Administrator',
+  profilePicture,
   onLogout = () => console.log('Logout clicked'),
 }) => {
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
@@ -34,8 +36,16 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({
                 className="flex items-center space-x-2 py-1 px-2 rounded-lg hover:bg-purple-900/30 transition-colors border border-transparent hover:border-purple-600/20"
                 aria-label="Profile menu"
               >
-                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center border border-purple-600/50 shadow-[0_0_8px_rgba(139,92,246,0.3)]">
-                  <FiUser className="text-purple-100 w-4 h-4" />
+                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center border border-purple-600/50 shadow-[0_0_8px_rgba(139,92,246,0.3)] overflow-hidden">
+                  {profilePicture ? (
+                    <img
+                      src={profilePicture}
+                      alt={adminName}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <FiUser className="text-purple-100 w-4 h-4" />
+                  )}
                 </div>
                 <div className="hidden md:block text-left">
                   <p className="text-sm font-medium text-purple-100">{adminName}</p>

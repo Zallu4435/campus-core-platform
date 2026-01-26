@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import Header from '../components/user/Header';
 import Footer from '../components/user/Footer';
-import { logout } from '../../appStore/authSlice';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { RootState } from '../../appStore/store';
 import { usePreferences } from '../../application/context/PreferencesContext';
 import { socketRef } from '../pages/canvas/chat/ChatComponent';
-import { authService } from '../../application/services/auth.service';
+import { useLogout } from '../../application/hooks/useAuthQueries';
 
 const UserLayout = () => {
   const location = useLocation();
@@ -16,30 +15,20 @@ const UserLayout = () => {
   const [activeTab, setActiveTab] = useState(defaultTab);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { styles } = usePreferences();
-  const isSettingsPage   = location.pathname === '/settings';
+  const isSettingsPage = location.pathname === '/settings';
   const isHelpPage = location.pathname === '/help';
 
   const user = useSelector((state: RootState) => state.auth.user);
   const fullName = `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim();
   const profilePicture = user?.profilePicture;
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
+  const { mutate: logoutMutation } = useLogout();
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
     if (socketRef.current) {
       socketRef.current.disconnect();
       socketRef.current = null;
     }
-    try {
-      await authService.logout();
-    } catch (err: unknown) {
-      const error = err as Error;
-      if (!error.message?.includes('401')) {
-        console.error('Logout API error:', error);
-      }
-    }
-    dispatch(logout());
-    navigate('/login');
+    logoutMutation();
   };
 
   useEffect(() => {

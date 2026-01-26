@@ -29,24 +29,24 @@ export default function CreateAssignmentModal({
         dueDate: formattedDate,
         maxMarks: selectedAssignment.maxMarks.toString(),
         description: selectedAssignment.description,
-        files: [] 
+        files: []
       });
 
       if (selectedAssignment.files && Array.isArray(selectedAssignment.files)) {
-        setExistingFiles(selectedAssignment.files.map((file) => {
+        setExistingFiles(selectedAssignment.files.map((file, idx) => {
           if (typeof file === 'string') {
             return {
               fileName: file,
               fileUrl: file,
               fileSize: 0,
-              _id: ''
+              _id: `existing-${idx}`
             };
           } else {
             return {
               fileName: file.fileName,
               fileUrl: file.fileUrl,
               fileSize: file.fileSize,
-              _id: ''
+              _id: (file as any)._id || (file as any).id || `existing-${idx}`
             };
           }
         }));
@@ -142,7 +142,7 @@ export default function CreateAssignmentModal({
       const response = await httpClient.get(`/faculty/assignments/${selectedAssignment._id}/files/view`, {
         params: { fileName },
       });
-      const pdfData = response.data.data.pdfData;
+      const { pdfData, contentType } = response.data.data;
       if (pdfData) {
         const byteCharacters = atob(pdfData);
         const byteNumbers = new Array(byteCharacters.length);
@@ -150,7 +150,7 @@ export default function CreateAssignmentModal({
           byteNumbers[i] = byteCharacters.charCodeAt(i);
         }
         const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: 'application/pdf' });
+        const blob = new Blob([byteArray], { type: contentType || 'application/pdf' });
         const url = window.URL.createObjectURL(blob);
         window.open(url, '_blank', 'noopener,noreferrer');
         setTimeout(() => window.URL.revokeObjectURL(url), 1000);

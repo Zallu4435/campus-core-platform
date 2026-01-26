@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
-import { 
-  LuList, LuClock, LuCalendar, LuBookOpen, LuSettings, 
+import {
+  LuList, LuClock, LuCalendar, LuBookOpen, LuSettings,
   LuLogOut, LuGraduationCap, LuChevronRight, LuStar, LuTrendingUp,
   LuAward, LuFileText
 } from 'react-icons/lu';
+import { useLogout } from '../../../application/hooks/useAuthQueries';
 
 interface SidebarProps {
   activeTab: string;
@@ -19,6 +20,7 @@ export default function Sidebar({ activeTab, setActiveTab, onCollapse }: Sidebar
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [hoveredItem, setHoveredItem] = useState<number | 'logout' | null>(null);
   const navigate = useNavigate();
+  const { mutate: logoutMutation } = useLogout();
 
   const handleCollapse = () => {
     const newCollapsed = !isCollapsed;
@@ -27,44 +29,44 @@ export default function Sidebar({ activeTab, setActiveTab, onCollapse }: Sidebar
   };
 
   const navItems = [
-    { 
-      title: 'Dashboard', 
-      icon: <LuList size={20} />, 
+    {
+      title: 'Dashboard',
+      icon: <LuList size={20} />,
       gradient: 'from-blue-500 to-cyan-500',
       description: 'Overview & Analytics',
       path: '/faculty'
     },
-    { 
-      title: 'My Sessions', 
-      icon: <LuClock size={20} />, 
+    {
+      title: 'My Sessions',
+      icon: <LuClock size={20} />,
       gradient: 'from-purple-500 to-pink-500',
       description: 'Manage Classes',
       path: '/faculty/sessions'
     },
-    { 
-      title: 'Assignments', 
-      icon: <LuFileText size={20} />, 
+    {
+      title: 'Assignments',
+      icon: <LuFileText size={20} />,
       gradient: 'from-amber-500 to-orange-500',
       description: 'Manage Assignments',
       path: '/faculty/assignments'
     },
-    { 
-      title: 'Attendance', 
-      icon: <LuCalendar size={20} />, 
+    {
+      title: 'Attendance',
+      icon: <LuCalendar size={20} />,
       gradient: 'from-green-500 to-emerald-500',
       description: 'Track Presence',
       path: '/faculty/attendance'
     },
-    { 
-      title: 'Attendance Summary', 
-      icon: <LuBookOpen size={20} />, 
+    {
+      title: 'Attendance Summary',
+      icon: <LuBookOpen size={20} />,
       gradient: 'from-indigo-500 to-blue-500',
       description: 'Reports & Data',
       path: '/faculty/attendance-summary'
     },
-    { 
-      title: 'Settings', 
-      icon: <LuSettings size={20} />, 
+    {
+      title: 'Settings',
+      icon: <LuSettings size={20} />,
       gradient: 'from-gray-500 to-slate-500',
       description: 'Preferences',
       path: '/faculty/settings'
@@ -87,7 +89,7 @@ export default function Sidebar({ activeTab, setActiveTab, onCollapse }: Sidebar
     <aside className={`fixed left-0 top-0 bottom-0 ${isCollapsed ? 'w-24' : 'w-72'} transition-all duration-300 ease-in-out z-30`}>
       {/* Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 opacity-95"></div>
-      
+
       {/* Overlay Pattern */}
       <div className="absolute inset-0 opacity-10">
         <div className="absolute inset-0" style={{
@@ -120,9 +122,9 @@ export default function Sidebar({ activeTab, setActiveTab, onCollapse }: Sidebar
               onClick={handleCollapse}
               className="p-2 hover:bg-white/10 rounded-lg transition-colors duration-200 text-white/70 hover:text-white"
             >
-              <LuChevronRight 
-                size={16} 
-                className={`transform transition-all duration-300 ease-in-out ${isCollapsed ? 'rotate-180' : 'rotate-0'}`} 
+              <LuChevronRight
+                size={16}
+                className={`transform transition-all duration-300 ease-in-out ${isCollapsed ? 'rotate-180' : 'rotate-0'}`}
               />
             </button>
           </div>
@@ -143,11 +145,10 @@ export default function Sidebar({ activeTab, setActiveTab, onCollapse }: Sidebar
                     onClick={() => handleNavigation(item.path, item.title)}
                     onMouseEnter={() => setHoveredItem(index)}
                     onMouseLeave={() => setHoveredItem(null)}
-                    className={`group relative flex items-center w-full text-left px-4 py-4 rounded-2xl transition-all duration-200 ${
-                      activeTab === item.title
+                    className={`group relative flex items-center w-full text-left px-4 py-4 rounded-2xl transition-all duration-200 ${activeTab === item.title
                         ? `bg-gradient-to-r ${item.gradient} text-white font-bold shadow-lg`
                         : 'text-indigo-100 hover:bg-white/10 hover:text-white'
-                    }`}
+                      }`}
                   >
                     <div className="relative z-10 flex items-center w-full">
                       <span className="mr-3">
@@ -163,7 +164,7 @@ export default function Sidebar({ activeTab, setActiveTab, onCollapse }: Sidebar
                         <LuChevronRight size={16} className="ml-auto" />
                       )}
                     </div>
-                    
+
                     {/* Tooltip for collapsed mode */}
                     {isCollapsed && hoveredItem === index && (
                       <div className="absolute left-full ml-4 px-4 py-2 bg-black/90 text-white text-sm rounded-lg whitespace-nowrap z-50">
@@ -201,7 +202,7 @@ export default function Sidebar({ activeTab, setActiveTab, onCollapse }: Sidebar
         {/* Logout Button */}
         <div className="p-4 border-t border-white/10 flex-shrink-0">
           <button
-            onClick={() => navigate('/login')}
+            onClick={() => logoutMutation()}
             onMouseEnter={() => setHoveredItem('logout')}
             onMouseLeave={() => setHoveredItem(null)}
             className="group flex items-center w-full text-left px-4 py-4 rounded-2xl text-red-300 hover:bg-red-500/20 hover:text-red-200 transition-all duration-200"
@@ -210,7 +211,7 @@ export default function Sidebar({ activeTab, setActiveTab, onCollapse }: Sidebar
               <LuLogOut size={20} />
             </span>
             {!isCollapsed && <span className="font-medium">Log Out</span>}
-            
+
             {/* Tooltip for collapsed mode */}
             {isCollapsed && hoveredItem === 'logout' && (
               <div className="absolute left-full ml-4 px-4 py-2 bg-black/90 text-white text-sm rounded-lg whitespace-nowrap z-50">

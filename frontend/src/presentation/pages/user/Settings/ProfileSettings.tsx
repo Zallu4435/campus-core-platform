@@ -12,12 +12,12 @@ const formatPasswordChangedDate = (passwordChangedAt?: string): string => {
   if (!passwordChangedAt) {
     return 'Never changed';
   }
-  
+
   const changedDate = new Date(passwordChangedAt);
   const now = new Date();
   const diffTime = Math.abs(now.getTime() - changedDate.getTime());
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  
+
   if (diffDays === 1) {
     return '1 day ago';
   } else if (diffDays < 7) {
@@ -42,7 +42,11 @@ export default function ProfileSettings() {
     isEditing,
     setIsEditing,
     updateProfile,
+    isUpdating,
+    updateError,
     changePassword,
+    isChangingPassword,
+    passwordError,
     updateProfilePicture,
   } = useProfileManagement();
 
@@ -199,6 +203,7 @@ export default function ProfileSettings() {
                       className="w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all duration-200"
                       placeholder="Enter your phone number"
                     />
+                    <p className="text-[10px] text-slate-500 ml-1">Format: +123456789 (Must not start with 0)</p>
                   </div>
 
                   <div className="space-y-2">
@@ -216,14 +221,30 @@ export default function ProfileSettings() {
                   </div>
                 </div>
 
-                <div className="flex justify-end pt-4">
-                  <button
-                    onClick={handleSaveChanges}
-                    className="bg-sky-500 hover:bg-sky-600 text-white px-6 py-3 rounded-lg flex items-center font-medium transition-all duration-200 shadow-sm hover:shadow-md"
-                  >
-                    <FiSave className="w-4 h-4 mr-2" />
-                    Create Profile
-                  </button>
+                <div className="flex flex-col space-y-4 pt-4">
+                  {updateError && (
+                    <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center text-sm animate-shake">
+                      <div className="w-5 h-5 bg-red-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                        <FiX className="w-3 h-3 text-red-600" />
+                      </div>
+                      {updateError.message}
+                    </div>
+                  )}
+                  <div className="flex justify-end">
+                    <button
+                      onClick={handleSaveChanges}
+                      disabled={isUpdating}
+                      className={`${isUpdating ? 'opacity-70 cursor-not-allowed' : ''
+                        } bg-sky-500 hover:bg-sky-600 text-white px-6 py-3 rounded-lg flex items-center font-medium transition-all duration-200 shadow-sm hover:shadow-md`}
+                    >
+                      {isUpdating ? (
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                      ) : (
+                        <FiSave className="w-4 h-4 mr-2" />
+                      )}
+                      {isUpdating ? 'Creating...' : 'Create Profile'}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -295,11 +316,10 @@ export default function ProfileSettings() {
               </div>
               <button
                 onClick={handleEditToggle}
-                className={`${
-                  isEditing
-                    ? 'bg-red-500 hover:bg-red-600 text-white'
-                    : 'bg-sky-500 hover:bg-sky-600 text-white'
-                } px-4 py-2 rounded-lg flex items-center transition-all duration-200 shadow-sm hover:shadow-md text-sm font-medium`}
+                className={`${isEditing
+                  ? 'bg-red-500 hover:bg-red-600 text-white'
+                  : 'bg-sky-500 hover:bg-sky-600 text-white'
+                  } px-4 py-2 rounded-lg flex items-center transition-all duration-200 shadow-sm hover:shadow-md text-sm font-medium`}
               >
                 {isEditing ? (
                   <FiX className="w-4 h-4 mr-2" />
@@ -330,9 +350,8 @@ export default function ProfileSettings() {
                   value={formData.firstName}
                   onChange={(e) => handleInputChange('firstName', e.target.value)}
                   disabled={!isEditing}
-                  className={`w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all duration-200 ${
-                    !isEditing ? 'opacity-60 cursor-not-allowed bg-slate-100' : ''
-                  }`}
+                  className={`w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all duration-200 ${!isEditing ? 'opacity-60 cursor-not-allowed bg-slate-100' : ''
+                    }`}
                 />
               </div>
 
@@ -346,9 +365,8 @@ export default function ProfileSettings() {
                   value={formData.lastName}
                   onChange={(e) => handleInputChange('lastName', e.target.value)}
                   disabled={!isEditing}
-                  className={`w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all duration-200 ${
-                    !isEditing ? 'opacity-60 cursor-not-allowed bg-slate-100' : ''
-                  }`}
+                  className={`w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all duration-200 ${!isEditing ? 'opacity-60 cursor-not-allowed bg-slate-100' : ''
+                    }`}
                 />
               </div>
 
@@ -362,10 +380,10 @@ export default function ProfileSettings() {
                   value={formData.phone}
                   onChange={(e) => handleInputChange('phone', e.target.value)}
                   disabled={!isEditing}
-                  className={`w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all duration-200 ${
-                    !isEditing ? 'opacity-60 cursor-not-allowed bg-slate-100' : ''
-                  }`}
+                  className={`w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all duration-200 ${!isEditing ? 'opacity-60 cursor-not-allowed bg-slate-100' : ''
+                    }`}
                 />
+                {isEditing && <p className="text-[10px] text-slate-500 ml-1">Format: +123456789 (Must not start with 0)</p>}
               </div>
 
               <div className="space-y-2">
@@ -404,14 +422,30 @@ export default function ProfileSettings() {
             </div>
 
             {isEditing && (
-              <div className="flex justify-end pt-6 border-t border-slate-200">
-                <button
-                  onClick={handleSaveChanges}
-                  className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg flex items-center font-medium transition-all duration-200 shadow-sm hover:shadow-md"
-                >
-                  <FiSave className="w-4 h-4 mr-2" />
-                  Save Changes
-                </button>
+              <div className="flex flex-col space-y-4 pt-6 border-t border-slate-200">
+                {updateError && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center text-sm animate-shake">
+                    <div className="w-5 h-5 bg-red-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                      <FiX className="w-3 h-3 text-red-600" />
+                    </div>
+                    {updateError.message}
+                  </div>
+                )}
+                <div className="flex justify-end">
+                  <button
+                    onClick={handleSaveChanges}
+                    disabled={isUpdating}
+                    className={`${isUpdating ? 'opacity-70 cursor-not-allowed' : ''
+                      } bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg flex items-center font-medium transition-all duration-200 shadow-sm hover:shadow-md`}
+                  >
+                    {isUpdating ? (
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                    ) : (
+                      <FiSave className="w-4 h-4 mr-2" />
+                    )}
+                    {isUpdating ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -429,6 +463,8 @@ export default function ProfileSettings() {
         isOpen={showPasswordModal}
         onClose={() => setShowPasswordModal(false)}
         onPasswordChange={handlePasswordChange}
+        isLoading={isChangingPassword}
+        error={passwordError}
       />
     </div>
   );

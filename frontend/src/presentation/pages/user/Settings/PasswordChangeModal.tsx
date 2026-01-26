@@ -6,6 +6,8 @@ export const PasswordChangeModal = ({
   isOpen,
   onClose,
   onPasswordChange,
+  isLoading,
+  error,
 }: PasswordChangeModalProps) => {
   const [passwords, setPasswords] = useState({
     currentPassword: '',
@@ -33,15 +35,18 @@ export const PasswordChangeModal = ({
     setPasswords(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (
       passwords.currentPassword &&
       passwords.newPassword &&
       passwords.newPassword === passwords.confirmPassword
     ) {
-      onPasswordChange(passwords);
-      onClose();
-      setPasswords({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      try {
+        await onPasswordChange(passwords);
+        setPasswords({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      } catch (err) {
+        // Error is handled via props and displayed in UI
+      }
     }
   };
 
@@ -85,6 +90,15 @@ export const PasswordChangeModal = ({
         </div>
 
         <div className="space-y-6">
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl flex items-center text-sm animate-shake">
+              <div className="w-5 h-5 bg-red-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                <FaTimes className="w-3 h-3 text-red-600" />
+              </div>
+              {error.message}
+            </div>
+          )}
+
           <div className="space-y-2">
             <label className="text-slate-800 text-sm font-medium">Current Password</label>
             <div className="relative">
@@ -151,11 +165,16 @@ export const PasswordChangeModal = ({
           <div className="flex gap-3 pt-4">
             <button
               onClick={handleSubmit}
-              disabled={!isValid}
-              className="flex-1 bg-sky-500 hover:bg-sky-600 disabled:bg-slate-400 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg flex items-center justify-center transition-all duration-200 shadow-sm hover:shadow-md text-sm font-medium"
+              disabled={!isValid || isLoading}
+              className={`flex-1 bg-sky-500 hover:bg-sky-600 disabled:bg-slate-400 disabled:cursor-not-allowed text-white px-6 py-2.5 rounded-xl flex items-center justify-center transition-all duration-200 shadow-sm hover:shadow-md text-sm font-medium ${isLoading ? 'opacity-70' : ''
+                }`}
             >
-              <FaCheck className="w-3.5 h-3.5 mr-1.5" />
-              Update Password
+              {isLoading ? (
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+              ) : (
+                <FaCheck className="w-3.5 h-3.5 mr-1.5" />
+              )}
+              {isLoading ? 'Updating...' : 'Update Password'}
             </button>
             <button
               onClick={handleClose}

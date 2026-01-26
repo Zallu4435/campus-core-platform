@@ -75,6 +75,10 @@ router.get('/:id', authMiddleware, (req, res, next) => {
     expressAdapter(req, res, next, assignmentController.getAssignmentById.bind(assignmentController));
 });
 
+router.get('/:id/files/view', authMiddleware, (req, res, next) => {
+    expressAdapter(req, res, next, assignmentController.serveFile.bind(assignmentController));
+});
+
 router.post('/',
     authMiddleware,
     assignmentUpload.array('files', 5),

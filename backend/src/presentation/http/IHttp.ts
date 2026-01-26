@@ -215,6 +215,7 @@ export interface IAssignmentController extends IController {
   getSubmissionById(httpRequest: IHttpRequest): Promise<IHttpResponse>;
   reviewSubmission(httpRequest: IHttpRequest): Promise<IHttpResponse>;
   getAnalytics(httpRequest: IHttpRequest): Promise<IHttpResponse>;
+  serveFile(httpRequest: IHttpRequest): Promise<IHttpResponse>;
 }
 
 export interface IUserAssignmentController extends IController {

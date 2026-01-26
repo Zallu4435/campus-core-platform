@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { FiChevronLeft, FiChevronRight, FiMenu, FiX } from 'react-icons/fi';
 import {
   MdDashboard,
@@ -19,9 +19,9 @@ import {
   MdSettings
 } from 'react-icons/md';
 import { IoSearchOutline as Search } from 'react-icons/io5';
-import { useDispatch, useSelector } from 'react-redux';
-import { logout } from '../../../appStore/authSlice';
+import { useSelector } from 'react-redux';
 import { RootState } from '../../../appStore/store';
+import { useLogout } from '../../../application/hooks/useAuthQueries';
 
 const sidebarItems = [
   { name: 'Dashboard', path: '/admin', icon: <MdDashboard size={20} /> },
@@ -64,15 +64,13 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar }) => {
   );
   const [searchQuery, setSearchQuery] = useState('');
 
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
+  const { mutate: logoutMutation } = useLogout();
 
   const user = useSelector((state: RootState) => state.auth.user);
-  const fullName = `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim(); 
+  const fullName = `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim();
 
   const handleLogout = () => {
-    dispatch(logout());
-    navigate('/login')
+    logoutMutation();
   };
 
   useEffect(() => {
@@ -306,7 +304,8 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar }) => {
       <div className={`transition-all duration-300 ease-in-out ${collapsed ? 'lg:ml-20' : 'lg:ml-72'}`}>
       </div>
 
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         @keyframes floatingMist {
           0%, 100% {
             transform: translateY(0) translateX(0);

@@ -19,7 +19,8 @@ import {
   IGetSubmissionsUseCase,
   IGetSubmissionByIdUseCase,
   IReviewSubmissionUseCase,
-  IGetAnalyticsUseCase
+  IGetAnalyticsUseCase,
+  IServeAssignmentFileUseCase
 } from "./IAssignmentUseCases";
 import { AnalyticsData } from '../dtos/AnalyticsDTOs';
 import {
@@ -247,6 +248,47 @@ export class GetAnalyticsUseCase implements IGetAnalyticsUseCase {
   async execute(): Promise<AnalyticsData> {
     const analytics = await this.assignmentRepository.getAnalytics();
     return analytics;
+  }
+}
+
+export class ServeAssignmentFileUseCase implements IServeAssignmentFileUseCase {
+  constructor(
+    private assignmentRepository: IAssignmentRepository,
+    private storageService: IStorageService
+  ) { }
+
+  async execute(params: { assignmentId: string; fileName: string }): Promise<{ pdfData: string; fileName: string; contentType: string }> {
+    const assignment = await this.assignmentRepository.getAssignmentById(params.assignmentId);
+    if (!assignment) {
+      throw new AssignmentNotFoundError(params.assignmentId);
+    }
+
+    const file = assignment.files?.find(f => f.fileName === params.fileName);
+    if (!file) {
+      throw new Error(`File ${params.fileName} not found in assignment ${params.assignmentId}`);
+    }
+
+    try {
+      // Use the stored fileUrl directly to fetch from storage
+      const buffer = await this.storageService.fetchFileAsBuffer(file.fileUrl);
+
+      const ext = file.fileName.split('.').pop()?.toLowerCase();
+      let contentType = 'application/octet-stream';
+      if (ext === 'pdf') contentType = 'application/pdf';
+      else if (['jpg', 'jpeg'].includes(ext || '')) contentType = 'image/jpeg';
+      else if (ext === 'png') contentType = 'image/png';
+      else if (['doc', 'docx'].includes(ext || '')) contentType = 'application/msword';
+      else if (ext === 'txt') contentType = 'text/plain';
+
+      return {
+        pdfData: buffer.toString('base64'),
+        fileName: file.fileName,
+        contentType
+      };
+    } catch (error) {
+      Logger.error(`Failed to fetch assignment file: ${file.fileUrl}`, error);
+      throw new Error('Failed to fetch file from storage');
+    }
   }
 }
 

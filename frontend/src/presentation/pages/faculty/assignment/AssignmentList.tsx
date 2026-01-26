@@ -44,7 +44,10 @@ export default function AssignmentList({
     try {
       setIsFetchingAssignment(true);
       const response = await assignmentService.getAssignmentById(assignment._id);
-      const updatedAssignment = response?.assignment;
+      const updatedAssignment = response?.assignment || response;
+      if (!updatedAssignment || !updatedAssignment._id) {
+        throw new Error('Invalid assignment data received');
+      }
 
       setSelectedAssignment(updatedAssignment);
       setShowCreateModal(true);
@@ -155,7 +158,11 @@ export default function AssignmentList({
                       <h3 className="font-bold text-purple-900 text-xl mb-2 group-hover:text-pink-600 transition-colors">
                         {assignment.title || 'Untitled Assignment'}
                       </h3>
-                      <p className="text-pink-600 font-medium text-sm mb-3">{assignment.subject || 'No Subject'}</p>
+                      <div className="flex items-center space-x-3 mb-3">
+                        <p className="text-pink-600 font-medium text-sm">{assignment.subject || 'No Subject'}</p>
+                        <span className="w-1 h-1 bg-pink-200 rounded-full"></span>
+                        <p className="text-purple-600 font-bold text-sm">Max Marks: {assignment.maxMarks}</p>
+                      </div>
                     </div>
                     <div className="flex items-center space-x-2">
                       <button

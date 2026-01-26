@@ -5,7 +5,7 @@ import NotificationModal from '../common/NotificationModal';
 import { useNotificationManagement } from '../../../application/hooks/useNotificationManagement';
 import { HeaderProps, SearchResult, facultySearchItems } from '../../../shared/utils/facultyHeader';
 
-export default function Header({ currentDate, facultyName, onLogout, setActiveTab }: HeaderProps) {
+export default function Header({ currentDate, facultyName, onLogout, setActiveTab, profilePicture }: HeaderProps) {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
@@ -15,7 +15,7 @@ export default function Header({ currentDate, facultyName, onLogout, setActiveTa
   const [focusedResultIndex, setFocusedResultIndex] = useState(-1);
   const [time, setTime] = useState(new Date());
   const navigate = useNavigate();
-  
+
   const { notifications } = useNotificationManagement();
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
@@ -65,13 +65,13 @@ export default function Header({ currentDate, facultyName, onLogout, setActiveTa
         '/faculty/reports': 'Dashboard',
         '/faculty/grades': 'Dashboard'
       };
-      
+
       const targetTab = pathToTabMap[result.path];
       if (targetTab) {
         setActiveTab(targetTab);
       }
     }
-    
+
     navigate(result.path);
     setSearchQuery('');
     setSearchResults([]);
@@ -115,7 +115,7 @@ export default function Header({ currentDate, facultyName, onLogout, setActiveTa
   return (
     <header className="bg-white/80 backdrop-blur-xl h-20 px-8 flex justify-between items-center shadow-lg shadow-indigo-100/50 fixed top-0 left-72 w-[calc(100%-18rem)] z-50 border-b border-white/20">
       <div className="absolute inset-0 bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 opacity-60"></div>
-      
+
       <div className="relative z-10 flex items-center space-x-6">
         <div className="relative">
           <div className="relative">
@@ -159,14 +159,14 @@ export default function Header({ currentDate, facultyName, onLogout, setActiveTa
                     key={result.id}
                     onClick={() => handleSearchResultSelect(result)}
                     className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group ${index === focusedResultIndex
-                        ? 'bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200'
-                        : 'hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50'
+                      ? 'bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200'
+                      : 'hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50'
                       }`}
                     onMouseEnter={() => setFocusedResultIndex(index)}
                   >
                     <div className={`p-2 rounded-lg ${index === focusedResultIndex
-                        ? 'bg-indigo-100 text-indigo-600'
-                        : 'bg-gray-100 text-gray-600 group-hover:bg-indigo-100 group-hover:text-indigo-600'
+                      ? 'bg-indigo-100 text-indigo-600'
+                      : 'bg-gray-100 text-gray-600 group-hover:bg-indigo-100 group-hover:text-indigo-600'
                       } transition-all duration-200`}>
                       {result.icon}
                     </div>
@@ -227,7 +227,7 @@ export default function Header({ currentDate, facultyName, onLogout, setActiveTa
       {/* Right Section - Notifications and Profile */}
       <div className="relative z-10 flex items-center space-x-4">
         <div className="relative">
-          <button 
+          <button
             onClick={() => setShowNotifications(!showNotifications)}
             className="bg-white/90 backdrop-blur-sm p-3 rounded-full hover:bg-white transition-all duration-200 shadow-lg border border-white/50"
           >
@@ -238,8 +238,8 @@ export default function Header({ currentDate, facultyName, onLogout, setActiveTa
               </span>
             )}
           </button>
-          
-          <NotificationModal 
+
+          <NotificationModal
             isOpen={showNotifications}
             onClose={() => setShowNotifications(false)}
           />
@@ -251,8 +251,12 @@ export default function Header({ currentDate, facultyName, onLogout, setActiveTa
             className="flex items-center space-x-3 bg-white/90 backdrop-blur-sm rounded-full pl-2 pr-6 py-2 hover:bg-white transition-all duration-200 shadow-lg border border-white/50"
           >
             <div className="relative">
-              <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 h-10 w-10 rounded-full flex items-center justify-center text-white font-bold shadow-lg">
-                {getInitials(facultyName)}
+              <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 h-10 w-10 rounded-full flex items-center justify-center text-white font-bold shadow-lg overflow-hidden">
+                {profilePicture ? (
+                  <img src={profilePicture} alt={facultyName} className="w-full h-full object-cover" />
+                ) : (
+                  getInitials(facultyName)
+                )}
               </div>
             </div>
             <div className="text-left">
@@ -261,7 +265,7 @@ export default function Header({ currentDate, facultyName, onLogout, setActiveTa
             </div>
             <div className="w-2 h-2 bg-green-400 rounded-full"></div>
           </button>
-          
+
           {showProfileMenu && (
             <div className="absolute right-0 mt-3 w-64 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 z-50">
               <div className="p-4 border-b border-gray-100">
@@ -275,7 +279,7 @@ export default function Header({ currentDate, facultyName, onLogout, setActiveTa
                   </div>
                 </div>
               </div>
-              
+
               <div className="p-2">
                 {[
                   { icon: <LuUser size={16} />, label: 'My Profile', color: 'text-indigo-600', action: () => navigate('/faculty/settings') },
@@ -289,9 +293,9 @@ export default function Header({ currentDate, facultyName, onLogout, setActiveTa
                     <span className="font-medium">{item.label}</span>
                   </button>
                 ))}
-                
+
                 <div className="border-t border-gray-100 mt-2 pt-2">
-                  <button 
+                  <button
                     onClick={onLogout}
                     className="flex items-center space-x-3 w-full px-3 py-3 text-sm text-red-600 hover:bg-red-50 rounded-xl transition-all duration-200"
                   >
