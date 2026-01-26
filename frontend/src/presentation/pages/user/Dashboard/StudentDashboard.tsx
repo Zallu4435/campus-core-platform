@@ -23,7 +23,8 @@ export default function StudentDashboard() {
     calendarDays,
     isLoading,
     hasError,
-    dashboardError
+    dashboardError,
+    studentInfo
   } = useStudentDashboard();
 
   if (isLoading) return <div>Loading...</div>;
@@ -36,7 +37,7 @@ export default function StudentDashboard() {
           path="/"
           element={
             <>
-              <WelcomeBanner />
+              <WelcomeBanner studentInfo={studentInfo} />
               <div className="px-2 sm:px-4 md:px-4 py-4 sm:py-6 md:py-12">
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 sm:gap-4 md:gap-6 h-full">
                   <Announcements announcements={announcements} />

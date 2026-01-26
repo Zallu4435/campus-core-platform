@@ -1,34 +1,12 @@
 import { FaCalendarAlt, FaMapMarkerAlt } from 'react-icons/fa';
 import { usePreferences } from '../../../../application/context/PreferencesContext';
-import { EventItem, NewEventsProps } from '../../../../domain/types/dashboard/user';
+import { NewEventsProps } from '../../../../domain/types/dashboard/user';
 
-const mockEvents: EventItem[] = [
-  {
-    id: '1',
-    title: 'Spring Fest 2024',
-    date: '2024-04-20',
-    location: 'Main Auditorium',
-    description: 'Join us for music, food, and fun at the annual Spring Fest!'
-  },
-  {
-    id: '2',
-    title: 'Tech Symposium',
-    date: '2024-05-05',
-    location: 'Innovation Hall',
-    description: 'A showcase of student tech projects and guest speakers.'
-  },
-  {
-    id: '3',
-    title: 'Sports Day',
-    date: '2024-06-01',
-    location: 'Sports Complex',
-    description: 'Compete or cheer for your friends in a day full of sports!'
-  }
-];
+// Mock data removed in favor of real API data
 
 export default function NewEvents({ events }: NewEventsProps) {
   const { styles, theme } = usePreferences();
-  const displayEvents = events || mockEvents;
+  const displayEvents = events;
 
   return (
     <div className={`relative overflow-hidden rounded-2xl sm:rounded-3xl shadow-xl ${styles.backgroundSecondary} group hover:shadow-2xl transition-all duration-500`}>
@@ -55,24 +33,35 @@ export default function NewEvents({ events }: NewEventsProps) {
           </div>
         </div>
         <div className="space-y-3 sm:space-y-4">
-          {displayEvents.map((event) => (
-            <div
-              key={event.id}
-              className={`group/item relative overflow-hidden ${styles.card.background} ${styles.card.border} ${styles.card.hover} rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 transition-all duration-300 shadow-sm hover:shadow-lg transform hover:scale-[1.02] backdrop-blur-md`}
-            >
-              <div className="relative z-10 flex flex-col gap-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <FaCalendarAlt className={`${styles.icon.secondary}`} size={14} />
-                  <span className={`text-xs sm:text-sm font-semibold ${styles.textPrimary}`}>{event.date}</span>
-                  <FaMapMarkerAlt className={`ml-2 ${styles.icon.secondary}`} size={13} />
-                  <span className={`text-xs sm:text-sm ${styles.textSecondary}`}>{event.location}</span>
+          {displayEvents && displayEvents.length > 0 ? (
+            displayEvents.map((event) => (
+              <div
+                key={event.id}
+                className={`group/item relative overflow-hidden ${styles.card.background} ${styles.card.border} ${styles.card.hover} rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 transition-all duration-300 shadow-sm hover:shadow-lg transform hover:scale-[1.02] backdrop-blur-md`}
+              >
+                <div className="relative z-10 flex flex-col gap-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <FaCalendarAlt className={`${styles.icon.secondary}`} size={14} />
+                    <span className={`text-xs sm:text-sm font-semibold ${styles.textPrimary}`}>
+                      {new Date(event.date).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                    </span>
+                    <FaMapMarkerAlt className={`ml-2 ${styles.icon.secondary}`} size={13} />
+                    <span className={`text-xs sm:text-sm ${styles.textSecondary}`}>{event.location}</span>
+                  </div>
+                  <h3 className={`text-sm sm:text-base font-semibold ${styles.textPrimary}`}>{event.title}</h3>
+                  <p className={`text-xs sm:text-sm ${styles.textSecondary}`}>{event.description}</p>
                 </div>
-                <h3 className={`text-sm sm:text-base font-semibold ${styles.textPrimary}`}>{event.title}</h3>
-                <p className={`text-xs sm:text-sm ${styles.textSecondary}`}>{event.description}</p>
+                <div className={`absolute bottom-0 left-0 h-0.5 sm:h-1 w-0 bg-gradient-to-r ${styles.accent} group-hover/item:w-full transition-all duration-300 rounded-full`}></div>
               </div>
-              <div className={`absolute bottom-0 left-0 h-0.5 sm:h-1 w-0 bg-gradient-to-r ${styles.accent} group-hover/item:w-full transition-all duration-300 rounded-full`}></div>
+            ))
+          ) : (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <div className={`w-12 h-12 rounded-full ${styles.backgroundSecondary} flex items-center justify-center mb-3 bg-opacity-50`}>
+                <FaCalendarAlt className={`${styles.textSecondary} opacity-50`} size={20} />
+              </div>
+              <p className={`text-sm font-medium ${styles.textSecondary}`}>No new events</p>
             </div>
-          ))}
+          )}
         </div>
       </div>
     </div>

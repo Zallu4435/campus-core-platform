@@ -389,7 +389,7 @@ export default function Header({ mobileMenuOpen, setMobileMenuOpen, onLogout, us
                       </li>
                       <li className={`border-t ${styles.borderSecondary} mt-2 pt-2`}>
                         <button
-                          onClick={() => handleDropdownAction('logout')}
+                          onMouseDown={() => handleDropdownAction('logout')}
                           className={`w-full flex items-center space-x-3 px-4 py-3 ${styles.status.error} ${styles.card.hover} transition-all duration-200 group`}
                         >
                           <div className={`p-1.5 rounded-lg bg-opacity-10`} style={{ backgroundColor: styles.status.error.replace('text-', 'bg-') + '/10' }}>
@@ -457,7 +457,7 @@ export default function Header({ mobileMenuOpen, setMobileMenuOpen, onLogout, us
                       </li>
                       <li className={`border-t ${styles.borderSecondary} mt-2 pt-2`}>
                         <button
-                          onClick={() => handleDropdownAction('logout')}
+                          onMouseDown={() => handleDropdownAction('logout')}
                           className={`w-full flex items-center space-x-3 px-4 py-3 ${styles.status.error} ${styles.card.hover} transition-all duration-200 group`}
                         >
                           <div className={`p-1.5 rounded-lg bg-opacity-10`} style={{ backgroundColor: styles.status.error.replace('text-', 'bg-') + '/10' }}>

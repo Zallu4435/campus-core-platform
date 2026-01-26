@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { toast } from 'react-hot-toast';
 import { getThemeStyles } from '../../frameworks/config/themeConfig';
 import { ThemeType } from '../../domain/types/config/types';
 import { PreferencesContextType } from '../../domain/types/application';
@@ -18,10 +19,18 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   const styles = getThemeStyles(theme);
 
+  const isFirstRender = useRef(true);
+
   useEffect(() => {
     localStorage.setItem('theme', theme);
     document.documentElement.classList.remove('dark', 'light', 'default');
     document.documentElement.classList.add(theme);
+
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+    } else {
+      toast.success(`Theme changed to ${theme.charAt(0).toUpperCase() + theme.slice(1)}`);
+    }
   }, [theme]);
 
   useEffect(() => {

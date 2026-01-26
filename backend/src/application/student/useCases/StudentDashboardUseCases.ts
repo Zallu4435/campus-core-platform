@@ -64,6 +64,11 @@ export class GetCalendarDaysUseCase implements IGetCalendarDaysUseCase {
 
   async execute(params: GetCalendarDaysRequestDTO): Promise<Record<number, SpecialDate[]>> {
     if (!params.studentId) throw new StudentValidationError('studentId', 'Student ID is required');
+
+    const now = new Date();
+    const targetMonth = params.month !== undefined ? params.month : now.getMonth();
+    const targetYear = params.year !== undefined ? params.year : now.getFullYear();
+
     const { events, sports, clubs } = await this._repo.getCalendarDays();
     const dayTypeMap: Record<number, SpecialDate[]> = {};
 
@@ -72,9 +77,11 @@ export class GetCalendarDaysUseCase implements IGetCalendarDaysUseCase {
       const d = new Date(dateStr);
       if (isNaN(d.getTime())) return;
 
-      const day = d.getDate();
-      if (!dayTypeMap[day]) dayTypeMap[day] = [];
-      dayTypeMap[day].push({ type, title, date: dateStr });
+      if (d.getMonth() === targetMonth && d.getFullYear() === targetYear) {
+        const day = d.getDate();
+        if (!dayTypeMap[day]) dayTypeMap[day] = [];
+        dayTypeMap[day].push({ type, title, date: dateStr });
+      }
     };
 
     events.forEach(e => addEntry(e.date as string, 'event', e.title as string));

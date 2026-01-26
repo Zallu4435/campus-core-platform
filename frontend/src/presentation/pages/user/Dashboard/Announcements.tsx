@@ -31,8 +31,8 @@ export default function Announcements({ announcements }: AnnouncementsProps) {
         </div>
         <div className="space-y-3 sm:space-y-4">
           {announcements.map((item: Announcement, index: number) => (
-            <div 
-              key={index} 
+            <div
+              key={index}
               className={`group/item relative overflow-hidden ${styles.card.background} ${styles.card.border} ${styles.card.hover} rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 transition-all duration-300 shadow-sm hover:shadow-lg transform hover:scale-[1.02] backdrop-blur-md`}
             >
               <div className={`absolute -inset-0.5 bg-gradient-to-r ${styles.orb.secondary} rounded-xl sm:rounded-2xl blur transition-all duration-300 group-hover/item:opacity-20`}></div>
@@ -46,19 +46,16 @@ export default function Announcements({ announcements }: AnnouncementsProps) {
                   </div>
                   <p className={`text-xs sm:text-sm ${styles.textSecondary} ml-3 sm:ml-5 flex items-center space-x-2`}>
                     <span className={`${styles.icon.secondary}`}>📅</span>
-                    <span className="font-medium">{item.date}</span>
+                    <span className="font-medium">
+                      {new Date(item.date).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                    </span>
                   </p>
                 </div>
                 <FaArrowRight className={`${styles.icon.primary} opacity-0 group-hover/item:opacity-100 group-hover/item:translate-x-1 transition-all duration-300`} size={12} />
               </div>
             </div>
           ))}
-          <button className={`group/btn w-full mt-4 sm:mt-6 px-4 sm:px-6 py-3 sm:py-4 ${styles.button.primary} rounded-xl sm:rounded-2xl text-sm sm:text-base font-medium transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 backdrop-blur-md ${styles.border}`}>
-            <span className="flex items-center justify-center space-x-2">
-              <span>View all announcements</span>
-              <FaArrowRight className="group-hover/btn:translate-x-1 transition-transform duration-300" size={12} />
-            </span>
-          </button>
+
         </div>
       </div>
     </div>

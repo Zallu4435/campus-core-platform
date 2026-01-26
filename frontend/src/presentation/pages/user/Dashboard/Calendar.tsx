@@ -1,4 +1,4 @@
-import { FaCalendarAlt, FaArrowRight } from 'react-icons/fa';
+import { FaCalendarAlt } from 'react-icons/fa';
 import { usePreferences } from '../../../../application/context/PreferencesContext';
 import { CalendarProps, LegendProps } from '../../../../domain/types/dashboard/user';
 
@@ -101,15 +101,7 @@ export default function Calendar({ calendarDays }: CalendarProps) {
           <Legend color={styles.status.warning} label="Sport" styles={styles} />
           <Legend color={styles.status.success} label="Club" styles={styles} />
         </div>
-        <button className={`group/btn w-full mt-4 sm:mt-6 px-4 sm:px-6 py-3 sm:py-4 ${styles.button.primary} rounded-xl sm:rounded-2xl text-sm sm:text-base font-medium transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 backdrop-blur-md ${styles.border}`}>
-          <span className="flex items-center justify-center space-x-2">
-            <span>View Full Calendar</span>
-            <FaArrowRight
-              className="group-hover/btn:translate-x-1 transition-transform duration-300"
-              size={12}
-            />
-          </span>
-        </button>
+
       </div>
     </div>
   );

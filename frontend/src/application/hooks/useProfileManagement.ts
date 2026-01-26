@@ -45,10 +45,11 @@ export const useProfileManagement = () => {
   const { mutateAsync: updateProfilePicture } = useMutation({
     mutationFn: (file: File) => profileService.updateProfilePicture(file),
     onSuccess: (url: string) => {
+      const uniqueUrl = `${url}?t=${new Date().getTime()}`;
       queryClient.setQueryData(['profile'], (oldData: ProfileData | undefined) =>
-        oldData ? { ...oldData, profilePicture: url } : oldData
+        oldData ? { ...oldData, profilePicture: uniqueUrl } : oldData
       );
-      dispatch(updateUser({ profilePicture: url }));
+      dispatch(updateUser({ profilePicture: uniqueUrl }));
       queryClient.invalidateQueries({ queryKey: ['profile'] });
       toast.success('Profile picture updated successfully');
     },

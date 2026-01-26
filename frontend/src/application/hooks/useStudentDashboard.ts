@@ -12,17 +12,19 @@ export const useStudentDashboard = (): StudentDashboardData & {
     queryKey: ['student-dashboard'],
     queryFn: () => studentDashboardService.getAllDashboardData(),
     retry: 1,
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data: studentInfo, isLoading: studentInfoLoading, error: studentInfoError } = useQuery({
     queryKey: ['student-dashboard-student-info'],
     queryFn: () => studentDashboardService.getStudentInfo(),
     retry: 1,
+    staleTime: 5 * 60 * 1000,
   });
 
   const dashboard: Partial<StudentDashboardData> = data || {};
 
-  const safeRefetch = () => refetch().then(() => {});
+  const safeRefetch = () => refetch().then(() => { });
 
   return {
     announcements: dashboard?.announcements || [],
