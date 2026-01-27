@@ -32,7 +32,7 @@ export const useUniversitySessionManagement = (initialFilters = { status: 'all',
 
   const backendStatus = getBackendStatus(filters.status);
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, isFetching, error } = useQuery({
     queryKey: ['universitySessions', { status: backendStatus, instructor: filters.instructor, search: debouncedSearchTerm }],
     queryFn: () => universitySessionService.getSessions({ status: backendStatus, instructor: filters.instructor, search: debouncedSearchTerm })
   });
@@ -69,5 +69,6 @@ export const useUniversitySessionManagement = (initialFilters = { status: 'all',
     setFilters,
     searchTerm,
     setSearchTerm,
+    isFetching,
   };
-}; 
+};

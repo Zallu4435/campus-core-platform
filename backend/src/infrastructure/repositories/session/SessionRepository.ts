@@ -156,7 +156,7 @@ export class SessionRepository implements ISessionRepository {
 
     const lastInterval = attendance.intervals[attendance.intervals.length - 1];
     if (lastInterval.leftAt) {
-      throw new Error('No open join interval found');
+      return;
     }
 
     const result = await VideoSessionModel.findOneAndUpdate(

@@ -79,10 +79,11 @@ export interface DiplomaFormProps {
 export interface DiplomaApiResponse {
   success: boolean;
   data: {
-    courses: DiplomaCourse[];
+    data: DiplomaCourse[];
     totalPages: number;
-    currentPage: number;
-    totalCourses: number;
+    page: number;
+    total: number;
+    limit: number;
   };
   message?: string;
 }
@@ -134,6 +135,7 @@ export interface DiplomaCourse {
   createdAt: string;
   updatedAt: string;
   isEnrolled: boolean;
+  thumbnail?: string;
 }
 
 export interface Chapter {

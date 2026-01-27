@@ -2,7 +2,7 @@ import React from 'react';
 import { FaVideo, FaUsers } from 'react-icons/fa';
 import { TopBarProps } from '../../../domain/types/videoConference';
 
-export const TopBar: React.FC<TopBarProps> = ({ sessionName, meetingTimer }) => (
+export const TopBar: React.FC<TopBarProps> = ({ sessionName, meetingTimer, participantCount }) => (
   <div className="fixed top-0 left-0 right-0 bg-white/10 backdrop-blur-lg border-b border-white/20 px-2 sm:px-6 py-3 sm:py-4 z-20">
     <div className="flex items-center justify-between max-w-6xl mx-auto flex-nowrap gap-2 sm:gap-4">
       <div className="flex items-center flex-nowrap gap-2 sm:gap-4 min-w-0">
@@ -17,7 +17,7 @@ export const TopBar: React.FC<TopBarProps> = ({ sessionName, meetingTimer }) => 
       <div className="flex items-center flex-nowrap gap-2 sm:gap-4">
         <div className="flex items-center gap-1 text-white/60 flex-shrink-0">
           <FaUsers className="w-4 h-4" />
-          <span className="text-xs sm:text-sm font-medium">4</span>
+          <span className="text-xs sm:text-sm font-medium">{participantCount}</span>
         </div>
         <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse flex-shrink-0" />
         <div className="bg-gray-800/80 text-white text-xs px-2 py-1 rounded font-mono ml-1 sm:ml-2 flex-shrink-0">

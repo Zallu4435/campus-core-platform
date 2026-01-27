@@ -1,19 +1,20 @@
 import React from 'react';
-import { 
-  FaUser, 
-  FaCalendarAlt, 
-  FaClock, 
-  FaCheckCircle, 
+import {
+  FaUser,
+  FaCalendarAlt,
+  FaClock,
+  FaCheckCircle,
   FaCircle,
   FaMicrophone,
   FaVideo,
   FaDesktop,
-  FaComments
+  FaComments,
+  FaUsers,
 } from 'react-icons/fa';
-import { 
-  getStatusBadge, 
-  getDifficultyBadge, 
-  getActionButton 
+import {
+  getStatusBadge,
+  getDifficultyBadge,
+  getActionButton
 } from '../utils/sessionUtils';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
@@ -26,7 +27,7 @@ export const SessionCard: React.FC<SessionCardProps> = ({
   userAccess,
   styles,
   onToggleWatched,
-  
+  onJoinSession,
 }) => {
   const backendSession = session as unknown as BackendSession;
   const navigate = useNavigate();
@@ -73,126 +74,176 @@ export const SessionCard: React.FC<SessionCardProps> = ({
   const isEnrolled = session.isEnrolled ?? userAccess.isEnrolled;
 
   return (
-    <div className={`${styles.card.background} rounded-xl sm:rounded-2xl ${styles.cardShadow || ''} ${styles.cardBorder || ''} ${styles.cardHover || styles.card.hover} overflow-hidden ${session.isLive ? `${styles.status.error} bg-gradient-to-r ${styles.backgroundSecondary}` : ''}`}>
-      <div className="p-4 sm:p-6">
-        <div className="flex flex-col-reverse sm:flex-row gap-4 sm:gap-6">
-          <div className="flex-1">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-4">
-              <div className="flex items-center gap-3 sm:gap-4">
-                <div className="text-2xl sm:text-3xl">{avatar || '👤'}</div>
-                <div>
-                  <h3 className={`text-lg sm:text-xl font-bold ${styles.textPrimary} mb-2`}>
-                    Session {index + 1}: {session.title}
-                  </h3>
-                  <div className="flex flex-wrap items-center gap-3 text-sm mb-2">
-                    <span className="flex items-center gap-2 font-medium">
-                      <FaUser className={`w-4 h-4 ${styles.icon.secondary}`} />
-                      <span className={`${styles.textPrimary}`}>{session.instructor}</span>
+    <div className={`group relative overflow-hidden ${styles.card.background} backdrop-blur-xl rounded-[2.5rem] border ${styles.border} shadow-2xl transition-all duration-500 hover:scale-[1.01] hover:border-blue-500/30`}>
+      {/* Decorative background pulse for live sessions */}
+      {session.isLive && (
+        <div className="absolute inset-0 bg-gradient-to-br from-rose-500/10 via-transparent to-transparent animate-pulse -z-10"></div>
+      )}
+
+      <div className="p-4 sm:p-7">
+        <div className="flex flex-col lg:flex-row gap-6 sm:gap-10">
+          {/* Left: Thumbnail/Avatar Area */}
+          <div className="relative w-full lg:w-48 xl:w-56 h-48 sm:h-56 lg:h-auto shrink-0 overflow-hidden rounded-[2rem] border border-white/10 shadow-inner group-hover:shadow-2xl transition-all duration-500">
+            <div className="absolute inset-0 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center">
+              <div className="relative">
+                <div className={`text-6xl sm:text-7xl lg:text-8xl transform group-hover:scale-110 transition-transform duration-700`}>
+                  {avatar || '👤'}
+                </div>
+              </div>
+            </div>
+            {session.isLive && (
+              <div className="absolute top-4 left-4 flex items-center gap-1.5 px-3 py-1.5 bg-rose-500 text-white rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg animate-bounce">
+                <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></div>
+                Live
+              </div>
+            )}
+          </div>
+
+          {/* Right: Content Area */}
+          <div className="flex-1 flex flex-col justify-between py-1">
+            <div>
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4">
+                <div className="flex-1">
+                  <div className="flex flex-wrap items-center gap-2 mb-2">
+                    <span className={`px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-500 text-[10px] font-bold border border-blue-500/20`}>
+                      {session.course}
                     </span>
-                    <span className={`${styles.textSecondary}`}>•</span>
-                    <span className={`${styles.textSecondary}`}>{session.course}</span>
+                    {getDifficultyBadge(session.difficulty, sessionStyles) as React.ReactElement}
+                    {getStatusBadge(status, sessionStyles, session.isLive) as React.ReactElement}
+                  </div>
+                  <h3 className={`text-xl sm:text-2xl font-black ${styles.textPrimary} tracking-tight leading-tight group-hover:text-blue-500 transition-colors duration-300`}>
+                    {session.title}
+                  </h3>
+                </div>
+
+                <div className="hidden sm:block">
+                  {getActionButton(session, userAccess, sessionStyles, {
+                    onJoin: () => onJoinSession?.(session.id || session._id || '', user?.id || ''),
+                    onWatch: () => onToggleWatched(session.id || session._id || '')
+                  }) as React.ReactElement}
+                </div>
+              </div>
+
+              <p className={`${styles.textSecondary} text-sm sm:text-base leading-relaxed opacity-70 mb-6 line-clamp-2 sm:line-clamp-none`}>
+                {session.description}
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-blue-500 border border-white/5">
+                    <FaUser className="w-5 h-5" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className={`${styles.textSecondary} text-[10px] font-bold uppercase tracking-wider opacity-40`}>Instructor</span>
+                    <span className={`text-sm font-bold ${styles.textPrimary}`}>{session.instructor}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-amber-500 border border-white/5">
+                    <FaCalendarAlt className="w-5 h-5" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className={`${styles.textSecondary} text-[10px] font-bold uppercase tracking-wider opacity-40`}>Schedule</span>
+                    <span className={`text-sm font-bold ${styles.textPrimary}`}>{dateStr}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-emerald-500 border border-white/5">
+                    <FaClock className="w-5 h-5" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className={`${styles.textSecondary} text-[10px] font-bold uppercase tracking-wider opacity-40`}>Time & Duration</span>
+                    <span className={`text-sm font-bold ${styles.textPrimary}`}>{timeStr} • {session.duration} hrs</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-indigo-500 border border-white/5">
+                    <FaUsers className="w-5 h-5" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className={`${styles.textSecondary} text-[10px] font-bold uppercase tracking-wider opacity-40`}>Joined</span>
+                    <span className={`text-sm font-bold ${styles.textPrimary}`}>
+                      {session.attendees || 0} / {session.maxAttendees || '∞'}
+                    </span>
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2 sm:gap-3 mt-2 sm:mt-0">
-                {getStatusBadge(status, sessionStyles, session.isLive) as React.ReactElement}
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center justify-between pt-6 border-t border-white/5 gap-4">
+              <div className="flex flex-wrap items-center gap-2">
+                {(tags || []).map((tag: string) => (
+                  <span key={tag} className={`px-3 py-1 bg-white/5 ${styles.textSecondary} rounded-lg text-[10px] font-bold uppercase border border-white/5 tracking-wider hover:bg-white/10 transition-colors cursor-default`}>
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-4 w-full sm:w-auto">
+                <div className="sm:hidden w-full">
+                  {getActionButton(session, userAccess, sessionStyles, {
+                    onJoin: () => onJoinSession?.(session.id || session._id || '', user?.id || ''),
+                    onWatch: () => onToggleWatched(session.id || session._id || '')
+                  }) as React.ReactElement}
+                </div>
+                {frontendStatus === 'completed' && hasRecording && isEnrolled && (
+                  <button
+                    onClick={() => onToggleWatched(session.id || session._id || '')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/10 text-emerald-500 text-xs font-bold border border-emerald-500/20 hover:bg-emerald-500 hover:text-white transition-all duration-300 transform active:scale-95`}
+                    aria-label={userAccess.watchedSessions.includes(session.id || session._id || '') ? 'Mark as unwatched' : 'Mark as watched'}
+                  >
+                    {userAccess.watchedSessions.includes(session.id || session._id || '') ? (
+                      <>
+                        <FaCheckCircle className="w-3.5 h-3.5" />
+                        <span>WATCHED</span>
+                      </>
+                    ) : (
+                      <>
+                        <FaCircle className="w-3.5 h-3.5 opacity-40" />
+                        <span>MARK AS WATCHED</span>
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
             </div>
-            <p className={`${styles.textSecondary} mb-4 text-sm sm:text-base`}>{session.description}</p>
-            <div className="flex flex-wrap items-center gap-4 text-sm mb-4">
-              <span className="flex items-center gap-2">
-                <FaCalendarAlt className={`w-4 h-4 ${styles.icon.secondary}`} />
-                <span className={`${styles.textSecondary}`}>{dateStr}</span>
-              </span>
-              <span className="flex items-center gap-2">
-                <FaClock className={`w-4 h-4 ${styles.icon.secondary}`} />
-                <span className={`${styles.textSecondary}`}>{timeStr} ({session.duration} hrs)</span>
-              </span>
-            </div>
-            <div className="flex flex-wrap items-center gap-3 mb-4">
-              {getDifficultyBadge(session.difficulty, sessionStyles) as React.ReactElement}
-              {(tags || []).map((tag: string) => (
-                <span key={tag} className={`px-3 py-1 ${styles.backgroundSecondary} ${styles.textSecondary} rounded-full text-sm font-medium`}>
-                  {tag}
-                </span>
-              ))}
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
-              {frontendStatus === 'completed' && hasRecording && isEnrolled && (
-                <button
-                  onClick={() => onToggleWatched(session.id || '')}
-                  className={`flex items-center gap-2 text-sm font-medium ${styles.textSecondary} hover:${styles.status.success} transition-colors`}
-                  aria-label={userAccess.watchedSessions.includes(session.id || '') ? 'Mark as unwatched' : 'Mark as watched'}
-                >
-                  {userAccess.watchedSessions.includes(session.id || '') ? (
-                    <>
-                      <FaCheckCircle className={`w-4 h-4 ${styles.status.success}`} />
-                      <span className={`${styles.status.success}`}>Watched</span>
-                    </>
-                  ) : (
-                    <>
-                      <FaCircle className={`w-4 h-4 ${styles.icon.secondary}`} />
-                      <span>Mark as Watched</span>
-                    </>
-                  )}
-                </button>
-              )}
-            </div>
-          </div>
-          <div className="flex flex-col sm:justify-between sm:items-end gap-3 mb-3 sm:mb-0 w-full sm:w-auto">
-            {session.isLive && (
-              <div className={`flex items-center gap-2 text-sm ${styles.textSecondary} ${styles.backgroundSecondary} px-3 py-2 rounded-lg`}>
-                <div className={`w-2 h-2 ${styles.status.success} rounded-full animate-pulse`}></div>
-                Live for {Math.floor(Math.random() * 45 + 15)} minutes
-              </div>
-            )}
-            {getActionButton(session, userAccess, sessionStyles) as React.ReactElement}
           </div>
         </div>
+
         {session.isLive && (
-          <div className={`mt-4 p-3 ${styles.backgroundSecondary} ${styles.border} rounded-lg`}>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2">
-                  <FaMicrophone className={`w-4 h-4 ${styles.icon.secondary}`} />
-                  <FaVideo className={`w-4 h-4 ${styles.icon.secondary}`} />
-                  <FaDesktop className={`w-4 h-4 ${styles.icon.secondary}`} />
+          <div className={`mt-6 p-4 bg-rose-500/5 rounded-[1.5rem] border border-rose-500/10 backdrop-blur-md`}>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center -space-x-2 group-hover:-space-x-1 transition-all duration-500">
+                  <div className="w-8 h-8 rounded-full bg-slate-800 border-2 border-slate-900 flex items-center justify-center text-blue-500 shadow-lg">
+                    <FaMicrophone className="w-3.5 h-3.5" />
+                  </div>
+                  <div className="w-8 h-8 rounded-full bg-slate-800 border-2 border-slate-900 flex items-center justify-center text-rose-500 shadow-lg">
+                    <FaVideo className="w-3.5 h-3.5" />
+                  </div>
+                  <div className="w-8 h-8 rounded-full bg-slate-800 border-2 border-slate-900 flex items-center justify-center text-emerald-500 shadow-lg">
+                    <FaDesktop className="w-3.5 h-3.5" />
+                  </div>
                 </div>
-                <span className={`text-sm ${styles.textSecondary}`}>Audio, Video, Screen Share Available</span>
+                <div className="flex flex-col">
+                  <span className={`text-[10px] font-bold uppercase tracking-widest text-rose-500`}>Session Active</span>
+                  <span className={`text-xs ${styles.textSecondary} opacity-60`}>All classroom features are currently available</span>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <FaComments className={`w-4 h-4 ${styles.icon.secondary}`} />
-                <span className={`text-sm ${styles.textSecondary}`}>Chat Active</span>
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-xl text-blue-500">
+                <FaComments className="w-4 h-4" />
+                <span className="text-[10px] font-black uppercase tracking-widest">Chat Active</span>
               </div>
             </div>
           </div>
         )}
+
         {backendSession.joinUrl && (backendSession.status === 'Ongoing' || session.status === 'live' || session.isLive) && (
-          <div className="mt-4 flex justify-center">
-            <button
-              onClick={() => {
-                // Additional validation before joining
-                if (backendSession.status === 'Ended' || backendSession.status === 'Cancelled') {
-                  alert('Cannot join session: Session has ended or been cancelled');
-                  return;
-                }
-                if (backendSession.status !== 'Ongoing' && session.status !== 'live' && !session.isLive) {
-                  alert('Cannot join session: Session is not live');
-                  return;
-                }
-                
-                navigate(`/faculty/video-conference/${backendSession.id || backendSession._id}`, {
-                  state: {
-                    session: backendSession,
-                    faculty: user,
-                    isHost: false,
-                  },
-                });
-              }}
-              className="inline-block bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-3 px-8 rounded-full shadow-lg transition duration-200 text-lg"
-            >
-              Join Live Session
-            </button>
+          <div className="mt-6 flex justify-center lg:hidden">
+            {/* Mobile only join button if it was missing above */}
           </div>
         )}
       </div>

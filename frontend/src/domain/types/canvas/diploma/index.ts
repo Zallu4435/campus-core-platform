@@ -18,10 +18,12 @@ export interface Chapter {
   title: string;
   description: string;
   type: string;
-  duration: string;
+  duration: string | number;
   order?: number;
   isCompleted?: boolean;
   isBookmarked?: boolean;
+  videoUrl?: string;
+  notes?: string;
   [key: string]: unknown;
 }
 
@@ -35,6 +37,14 @@ export interface DiplomaCourse {
   createdAt?: string;
   updatedAt?: string;
   isEnrolled?: boolean;
+  thumbnail?: string;
+  category?: string;
+  instructor?: string;
+  department?: string;
+  status?: string;
+  videoCount?: number;
+  completedVideoCount?: number;
+  totalVideos?: number;
   [key: string]: unknown;
 }
 
@@ -90,4 +100,5 @@ export interface BackendCourse {
   createdAt?: string;
   updatedAt?: string;
   isEnrolled?: boolean;
+  thumbnail?: string;
 }

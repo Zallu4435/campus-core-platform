@@ -47,6 +47,7 @@ export interface DiplomaCourse {
     videos?: string[];
     createdAt: Date;
     updatedAt: Date;
+    thumbnail?: string;
 }
 
 export interface EnrollStudentProps {

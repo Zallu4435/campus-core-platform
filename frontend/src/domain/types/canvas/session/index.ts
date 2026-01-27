@@ -82,6 +82,7 @@ export interface SessionCardProps {
     styles: ThemeStyles;
     onToggleWatched: (sessionId: string) => void;
     onToggleLike?: (sessionId: string) => void;
+    onJoinSession?: (sessionId: string, userId: string) => void;
 }
 
 export interface SessionFiltersProps {

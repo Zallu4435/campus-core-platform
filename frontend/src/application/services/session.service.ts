@@ -86,7 +86,8 @@ class SessionService {
       const rawData = response.data.data;
       const normalized = (rawData || []).map((s) => ({
         ...s,
-        _id: s?._id ?? s?.id,
+        id: s.id || s._id,
+        _id: s._id || s.id,
       }));
       return normalized;
     } catch (error: unknown) {
@@ -101,7 +102,7 @@ class SessionService {
     try {
       const response = await httpClient.get<SingleSessionResponse>(`/faculty/sessions/video-sessions/${id}`);
       const s = response.data.data;
-      return { ...s, id: s._id };
+      return { ...s, id: s.id || s._id, _id: s._id || s.id };
     } catch (error: unknown) {
       if (isAxiosErrorWithApiError(error)) {
         throw new Error(error.response?.data?.error || error.response?.data?.message || 'Failed to get session by ID');
@@ -170,18 +171,18 @@ class SessionService {
 
   async getSessionAttendance(sessionId: string, filters: Record<string, string | number> = {}) {
     const filteredParams = Object.fromEntries(
-      Object.entries(filters).filter(([_, value]) => 
+      Object.entries(filters).filter(([_, value]) =>
         value !== undefined && value !== null && value !== '' && value !== 'all'
       )
     ) as Record<string, string>;
-    
+
     if (filteredParams.startDate) {
       filteredParams.startDate = new Date(filteredParams.startDate).toISOString();
     }
     if (filteredParams.endDate) {
       filteredParams.endDate = new Date(filteredParams.endDate).toISOString();
     }
-    
+
     const params = new URLSearchParams(filteredParams).toString();
     const url = `/faculty/sessions/video-sessions/${sessionId}/attendance${params ? '?' + params : ''}`;
     try {

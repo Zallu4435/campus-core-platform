@@ -71,11 +71,11 @@ const FacultyDashboard: React.FC = () => {
           <p className="text-gray-600 mb-4">There was an error loading the dashboard data.</p>
           <button
             onClick={() => window.location.reload()}
-            className="bg-blue-600 text-white px-4 py-2dhover:bg-blue-700"
+            className="bg-blue-600 text-white px-4 py-2 hover:bg-blue-700 rounded-md"
           >
-            Retry roun
+            Retry
           </button>
-        </div>ed-md
+        </div>
       </div>
     );
   }

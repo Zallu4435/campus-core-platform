@@ -6,10 +6,11 @@ export interface Message {
 }
 
 export interface Reaction {
-  id: string;
-  emoji: string;
-  sender: string;
-  timestamp: number;
+    id: string;
+    emoji: string;
+    sender: string;
+    timestamp: number;
+    offset?: number;
 }
 
 export interface ChatPanelProps {
@@ -64,14 +65,16 @@ export interface VideoGridProps {
     maxVisible?: number;
     localParticipantId?: string;
     localStream?: MediaStream | null;
+    screenShareStream?: MediaStream | null;
 }
 
 export interface TopBarProps {
     sessionName: string;
     meetingTimer: string;
+    participantCount: number;
 }
 
 export interface ReactionsPanelProps {
     reactions: { [participantId: string]: string };
     onRemoveReaction: (participantId: string) => void;
-  }
+}

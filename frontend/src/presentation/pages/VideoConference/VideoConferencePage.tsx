@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { ControlBar } from './ControlBar';
 import { ChatPanel } from './ChatPanel';
 import { TopBar } from './TopBar';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { io, Socket } from 'socket.io-client';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../../appStore/store';
@@ -13,12 +13,26 @@ import { Faculty, Session } from '../../../domain/types/canvas/session';
 
 
 export const VideoConferencePage: React.FC = () => {
+  const { sessionId: paramSessionId } = useParams<{ sessionId: string }>();
   const location = useLocation();
+  const navigate = useNavigate();
   const { session, faculty, isHost } = (location.state || {}) as {
     session?: Session;
     faculty?: Faculty;
     isHost?: boolean;
   };
+
+  const activeSessionId = session?.id || session?._id || paramSessionId;
+
+  useEffect(() => {
+    if (!activeSessionId || activeSessionId === 'undefined') {
+      navigate('/faculty/sessions');
+    }
+  }, [activeSessionId, navigate]);
+
+  if (!activeSessionId || activeSessionId === 'undefined') {
+    return null;
+  }
 
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -26,6 +40,8 @@ export const VideoConferencePage: React.FC = () => {
   const [cameraOn, setCameraOn] = useState(true);
   const [handRaised, setHandRaised] = useState(false);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+  const [screenShareStream, setScreenShareStream] = useState<MediaStream | null>(null);
+  const [mediaInitialized, setMediaInitialized] = useState(false);
   const [mediaReady, setMediaReady] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [reactions, setReactions] = useState<Reaction[]>([]);
@@ -38,7 +54,8 @@ export const VideoConferencePage: React.FC = () => {
   const socketRef = useRef<Socket | null>(null);
   const peerConnections = useRef<{ [userId: string]: RTCPeerConnection }>({});
   const localStreamRef = useRef<MediaStream | null>(null);
-  const myIdRef = useRef(faculty?.id || faculty?._id);
+  const screenStreamRef = useRef<MediaStream | null>(null);
+  const myIdRef = useRef(faculty?.id || faculty?._id || '');
 
   const user = useSelector((state: RootState) => state.auth.user);
   const userId = user?.id;
@@ -70,7 +87,10 @@ export const VideoConferencePage: React.FC = () => {
           localVideoRef.current.srcObject = stream;
         }
       } catch (err) {
+        console.warn('Media access denied or unavailable. Joining as listener.');
         setMediaReady(false);
+      } finally {
+        setMediaInitialized(true);
       }
     };
 
@@ -78,15 +98,21 @@ export const VideoConferencePage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!userId || !mediaReady || isConnected) {
+    if (!userId || !mediaInitialized || isConnected) {
       return;
     }
 
     const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
-    const SOCKET_URL = apiBaseUrl.replace('/api', '');
+    // Remove /api suffix and ensure no trailing slash for socket.io
+    const SOCKET_URL = apiBaseUrl.replace(/\/api\/?$/, '').replace(/\/$/, '');
+
+    console.log('Connecting to socket server at:', SOCKET_URL);
+
     const socket = io(SOCKET_URL, {
-      transports: ['websocket'],
-      auth: { userId }
+      transports: ['websocket', 'polling'], // Add polling fallback
+      auth: { userId },
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
     });
 
     socketRef.current = socket;
@@ -94,21 +120,29 @@ export const VideoConferencePage: React.FC = () => {
     socket.on('connect', () => {
       setIsConnected(true);
 
-      const myId = faculty?.id || faculty?._id || '';
+      const myId = faculty?.id || faculty?._id || userId || '';
       myIdRef.current = myId;
-      const myName = faculty?.firstName + (faculty?.lastName ? ' ' + faculty.lastName : '');
+      const myName = faculty?.firstName
+        ? faculty.firstName + (faculty.lastName ? ' ' + faculty.lastName : '')
+        : (user?.firstName ? `${user.firstName} ${user.lastName}` : 'User');
 
-      socket.emit('join-room', session?.id || session?._id, {
-        userId: myId,
-        username: myName,
-        isHost: isHost
-      });
+      if (activeSessionId) {
+        socket.emit('join-room', activeSessionId, {
+          userId: myId,
+          username: myName,
+          isHost: isHost,
+          cameraOn: mediaReady && cameraOn, // Only report true if media is actually ready
+          micOn: mediaReady && micOn
+        });
+      } else {
+        console.error('No session ID available to join');
+      }
 
       upsertParticipant({
         id: myId,
         name: myName,
-        videoOn: cameraOn,
-        audioOn: micOn,
+        videoOn: mediaReady && cameraOn,
+        audioOn: mediaReady && micOn,
         handRaised: false,
         isHost: isHost,
       });
@@ -132,15 +166,21 @@ export const VideoConferencePage: React.FC = () => {
       handRaised: boolean;
       isPresenting?: boolean;
     }>) => {
-      setParticipants(list.map((p) => ({
-        id: p.userId,
-        name: p.name,
-        isHost: p.isHost,
-        videoOn: p.cameraOn,
-        audioOn: p.micOn,
-        handRaised: p.handRaised,
-        isPresenting: p.isPresenting || false
-      })));
+      setParticipants(prev => {
+        return list.map((p) => {
+          const existing = prev.find(prevP => prevP.id === p.userId);
+          return {
+            id: p.userId,
+            name: p.name,
+            isHost: p.isHost,
+            videoOn: p.cameraOn,
+            audioOn: p.micOn,
+            handRaised: p.handRaised,
+            isPresenting: p.isPresenting || false,
+            mediaStream: existing?.mediaStream // Preserve local stream if it exists (e.g. for ghost participant)
+          };
+        });
+      });
     });
 
     socket.on('user-joined', (user) => {
@@ -190,7 +230,8 @@ export const VideoConferencePage: React.FC = () => {
         id: data.id,
         emoji: data.emoji,
         sender: data.userName,
-        timestamp: data.timestamp
+        timestamp: data.timestamp,
+        offset: Math.random() * 80 // Add random offset (0-80%)
       };
       setReactions(prev => [...prev, newReaction]);
     });
@@ -220,35 +261,45 @@ export const VideoConferencePage: React.FC = () => {
     });
 
     socket.on('video-offer', async (data) => {
-      if (data.to !== myIdRef.current) return;
+      // Accept offers for my main ID OR my screen share ID
+      if (data.to !== myIdRef.current && data.to !== `${myIdRef.current}-screen`) return;
 
-      const pc = createPeerConnection(data.from);
+      let streamToPublish = localStreamRef.current;
+      if (data.to === `${myIdRef.current}-screen`) {
+        streamToPublish = screenStreamRef.current;
+      }
+
+      const pc = createPeerConnection(data.from, data.to, streamToPublish);
+
       await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
 
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
 
       socket.emit('video-answer', {
-        sessionId: session?.id || session?._id,
-        from: myIdRef.current,
+        sessionId: activeSessionId,
+        from: data.to,
         to: data.from,
         answer,
       });
     });
 
     socket.on('video-answer', async (data) => {
-      if (data.to !== myIdRef.current) return;
+      // Answers might come back to my main ID or screen ID.
+      if (data.to !== myIdRef.current && data.to !== `${myIdRef.current}-screen`) return;
 
-      const pc = peerConnections.current[data.from];
+      const key = getPcKey(data.from, data.to);
+      const pc = peerConnections.current[key];
       if (pc) {
         await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
       }
     });
 
     socket.on('ice-candidate', async (data) => {
-      if (data.to !== myIdRef.current) return;
+      if (data.to !== myIdRef.current && data.to !== `${myIdRef.current}-screen`) return;
 
-      const pc = peerConnections.current[data.from];
+      const key = getPcKey(data.from, data.to);
+      const pc = peerConnections.current[key];
       if (pc && data.candidate) {
         try {
           await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
@@ -268,18 +319,22 @@ export const VideoConferencePage: React.FC = () => {
       peerConnections.current = {};
       setIsConnected(false);
     };
-  }, [userId, mediaReady, session, faculty, isHost]);
+  }, [userId, mediaInitialized, session, faculty, isHost]);
 
-  const createPeerConnection = (remoteUserId: string): RTCPeerConnection => {
+  // Helper to get unique PC key
+  const getPcKey = (remoteUserId: string, localIdentity: string) => `${remoteUserId}::${localIdentity}`;
+
+  const createPeerConnection = (remoteUserId: string, localIdentity: string, streamToPublish: MediaStream | null): RTCPeerConnection => {
     const pc = new RTCPeerConnection({
       iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
     });
 
-    peerConnections.current[remoteUserId] = pc;
+    const key = getPcKey(remoteUserId, localIdentity);
+    peerConnections.current[key] = pc;
 
-    if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach(track => {
-        pc.addTrack(track, localStreamRef.current!);
+    if (streamToPublish) {
+      streamToPublish.getTracks().forEach(track => {
+        pc.addTrack(track, streamToPublish);
       });
     }
 
@@ -287,7 +342,7 @@ export const VideoConferencePage: React.FC = () => {
       if (event.candidate && socketRef.current) {
         socketRef.current.emit('ice-candidate', {
           sessionId: session?.id || session?._id,
-          from: myIdRef.current,
+          from: localIdentity,
           to: remoteUserId,
           candidate: event.candidate,
         });
@@ -302,23 +357,51 @@ export const VideoConferencePage: React.FC = () => {
     };
 
     pc.onconnectionstatechange = () => {
-      console.log(`[WebRTC] Connection state with ${remoteUserId}:`, pc.connectionState);
+      console.log(`[WebRTC] Connection state with ${remoteUserId} (as ${localIdentity}):`, pc.connectionState);
     };
 
     return pc;
   };
 
   const createPeerConnectionAndOffer = async (remoteUserId: string) => {
-    const pc = createPeerConnection(remoteUserId);
+    // We only initiate offers from our MAIN identity to new users.
+    // Ghost users (screen share) wait for offers or handle logic differently.
+    // If I see a new user, I offer my main stream. 
+    // Does my screen share also offer to them? 
+    // Yes, if I am sharing, my "ghost" should also connect.
+    // But 'user-joined' event triggers this.
 
+    // 1. Main Identity Offer
+    await initiateOffer(remoteUserId, myIdRef.current, localStreamRef.current);
+
+    // 2. If I am screen sharing, my ghost identity should also offer?
+    // Not necessarily. The remote user receives 'user-joined' for the ghost and will offer TO the ghost.
+    // Wait, the standard flow here is:
+    // Existing users see 'user-joined' -> They offer TO the new user.
+    // So if 'remoteUserId' just joined, I initiate offer.
+
+    // If *I* just joined (or my screen ghost joined), OTHERS offer to ME.
+
+    // So here, 'remoteUserId' is the one who joined.
+    // I offer my main stream.
+    // If I have a screen share active (ghost), do I initiate an offer from the ghost?
+    // Generally yes, for full mesh.
+    if (screenStreamRef.current) { // Use ref to avoid stale closure
+      const screenId = `${myIdRef.current}-screen`;
+      await initiateOffer(remoteUserId, screenId, screenStreamRef.current);
+    }
+  };
+
+  const initiateOffer = async (remoteId: string, localIdentity: string, stream: MediaStream | null) => {
+    const pc = createPeerConnection(remoteId, localIdentity, stream);
     try {
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
       socketRef.current?.emit('video-offer', {
         sessionId: session?.id || session?._id,
-        from: myIdRef.current,
-        to: remoteUserId,
+        from: localIdentity,
+        to: remoteId,
         offer,
       });
     } catch (err) {
@@ -334,7 +417,7 @@ export const VideoConferencePage: React.FC = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       const now = Date.now();
-      setReactions(prev => prev.filter(reaction => now - reaction.timestamp < 3000));
+      setReactions(prev => prev.filter(reaction => now - reaction.timestamp < 15000));
     }, 1000);
     return () => clearInterval(interval);
   }, []);
@@ -356,7 +439,7 @@ export const VideoConferencePage: React.FC = () => {
 
       if (socketRef.current) {
         socketRef.current.emit('media-state-changed', {
-          sessionId: session?.id || session?._id,
+          sessionId: activeSessionId,
           userId: myIdRef.current,
           micOn: newState,
           cameraOn,
@@ -377,7 +460,7 @@ export const VideoConferencePage: React.FC = () => {
 
       if (socketRef.current) {
         socketRef.current.emit('media-state-changed', {
-          sessionId: session?.id || session?._id,
+          sessionId: activeSessionId,
           userId: myIdRef.current,
           micOn,
           cameraOn: newState,
@@ -392,7 +475,7 @@ export const VideoConferencePage: React.FC = () => {
       const newState = !prev;
       if (socketRef.current) {
         socketRef.current.emit('hand-raise-changed', {
-          sessionId: session?.id || session?._id,
+          sessionId: activeSessionId,
           userId: myIdRef.current,
           userName: faculty?.firstName + (faculty?.lastName ? ' ' + faculty.lastName : ''),
           handRaised: newState,
@@ -405,13 +488,14 @@ export const VideoConferencePage: React.FC = () => {
   const handleSendReaction = (emoji: string) => {
     if (socketRef.current) {
       socketRef.current.emit('send-reaction', {
-        sessionId: session?.id || session?._id,
+        sessionId: activeSessionId,
+        emoji,
         userId: myIdRef.current,
         userName: faculty?.firstName + (faculty?.lastName ? ' ' + faculty.lastName : ''),
-        emoji,
       });
     }
   };
+
 
   const handleLeave = async () => {
     if (localStream) {
@@ -421,25 +505,55 @@ export const VideoConferencePage: React.FC = () => {
     if (socketRef.current) {
       socketRef.current.disconnect();
     }
-    if (session?._id || session?.id) {
-      const sessionId = session._id || session.id || '';
-      try {
-        await attendanceLeave(sessionId);
-      } catch (err) {
-        console.error('Error calling attendanceLeave:', err);
-      }
-    }
-    window.location.href = '/';
+    // Attendance leave is handled by useEffect cleanup
+    navigate('/');
   };
 
   const handleShareScreen = async () => {
+    if (!localStream) {
+      alert("Screen sharing is not available in listener mode.");
+      return;
+    }
+
     try {
       const screenStream = await navigator.mediaDevices.getDisplayMedia({
         video: true,
-        audio: true
+        audio: true // Optional: capture system audio
       });
 
+      setScreenShareStream(screenStream);
+      screenStreamRef.current = screenStream;
+
+      const screenShareId = `${myIdRef.current}-screen`;
+      const screenShareName = `${faculty?.firstName || 'User'}'s Screen`;
+
+      // 1. Add Ghost Participant Locally
+      upsertParticipant({
+        id: screenShareId,
+        name: screenShareName,
+        videoOn: true,
+        audioOn: false,
+        handRaised: false,
+        isHost: false,
+        isPresenting: true, // Mark as presenting for UI styling
+        mediaStream: screenStream // Local stream for local preview
+      });
+
+      // 2. Signal Ghost Participant Entry
       if (socketRef.current) {
+        // Emit join-room for the ghost user
+        socketRef.current.emit('join-room', activeSessionId, {
+          userId: screenShareId,
+          username: screenShareName,
+          isHost: false
+        });
+
+        // Also emit screen-share-started event for legacy handling or status indicators
+        socketRef.current.emit('screen-share-started', {
+          sessionId: activeSessionId,
+          userId: myIdRef.current,
+          userName: faculty?.firstName + (faculty?.lastName ? ' ' + faculty.lastName : ''),
+        });
         socketRef.current.emit('screen-share-started', {
           sessionId: session?.id || session?._id,
           userId: myIdRef.current,
@@ -447,28 +561,38 @@ export const VideoConferencePage: React.FC = () => {
         });
       }
 
-      Object.values(peerConnections.current).forEach(pc => {
-        const sender = pc.getSenders().find(s => s.track?.kind === 'video');
-        if (sender) {
-          sender.replaceTrack(screenStream.getVideoTracks()[0]);
-        }
-      });
+      // 3. We do NOT replace tracks on the main connection.
+      // Instead, the new 'join-room' will trigger 'user-joined' on remote clients,
+      // provoking a NEW peer connection for the screen share ID.
+      // We need to handle the offer for this new ID correctly.
+
+      // Wait, 'user-joined' is broadcast to others. They will initiate an offer to 'screenShareId'.
+      // We will receive 'video-offer' directed to 'screenShareId'.
+      // createPeerConnectionAndOffer logic in THIS client handles OUTGOING offers.
+      // But here we act as a "new client" virtually.
+      // Remote clients see 'user-joined' (screenShareId) and send an offer to it.
+      // We receive that offer. Our socket is same. 
+      // 'video-offer' handler checks: if (data.to !== myIdRef.current) return;
+      // We must Update the check to allow data.to === screenShareId.
 
       screenStream.getVideoTracks()[0].onended = () => {
+        setScreenShareStream(null);
+        screenStreamRef.current = null;
+
+        // Remove local ghost participant
+        setParticipants(prev => prev.filter(p => p.id !== screenShareId));
+
         if (socketRef.current) {
+          // Emit leave-room for ghost user
+          socketRef.current.emit('leave-room', {
+            sessionId: activeSessionId,
+            userId: screenShareId
+          });
+
           socketRef.current.emit('screen-share-stopped', {
-            sessionId: session?.id || session?._id,
+            sessionId: activeSessionId,
             userId: myIdRef.current,
             userName: faculty?.firstName + (faculty?.lastName ? ' ' + faculty.lastName : ''),
-          });
-        }
-
-        if (localStream) {
-          Object.values(peerConnections.current).forEach(pc => {
-            const sender = pc.getSenders().find(s => s.track?.kind === 'video');
-            if (sender) {
-              sender.replaceTrack(localStream.getVideoTracks()[0]);
-            }
           });
         }
       };
@@ -481,7 +605,7 @@ export const VideoConferencePage: React.FC = () => {
   const handleSendMessage = (message: string) => {
     if (socketRef.current) {
       socketRef.current.emit('send-message', {
-        sessionId: session?.id || session?._id,
+        sessionId: activeSessionId,
         userId: myIdRef.current,
         userName: faculty?.firstName + (faculty?.lastName ? ' ' + faculty.lastName : ''),
         message,
@@ -501,7 +625,7 @@ export const VideoConferencePage: React.FC = () => {
     });
   }, [micOn, cameraOn, handRaised, faculty, isHost]);
 
-  const { attendanceJoin, attendanceLeave } = useSessionManagement();
+  const { attendanceJoin, attendanceLeave } = useSessionManagement({ loadSessions: false });
 
   useEffect(() => {
     if (!session?._id && !session?.id) return;
@@ -561,15 +685,19 @@ export const VideoConferencePage: React.FC = () => {
           </div>
         </div>
       )}
-      
-      <TopBar sessionName={session?.name || "Video Conference"} meetingTimer={meetingTimer} />
 
-      {!mediaReady && (
+      <TopBar
+        sessionName={session?.name || "Video Conference"}
+        meetingTimer={meetingTimer}
+        participantCount={participants.filter(p => !p.id.endsWith('-screen')).length}
+      />
+
+      {!mediaInitialized && (
         <div className="absolute top-20 left-4 bg-blue-500 text-white px-3 py-1 rounded-full text-sm z-50">
           Setting up media...
         </div>
       )}
-      {mediaReady && !isConnected && (
+      {mediaInitialized && !isConnected && (
         <div className="absolute top-20 left-4 bg-yellow-500 text-white px-3 py-1 rounded-full text-sm z-50">
           Connecting...
         </div>
@@ -580,24 +708,34 @@ export const VideoConferencePage: React.FC = () => {
         </div>
       )}
 
-      <div className="fixed inset-0 pointer-events-none z-40 flex flex-col gap-2 items-start px-8 pb-32 justify-end">
-        {reactions.map((reaction, index) => (
-          <div
-            key={reaction.id}
-            className="animate-reaction-flow"
-            style={{
-              animationDelay: `${index * 0.1}s`,
-              animationDuration: '3s',
-            }}
-          >
-            <div className="flex items-center space-x-2">
-              <div className="text-4xl animate-bounce">{reaction.emoji}</div>
-              <div className="text-white text-sm font-medium bg-black/50 px-2 py-1 rounded-full backdrop-blur-sm">
-                {reaction.sender}
+      <div className="fixed left-4 bottom-24 w-60 h-[60vh] pointer-events-none z-40 overflow-visible flex flex-col-reverse">
+        {reactions.map((reaction) => {
+          // We can't generate random values in render as it will jitter on re-renders unless we stable key or memo.
+          // Ideally, we store the 'left' offset in the reaction object itself when added.
+          // However, for now, let's just assume simple vertical stack is what we had, but we want a "stream".
+          // Getting distinct paths requires storing state. Let's rely on the CSS 'float' and just stagger them.
+
+          return (
+            <div
+              key={reaction.id}
+              className="absolute animate-reaction-flow"
+              style={{
+                left: `${reaction.offset ? reaction.offset % 50 : Math.random() * 50}px`, // Tight stream
+                bottom: '0',
+                fontSize: `${Math.random() * (2.2 - 1.8) + 1.8}rem`, // Consistent size range
+                animationDelay: `${Math.random() * 0.6}s`, // Short stagger for bursts
+                // Duration is handled by CSS class for consistency, or we can vary slightly:
+                animationDuration: `${4 + Math.random()}s`
+              }}
+            >
+              <div className="flex items-center space-x-2 animate-wiggle" style={{ animationDelay: `${Math.random()}s` }}>
+                <div className="drop-shadow-md filter">
+                  {reaction.emoji}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
 
@@ -607,6 +745,7 @@ export const VideoConferencePage: React.FC = () => {
           participants={participants}
           localParticipantId={myIdRef.current}
           localStream={localStream}
+          screenShareStream={screenShareStream}
         />
 
         {participants.length > 1 && (

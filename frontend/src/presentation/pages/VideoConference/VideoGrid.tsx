@@ -129,8 +129,8 @@ export const VideoGrid: React.FC<VideoGridProps> = ({
     visibleParticipants.forEach((participant, idx) => {
       const ref = videoRefs.current[idx];
       if (ref) {
-        if (participant.id === localParticipantId && localStream) {
-          if (ref.srcObject !== localStream) ref.srcObject = localStream;
+        if (participant.id === localParticipantId) {
+          if (ref.srcObject !== localStream) ref.srcObject = localStream || null;
         } else if (participant.mediaStream) {
           if (ref.srcObject !== participant.mediaStream) ref.srcObject = participant.mediaStream;
         }

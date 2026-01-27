@@ -56,11 +56,12 @@ export default function SessionManagement() {
 
   const handleViewSession = async (session: any) => {
     try {
-      if (!session.id) {
+      const sessionId = session._id || session.id;
+      if (!sessionId) {
         console.error('Session ID is undefined');
         return;
       }
-      const fullSession = await sessionService.getSessionById(session.id);
+      const fullSession = await sessionService.getSessionById(sessionId);
       setSelectedSession(fullSession as any);
       setShowDetailsModal(true);
     } catch (error) {
@@ -69,8 +70,9 @@ export default function SessionManagement() {
   };
 
   const handleEditSession = (session: any) => {
-    if (session.id) {
-      onEditIconClick(session.id);
+    const sessionId = session._id || session.id;
+    if (sessionId) {
+      onEditIconClick(sessionId);
     }
   };
 
@@ -80,14 +82,16 @@ export default function SessionManagement() {
   };
 
   const handleStartSessionClick = (session: any) => {
-    if (session.id) {
-      handleStartSession(session.id);
+    const sessionId = session._id || session.id;
+    if (sessionId) {
+      handleStartSession(sessionId);
     }
   };
 
   const handleEndSession = (session: any) => {
-    if (session.id) {
-      markSessionAsOver(session.id);
+    const sessionId = session._id || session.id;
+    if (sessionId) {
+      markSessionAsOver(sessionId);
     }
   };
 
@@ -317,7 +321,7 @@ export default function SessionManagement() {
       <WarningModal
         isOpen={showDeleteModal}
         onClose={() => { setShowDeleteModal(false); setSessionToDelete(null); }}
-        onConfirm={() => sessionToDelete && onDeleteSession(sessionToDelete.id)}
+        onConfirm={() => sessionToDelete && onDeleteSession(sessionToDelete._id || sessionToDelete.id)}
         title="Delete Session"
         message={`Are you sure you want to delete the session "${sessionToDelete?.title}"? This action cannot be undone.`}
         confirmText="Delete"

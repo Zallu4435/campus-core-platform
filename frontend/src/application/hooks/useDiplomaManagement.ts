@@ -142,7 +142,7 @@ export const useDiplomaManagement = () => {
   };
 
   return {
-    courses: coursesData?.courses || [],
+    courses: coursesData?.data || [],
     totalPages: coursesData?.totalPages || 0,
     page,
     setPage,

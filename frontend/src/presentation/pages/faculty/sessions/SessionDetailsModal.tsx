@@ -7,7 +7,7 @@ import { SessionDetailsModalProps } from '../../../../domain/types/faculty/atten
 
 const SessionDetailsModal: React.FC<SessionDetailsModalProps> = ({ session, onClose }) => {
   const [copied, setCopied] = useState(false);
-  
+
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     return () => {
@@ -122,8 +122,14 @@ const SessionDetailsModal: React.FC<SessionDetailsModalProps> = ({ session, onCl
                     alert('Cannot join session: Session is not live');
                     return;
                   }
-                  
-                  navigate(`/faculty/video-conference/${session.id || session._id}`, {
+
+                  const targetId = session.id || session._id;
+                  if (!targetId || targetId === 'undefined') {
+                    alert('Error: Session ID is missing or invalid.');
+                    return;
+                  }
+
+                  navigate(`/faculty/video-conference/${targetId}`, {
                     state: {
                       session,
                       faculty: user,

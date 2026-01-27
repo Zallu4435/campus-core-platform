@@ -19,7 +19,8 @@ export class UserDiplomaMapper {
             videoCount,
             completedVideoCount,
             createdAt: doc.createdAt || new Date(),
-            updatedAt: doc.updatedAt || new Date()
+            updatedAt: doc.updatedAt || new Date(),
+            thumbnail: doc.thumbnail
         };
     }
 
@@ -51,7 +52,8 @@ export class UserDiplomaMapper {
             department: doc.category || 'General',
             chapters,
             createdAt: doc.createdAt || new Date(),
-            updatedAt: doc.updatedAt || new Date()
+            updatedAt: doc.updatedAt || new Date(),
+            thumbnail: doc.thumbnail
         };
     }
 }

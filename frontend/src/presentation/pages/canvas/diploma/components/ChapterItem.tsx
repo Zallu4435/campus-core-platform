@@ -6,6 +6,7 @@ import { ChapterItemProps, ChapterType } from '../../../../../domain/types/canva
 export const ChapterItem: React.FC<ChapterItemProps> = ({
   chapter,
   courseId,
+  styles,
   isFirst,
   isPrevCompleted,
   isCompleted,
@@ -17,82 +18,77 @@ export const ChapterItem: React.FC<ChapterItemProps> = ({
   const TypeIcon = getChapterTypeIcon(chapter.type as ChapterType);
 
   return (
-    <div 
-      className={`group relative bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 transition-all duration-300 hover:shadow-lg hover:border-gray-300 dark:hover:border-gray-600 ${
-        isAccessible ? 'cursor-pointer hover:scale-[1.02]' : 'cursor-not-allowed opacity-60'
-      } w-full`}
+    <div
+      className={`group relative flex items-center p-4 sm:p-6 mb-4 rounded-3xl border transition-all duration-300 ${isAccessible
+        ? `${styles.card.background} ${styles.border} hover:shadow-xl hover:-translate-y-1 cursor-pointer`
+        : 'bg-gray-100/50 dark:bg-gray-800/50 border-transparent opacity-60 cursor-not-allowed shadow-none'
+        }`}
       onClick={() => isAccessible && onViewChapter(chapter)}
-      aria-label={`View ${chapter.title}`}
     >
-      <div className="p-5">
-        <div className="flex items-start gap-4">
-          <div className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center ${
-            isCompleted 
-              ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' 
-              : isAccessible 
-                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
-          }`}>
-            {isCompleted ? (
-              <FiCheckCircle className="w-6 h-6" />
-            ) : !isAccessible ? (
-              <FiLock className="w-6 h-6" />
-            ) : (
-              <TypeIcon className="w-6 h-6" />
-            )}
-          </div>
+      <div className={`flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center transition-all duration-500 mr-4 sm:mr-6 ${isCompleted
+        ? 'bg-emerald-500/10 text-emerald-500'
+        : isAccessible
+          ? `${styles.accent} bg-opacity-10 text-blue-500`
+          : 'bg-gray-200 dark:bg-gray-700 text-gray-400'
+        }`}>
+        {isCompleted ? (
+          <FiCheckCircle className="w-6 h-6 sm:w-8 sm:h-8" />
+        ) : !isAccessible ? (
+          <FiLock className="w-6 h-6 sm:w-8 sm:h-8" />
+        ) : (
+          <TypeIcon className="w-6 h-6 sm:w-8 sm:h-8 group-hover:scale-110 transition-transform" />
+        )}
+      </div>
 
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-3 mb-2">
-              <h4 className={`font-semibold text-lg leading-tight ${
-                isAccessible 
-                  ? 'text-gray-900 dark:text-gray-100' 
-                  : 'text-gray-500 dark:text-gray-400'
-              }`}>
-                {chapter.title}
-              </h4>
-              
-              {isCompleted && (
-                <span className="flex-shrink-0 px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs font-medium rounded-full">
-                  Completed
-                </span>
-              )}
-            </div>
-            
-            <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed mb-3 line-clamp-2">
-              {chapter.description}
-            </p>
-            
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
-                {chapter.type && (
-                  <div className="flex items-center gap-1.5">
-                    <FiPlay className="w-4 h-4" />
-                    <span className="capitalize">{chapter.type}</span>
-                  </div>
-                )}
-              </div>
-              
-              {isAccessible && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onBookmark(courseId, chapter._id || chapter.id);
-                  }}
-                  className={`p-2 rounded-lg transition-all duration-200 ${
-                    isBookmarked 
-                      ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-gray-700 dark:hover:text-gray-300'
-                  }`}
-                  aria-label={isBookmarked ? 'Remove bookmark' : 'Add bookmark'}
-                >
-                  <FiBookmark className={`w-4 h-4 ${isBookmarked ? 'fill-current' : ''}`} />
-                </button>
-              )}
-            </div>
+      <div className="flex-grow min-w-0">
+        <div className="flex items-center justify-between gap-3 mb-1">
+          <h4 className={`text-sm sm:text-base font-bold truncate ${isAccessible ? styles.textPrimary : 'text-gray-400'
+            }`}>
+            {chapter.title}
+          </h4>
+          {isCompleted && (
+            <span className="hidden sm:inline-block px-3 py-1 bg-emerald-500/10 text-emerald-600 text-[9px] font-black uppercase tracking-widest rounded-full border border-emerald-500/20">
+              Full Mastery
+            </span>
+          )}
+        </div>
+
+        <p className={`text-[11px] sm:text-xs line-clamp-1 opacity-60 font-medium ${styles.textSecondary}`}>
+          {chapter.description}
+        </p>
+
+        <div className="flex items-center gap-4 mt-3">
+          <div className="flex items-center gap-1.5">
+            <FiPlay className={`w-3.5 h-3.5 ${isAccessible ? 'text-blue-500' : 'text-gray-400'}`} />
+            <span className={`text-[10px] sm:text-xs font-bold uppercase tracking-wider ${isAccessible ? styles.textSecondary : 'text-gray-400'}`}>
+              {chapter.type || 'Video'} Lesson
+            </span>
           </div>
+          {chapter.duration && (
+            <div className={`h-1 w-1 rounded-full bg-gray-400 opacity-30`} />
+          )}
+          {chapter.duration && (
+            <span className={`text-[10px] sm:text-xs font-bold opacity-60 ${styles.textSecondary}`}>
+              {String(chapter.duration)}
+            </span>
+          )}
         </div>
       </div>
+
+      {isAccessible && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onBookmark(courseId, chapter.id || chapter._id || '');
+          }}
+          className={`ml-4 p-3 rounded-2xl transition-all duration-300 transform hover:scale-110 active:scale-90 ${isBookmarked
+            ? 'bg-rose-500/10 text-rose-500 shadow-sm'
+            : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400'
+            }`}
+        >
+          <FiBookmark className={`w-5 h-5 ${isBookmarked ? 'fill-current' : ''}`} />
+        </button>
+      )}
     </div>
   );
-}; 
+};

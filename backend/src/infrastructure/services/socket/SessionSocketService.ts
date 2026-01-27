@@ -180,6 +180,15 @@ export const setupSessionSocketHandlers = (io: Server) => {
       });
     });
 
+    socket.on('leave-room', (data) => {
+      const { sessionId, userId } = data;
+      removeParticipantFromSession(sessionId, userId);
+      socket.to(sessionId).emit('user-left', { userId });
+
+      // If the leaving user was the main socket user, we might want to clean up references,
+      // but if it's a ghost user (screen share), we just remove them from the list.
+    });
+
     socket.on('disconnect', (reason: string) => {
       if (currentUserId && currentSessionId) {
         removeParticipantFromSession(currentSessionId, currentUserId);

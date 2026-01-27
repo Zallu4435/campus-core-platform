@@ -24,7 +24,7 @@ const authSlice = createSlice({
     setAuth: (
       state,
       action: PayloadAction<{
-        user: { firstName: string; lastName: string; email: string; id?: string; profilePicture?: string };
+        user: { firstName: string; lastName: string; email: string; id?: string; profilePicture?: string; role: string };
         collection: 'register' | 'admin' | 'user' | 'faculty';
       }>
     ) => {
