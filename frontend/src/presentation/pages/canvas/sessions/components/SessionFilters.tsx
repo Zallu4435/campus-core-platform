@@ -29,7 +29,7 @@ export const SessionFilters: React.FC<Omit<SessionFiltersProps, 'filters' | 'onF
               placeholder="Search by title, instructor, or tag..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              className={`block w-full pl-12 pr-4 py-3.5 ${styles.card.background} backdrop-blur-xl border ${styles.border} ${styles.textPrimary} rounded-2xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 placeholder:text-slate-500 sm:text-sm shadow-xl`}
+              className={`block w-full pl-12 pr-4 py-3.5 ${styles.card.background} border ${styles.border} ${styles.textPrimary} rounded-2xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 placeholder:text-slate-500 sm:text-sm shadow-sm`}
             />
           </div>
 
@@ -38,7 +38,7 @@ export const SessionFilters: React.FC<Omit<SessionFiltersProps, 'filters' | 'onF
               <select
                 value={filters.status}
                 onChange={(e) => onFilterChange({ ...filters, status: e.target.value as any })}
-                className={`w-full md:w-40 px-4 py-3.5 ${styles.card.background} backdrop-blur-xl border ${styles.border} ${styles.textPrimary} rounded-2xl focus:ring-2 focus:ring-blue-500/50 transition-all duration-300 sm:text-sm shadow-xl cursor-pointer appearance-none`}
+                className={`w-full md:w-40 px-4 py-3.5 ${styles.card.background} border ${styles.border} ${styles.textPrimary} rounded-2xl focus:ring-2 focus:ring-blue-500/50 transition-all duration-300 sm:text-sm shadow-sm cursor-pointer appearance-none`}
               >
                 <option value="all">All Status</option>
                 <option value="live">🔴 Live</option>
@@ -51,7 +51,7 @@ export const SessionFilters: React.FC<Omit<SessionFiltersProps, 'filters' | 'onF
               <select
                 value={filters.instructor}
                 onChange={(e) => onFilterChange({ ...filters, instructor: e.target.value })}
-                className={`w-full md:w-48 px-4 py-3.5 ${styles.card.background} backdrop-blur-xl border ${styles.border} ${styles.textPrimary} rounded-2xl focus:ring-2 focus:ring-blue-500/50 transition-all duration-300 sm:text-sm shadow-xl cursor-pointer appearance-none`}
+                className={`w-full md:w-48 px-4 py-3.5 ${styles.card.background} border ${styles.border} ${styles.textPrimary} rounded-2xl focus:ring-2 focus:ring-blue-500/50 transition-all duration-300 sm:text-sm shadow-sm cursor-pointer appearance-none`}
               >
                 <option value="all">All Instructors</option>
                 {uniqueInstructors.map(instructor => (
@@ -62,7 +62,7 @@ export const SessionFilters: React.FC<Omit<SessionFiltersProps, 'filters' | 'onF
 
             <button
               onClick={onClearFilters}
-              className={`p-3.5 ${styles.card.background} backdrop-blur-xl border ${styles.border} ${styles.textSecondary} hover:text-rose-500 hover:bg-rose-500/10 rounded-2xl transition-all duration-300 shadow-xl group`}
+              className={`p-3.5 ${styles.card.background} border ${styles.border} ${styles.textSecondary} hover:text-rose-500 hover:bg-rose-500/10 rounded-2xl transition-all duration-300 shadow-sm group`}
               title="Clear all filters"
             >
               <FaFilter className={`w-5 h-5 group-hover:rotate-180 transition-transform duration-500`} />

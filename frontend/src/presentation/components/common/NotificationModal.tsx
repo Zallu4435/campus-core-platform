@@ -181,14 +181,14 @@ export default function NotificationModal({ isOpen, onClose }: NotificationModal
                         <button
                             onClick={() => setActiveTab('unread')}
                             className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 flex-1 ${activeTab === 'unread'
-                                    ? `${styles.status.primary} text-white shadow-lg`
-                                    : `${isDarkMode ? 'text-slate-300' : 'text-slate-700'} ${isDarkMode ? 'hover:bg-white/10' : 'hover:bg-slate-200'}`
+                                ? `${styles.status.primary} text-white shadow-lg`
+                                : `${isDarkMode ? 'text-slate-300' : 'text-slate-700'} ${isDarkMode ? 'hover:bg-white/10' : 'hover:bg-slate-200'}`
                                 }`}
                         >
                             Unread {unreadCount > 0 && (
                                 <span className={`ml-2 px-2.5 py-1 text-xs rounded-full font-semibold ${activeTab === 'unread'
-                                        ? (isDarkMode ? 'bg-white/20 text-white' : 'bg-white text-slate-700')
-                                        : (isDarkMode ? 'bg-white/10 text-white' : 'bg-slate-200 text-slate-700')
+                                    ? (isDarkMode ? 'bg-white/20 text-white' : 'bg-white text-slate-700')
+                                    : (isDarkMode ? 'bg-white/10 text-white' : 'bg-slate-200 text-slate-700')
                                     }`}>
                                     {unreadCount}
                                 </span>
@@ -197,8 +197,8 @@ export default function NotificationModal({ isOpen, onClose }: NotificationModal
                         <button
                             onClick={() => setActiveTab('all')}
                             className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 flex-1 ${activeTab === 'all'
-                                    ? `${styles.status.primary} text-white shadow-lg`
-                                    : `${isDarkMode ? 'text-slate-300' : 'text-slate-700'} ${isDarkMode ? 'hover:bg-white/10' : 'hover:bg-slate-200'}`
+                                ? `${styles.status.primary} text-white shadow-lg`
+                                : `${isDarkMode ? 'text-slate-300' : 'text-slate-700'} ${isDarkMode ? 'hover:bg-white/10' : 'hover:bg-slate-200'}`
                                 }`}
                         >
                             All
@@ -232,15 +232,15 @@ export default function NotificationModal({ isOpen, onClose }: NotificationModal
                                 <div
                                     key={notification._id}
                                     className={`px-6 py-4 ${isDarkMode ? 'hover:bg-white/10' : 'hover:bg-slate-100'} transition-all duration-200 border-l-4 group ${!notification.isRead
-                                            ? `${styles.status.primary} border-opacity-100 ${isDarkMode ? 'bg-white/5' : 'bg-slate-50'}`
-                                            : 'border-transparent'
+                                        ? `${styles.status.primary} border-opacity-100 ${isDarkMode ? 'bg-white/5' : 'bg-slate-50'}`
+                                        : 'border-transparent'
                                         } ${index !== filteredNotifications.length - 1 ? `border-b ${styles.borderSecondary}` : ''}`}
                                 >
                                     <div className="flex items-start space-x-4">
                                         {/* Notification Icon */}
                                         <div className={`flex-shrink-0 w-12 h-12 rounded-xl ${!notification.isRead
-                                                ? `${styles.status.primary} bg-opacity-20`
-                                                : `${styles.textSecondary} bg-opacity-10`
+                                            ? `${styles.status.primary} bg-opacity-20`
+                                            : `${styles.textSecondary} bg-opacity-10`
                                             } flex items-center justify-center mt-1`}>
                                             <div className={!notification.isRead ? styles.status.primary : styles.textSecondary}>
                                                 {getNotificationIcon(notification.type || 'default')}

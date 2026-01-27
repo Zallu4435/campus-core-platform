@@ -43,6 +43,7 @@ const NotificationManagement: React.FC = () => {
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
   const [showWarningModal, setShowWarningModal] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+  const [isSending, setIsSending] = useState(false);
 
   React.useEffect(() => {
     const timer = setTimeout(() => {
@@ -71,24 +72,18 @@ const NotificationManagement: React.FC = () => {
       setShowNotificationDetailsModal(true);
     } catch (error) {
       console.error('Error fetching notification details:', error);
-      toast.error('Failed to fetch notification details');
     }
   };
 
   const handleSaveNotification = async (data: Omit<Notification, '_id' | 'createdAt' | 'status'>) => {
     try {
+      setIsSending(true);
       await createNotification(data);
       setShowAddNotificationModal(false);
     } catch (error: unknown) {
-      let message = 'Failed to send notification';
-      if (error && typeof error === 'object') {
-        if ('response' in error && error.response && typeof error.response === 'object' && 'data' in error.response && error.response.data && typeof error.response.data === 'object' && 'message' in error.response.data) {
-          message = (error.response.data as { message?: string }).message || message;
-        } else if ('message' in error && typeof error.message === 'string') {
-          message = error.message;
-        }
-      }
-      toast.error(message);
+      console.error('Failed to send notification:', error);
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -104,11 +99,7 @@ const NotificationManagement: React.FC = () => {
         setShowWarningModal(false);
         setItemToDelete(null);
       } catch (error: unknown) {
-        let message = 'Failed to delete notification';
-        if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
-          message = error.message;
-        }
-        toast.error(message);
+        console.error('Failed to delete notification:', error);
       }
     }
   };
@@ -264,6 +255,7 @@ const NotificationManagement: React.FC = () => {
         onClose={() => setShowAddNotificationModal(false)}
         onSubmit={handleSaveNotification}
         recipientTypes={RECIPIENT_TYPES.filter((type) => type !== 'All')}
+        isLoading={isSending}
       />
 
       <NotificationDetailsModal

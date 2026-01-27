@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Toaster, toast } from 'react-hot-toast';
 import AssignmentList from './AssignmentList';
 import Submissions from './Submissions';
 import Analytics from './Analytics';
@@ -208,25 +209,19 @@ export default function AssignmentManagement() {
             </div>
 
             {showCreateModal && (
-                <div className="fixed inset-0 z-[9999] animate-fadeIn">
-                    <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
-                    <div className="relative z-10 h-full flex items-center justify-center p-4">
-                        <div className="transform animate-scaleIn">
-                            <CreateAssignmentModal
-                                newAssignment={newAssignment}
-                                setNewAssignment={setNewAssignment}
-                                setShowCreateModal={setShowCreateModal}
-                                onSubmit={handleCreateAssignment}
-                                isLoading={isCreating}
-                                selectedAssignment={selectedAssignment}
-                                onUpdate={handleUpdateAssignment}
-                                setActiveTab={setActiveTab}
-                                setSelectedAssignment={setSelectedAssignment}
-                            />
-                        </div>
-                    </div>
-                </div>
+                <CreateAssignmentModal
+                    newAssignment={newAssignment}
+                    setNewAssignment={setNewAssignment}
+                    setShowCreateModal={setShowCreateModal}
+                    onSubmit={handleCreateAssignment}
+                    isLoading={isCreating}
+                    selectedAssignment={selectedAssignment}
+                    onUpdate={handleUpdateAssignment}
+                    setActiveTab={setActiveTab}
+                    setSelectedAssignment={setSelectedAssignment}
+                />
             )}
+            <Toaster position="top-center" reverseOrder={false} />
         </div>
     );
 }

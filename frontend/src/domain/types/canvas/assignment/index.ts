@@ -18,8 +18,8 @@ export interface Submission {
 }
 
 export interface Assignment {
-    id?: string;
-    _id: string;
+    id: string;
+    _id?: string;
     title: string;
     subject: string;
     dueDate: string;
@@ -63,6 +63,7 @@ export interface UploadModalProps {
     assignment: Assignment;
     styles: ThemeStyles;
     selectedFile: File | null;
+    isSubmitting?: boolean;
     onClose: () => void;
     onFileSelect: (file: File) => void;
     onSubmit: () => void;

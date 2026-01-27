@@ -14,7 +14,6 @@ import {
 } from "../dtos/NotificationResponseDTOs";
 import { INotificationRepository } from "../repositories/INotificationRepository";
 import { NotificationFilter } from "../repositories/NotificationFilter";
-import { INotificationService } from "../services/INotificationService";
 import { NotificationStatus, NotificationRecipientType } from "../../../domain/notifications/entities/NotificationTypes";
 import { Notification } from "../../../domain/notifications/entities/Notification";
 import {
@@ -32,8 +31,7 @@ import {
 
 export class CreateNotificationUseCase implements ICreateNotificationUseCase {
     constructor(
-        private _notificationRepository: INotificationRepository,
-        private _notificationService: INotificationService
+        private _notificationRepository: INotificationRepository
     ) { }
 
     async execute(params: CreateNotificationRequestDTO): Promise<CreateNotificationResponseDTO> {
@@ -44,26 +42,14 @@ export class CreateNotificationUseCase implements ICreateNotificationUseCase {
             recipientId: params.recipientId,
             recipientName: params.recipientName,
             createdBy: params.createdBy,
-            status: NotificationStatus.PENDING,
+            status: NotificationStatus.SENT,
         });
 
         const created = await this._notificationRepository.create(notification);
         const notificationId = created.id!;
 
-        try {
-            const payload = {
-                title: params.title,
-                message: params.message,
-                data: { notificationId }
-            };
-
-            await this._notificationService.sendByRecipientType(params.recipientType, params.recipientId, payload);
-
-            await this._notificationRepository.update(notificationId, { status: NotificationStatus.SENT });
-        } catch (error) {
-            await this._notificationRepository.update(notificationId, { status: NotificationStatus.FAILED });
-            throw error;
-        }
+        // Notification service call removed as Firebase is removed.
+        // Status is set to SENT immediately as it is now just a DB record.
 
         return { notificationId };
     }
@@ -80,10 +66,15 @@ export class GetAllNotificationsUseCase implements IGetAllNotificationsUseCase {
         if (userId && collection !== "admin") {
             const validRecipientTypes = [
                 NotificationRecipientType.ALL,
-                NotificationRecipientType.ALL_STUDENTS,
-                NotificationRecipientType.ALL_FACULTY,
                 NotificationRecipientType.ALL_STUDENTS_AND_FACULTY
             ];
+
+            if (collection === "user") {
+                validRecipientTypes.push(NotificationRecipientType.ALL_STUDENTS);
+            } else if (collection === "faculty") {
+                validRecipientTypes.push(NotificationRecipientType.ALL_FACULTY);
+            }
+
             filter.$or = [
                 { recipientId: userId },
                 { recipientType: { $in: validRecipientTypes } },

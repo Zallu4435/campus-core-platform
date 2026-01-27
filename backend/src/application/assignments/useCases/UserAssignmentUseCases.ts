@@ -36,9 +36,10 @@ export class GetUserAssignmentsUseCase implements IGetUserAssignmentsUseCase {
       params.sortBy
     );
 
-    const mappedAssignments = assignments.map(assignment => {
-      const dto = AssignmentMapper.toDTO(assignment);
-      return { ...dto, submission: null };
+    const mappedAssignments = assignments.map(({ assignment, submission }) => {
+      const assignmentDTO = AssignmentMapper.toDTO(assignment);
+      const submissionDTO = submission ? AssignmentMapper.submissionToDTO(submission) : null;
+      return { ...assignmentDTO, submission: submissionDTO };
     });
 
     return {

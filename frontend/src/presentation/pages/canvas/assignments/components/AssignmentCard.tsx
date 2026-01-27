@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { toast } from 'react-hot-toast';
 import { FiCalendar, FiClock, FiUpload, FiDownload, FiEye, FiFile, FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
 import { getDaysLeft, formatDueDate, getStatusColor } from '../utils/assignmentUtils';
 import { GradeModal } from './GradeModal';
@@ -44,6 +45,7 @@ export const AssignmentCard: React.FC<AssignmentCardProps> = ({
       }
 
       const blob = await userAssignmentService.downloadReferenceFile(fileUrl, actualFileName);
+      toast.success('Download started', { position: 'top-center' });
 
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -59,6 +61,7 @@ export const AssignmentCard: React.FC<AssignmentCardProps> = ({
 
     } catch (error) {
       console.error('Error downloading assignment file:', error);
+      toast.error('Direct download failed, trying fallback...', { position: 'top-center' });
       try {
         const link = document.createElement('a');
         link.href = fileUrl;
@@ -69,6 +72,7 @@ export const AssignmentCard: React.FC<AssignmentCardProps> = ({
         document.body.removeChild(link);
       } catch (fallbackError) {
         console.error('Fallback download also failed:', fallbackError);
+        toast.error('Download failed. Opening in new tab.', { position: 'top-center' });
         window.open(fileUrl, '_blank');
       }
     }
@@ -77,14 +81,13 @@ export const AssignmentCard: React.FC<AssignmentCardProps> = ({
   return (
     <>
       <div
-        className={`${styles.card.background} p-4 sm:p-6 rounded-lg sm:rounded-2xl shadow-lg ${styles.border} ${isOverdue ? `border-l-4 ${styles.status.error}` : ''
-          } hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer`}
+        className={`${styles.card.background} p-4 sm:p-5 rounded-xl shadow-sm border ${styles.border} ${isOverdue ? 'border-l-4 ' + styles.status.error : ''} hover:shadow-md transition-all duration-200 cursor-pointer`}
       >
         <div className="flex flex-col gap-3 sm:gap-4">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
             <div className="flex-1">
               <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
-                <h3 className={`text-base sm:text-xl font-bold ${styles.textPrimary}`}> 
+                <h3 className={`text-base sm:text-xl font-bold ${styles.textPrimary}`}>
                   {assignment.title}
                 </h3>
                 {assignment.submission && (
@@ -155,7 +158,7 @@ export const AssignmentCard: React.FC<AssignmentCardProps> = ({
 
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-3 sm:pt-4 border-t border-gray-100 gap-2 sm:gap-0">
             <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-              <span className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold ${getStatusColor(actualStatus, styles)}`}>
+              <span className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${getStatusColor(actualStatus, styles)}`}>
                 {actualStatus.charAt(0).toUpperCase() + actualStatus.slice(1)}
               </span>
               {assignment.submission && (
@@ -172,7 +175,7 @@ export const AssignmentCard: React.FC<AssignmentCardProps> = ({
                     e.stopPropagation();
                     onUpload(assignment);
                   }}
-                  className={`px-4 sm:px-6 py-2 sm:py-3 ${styles.button.primary} rounded-lg sm:rounded-xl flex items-center gap-1.5 sm:gap-2 text-xs sm:text-base`}
+                  className={`px-4 py-2 ${styles.button.primary} rounded-lg flex items-center gap-2 text-sm font-medium transition-all`}
                 >
                   <FiUpload className="h-4 w-4" />
                   Submit
@@ -195,7 +198,7 @@ export const AssignmentCard: React.FC<AssignmentCardProps> = ({
                     e.stopPropagation();
                     onUpload(assignment);
                   }}
-                  className={`px-4 sm:px-6 py-2 sm:py-3 ${styles.button.primary} rounded-lg sm:rounded-xl flex items-center gap-1.5 sm:gap-2 text-xs sm:text-base`}
+                  className={`px-4 py-2 ${styles.button.primary} rounded-lg flex items-center gap-2 text-sm font-medium transition-all`}
                 >
                   <FiUpload className="h-4 w-4" />
                   Resubmit
@@ -207,7 +210,7 @@ export const AssignmentCard: React.FC<AssignmentCardProps> = ({
                     e.stopPropagation();
                     setShowGradeModal(true);
                   }}
-                  className={`px-4 sm:px-6 py-2 sm:py-2 ${styles.button.primary} rounded-lg sm:rounded-xl flex items-center gap-1.5 sm:gap-2 text-xs sm:text-base`}
+                  className={`px-4 py-2 ${styles.button.primary} rounded-lg flex items-center gap-2 text-sm font-medium transition-all`}
                 >
                   <FiEye className="h-4 w-4" />
                   View Grade

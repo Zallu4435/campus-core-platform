@@ -6,14 +6,15 @@ import { AssignmentResponseDTO, SubmissionResponseDTO } from "../../../../applic
 
 export class AssignmentMapper {
     static toDomain(doc: IAssignmentSource): Assignment {
+        const id = doc._id ? doc._id.toString() : (doc.id ? doc.id.toString() : '');
         return Assignment.create({
-            id: doc._id.toString(),
+            id,
             title: doc.title,
             subject: doc.subject,
             description: doc.description,
             maxMarks: doc.maxMarks,
             dueDate: doc.dueDate instanceof Date ? doc.dueDate : new Date(doc.dueDate),
-            files: doc.files || [],
+            files: (doc.files || []).map(f => ({ ...f, _id: f._id ? f._id.toString() : (f.id ? f.id.toString() : '') })),
             status: doc.status as AssignmentStatus,
             createdAt: doc.createdAt instanceof Date ? doc.createdAt : new Date(doc.createdAt || Date.now()),
             updatedAt: doc.updatedAt instanceof Date ? doc.updatedAt : new Date(doc.updatedAt || Date.now()),
@@ -54,15 +55,16 @@ export class AssignmentMapper {
     }
 
     static submissionToDomain(doc: ISubmissionSource): Submission {
+        const id = doc._id ? doc._id.toString() : (doc.id ? doc.id.toString() : '');
         return Submission.create({
-            id: doc._id.toString(),
+            id,
             assignmentId: doc.assignmentId.toString(),
             studentId: doc.studentId.toString(),
             studentName: doc.studentName,
             submittedDate: doc.submittedDate instanceof Date ? doc.submittedDate : new Date(doc.submittedDate),
             status: doc.status as SubmissionStatus,
             isLate: doc.isLate,
-            files: doc.files || [],
+            files: (doc.files || []).map(f => ({ ...f, _id: f._id ? f._id.toString() : (f.id ? f.id.toString() : '') })),
             marks: doc.marks,
             feedback: doc.feedback,
             reviewedAt: doc.reviewedAt ? (doc.reviewedAt instanceof Date ? doc.reviewedAt : new Date(doc.reviewedAt)) : undefined,

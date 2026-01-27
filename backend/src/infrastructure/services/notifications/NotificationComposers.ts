@@ -18,17 +18,13 @@ import {
 import { NotificationRepository } from '../../repositories/notifications/NotificationRepository';
 import { NotificationController } from '../../../presentation/http/notifications/NotificationController';
 import { INotificationController } from '../../../presentation/http/IHttp';
-import { IAuthRepository } from '../../../application/auth/repositories/IAuthRepository';
-import { AuthRepository } from '../../repositories/auth/AuthRepository';
-import { INotificationService } from '../../../application/notifications/services/INotificationService';
-import { FirebaseNotificationService } from '../../services/notifications/FirebaseNotificationService';
 
 export function getNotificationComposer(): INotificationController {
-  const authRepository: IAuthRepository = new AuthRepository();
-  const notificationService: INotificationService = new FirebaseNotificationService(authRepository);
+  // const authRepository: IAuthRepository = new AuthRepository(); // Unused
+  // const notificationService: INotificationService = new FirebaseNotificationService(authRepository); // Removed
   const repository: INotificationRepository = new NotificationRepository();
 
-  const createNotificationUseCase: ICreateNotificationUseCase = new CreateNotificationUseCase(repository, notificationService);
+  const createNotificationUseCase: ICreateNotificationUseCase = new CreateNotificationUseCase(repository);
   const getAllNotificationsUseCase: IGetAllNotificationsUseCase = new GetAllNotificationsUseCase(repository);
   const getIndividualNotificationUseCase: IGetIndividualNotificationUseCase = new GetIndividualNotificationUseCase(repository);
   const deleteNotificationUseCase: IDeleteNotificationUseCase = new DeleteNotificationUseCase(repository);

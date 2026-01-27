@@ -25,7 +25,6 @@ const userSchema = new Schema<IUser>({
     trim: true,
   },
   passwordChangedAt: { type: Date },
-  fcmTokens: [{ type: String }],
   blocked: { type: Boolean, default: false },
 });
 

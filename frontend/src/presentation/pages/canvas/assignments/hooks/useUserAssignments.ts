@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { userAssignmentService } from '../services/userAssignmentService';
 import { SelectedFile, SortOption, FilterStatus } from '../../../../../domain/types/canvas/assignment';
@@ -12,9 +12,14 @@ export const useUserAssignments = () => {
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
   const [sortBy, setSortBy] = useState<SortOption>('dueDate');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 3;
+  const itemsPerPage = 6;
 
-  const { data: assignments, isLoading: isLoadingAssignments } = useQuery({
+  // Reset to first page when search or filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterStatus, sortBy]);
+
+  const { data: result, isLoading: isLoadingAssignments } = useQuery({
     queryKey: ['userAssignments', { search: searchTerm, status: filterStatus, sortBy, page: currentPage, limit: itemsPerPage }],
     queryFn: async () => {
       const result = await userAssignmentService.getAssignments({
@@ -24,7 +29,7 @@ export const useUserAssignments = () => {
         page: currentPage,
         limit: itemsPerPage,
       });
-      return result.assignments;
+      return result;
     }
   });
 
@@ -98,7 +103,8 @@ export const useUserAssignments = () => {
   }, []);
 
   return {
-    assignments: assignments || [],
+    assignments: result?.data || [],
+    total: result?.total || 0,
     selectedFile,
     error,
     isLoading: isLoadingAssignments || submitAssignmentMutation.isPending,

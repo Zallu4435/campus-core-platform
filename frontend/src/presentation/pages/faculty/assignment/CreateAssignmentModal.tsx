@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { FaUpload, FaTimes, FaFile } from 'react-icons/fa';
+import { createPortal } from 'react-dom';
+import { FaUpload, FaTimes, FaFile, FaExclamationCircle } from 'react-icons/fa';
 import { FiEye } from 'react-icons/fi';
+import { toast } from 'react-hot-toast';
 import httpClient from '../../../../frameworks/api/httpClient';
 import { CreateAssignmentModalProps } from '../../../../domain/types/faculty/assignment';
+import { assignmentSchema } from '../../../../domain/validation/management/assignmentSchema';
+
 
 export default function CreateAssignmentModal({
   newAssignment,
@@ -17,7 +21,15 @@ export default function CreateAssignmentModal({
 }: CreateAssignmentModalProps) {
 
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [existingFiles, setExistingFiles] = useState<Array<{ fileName: string; fileUrl: string; fileSize: number; _id: string }>>([]);
+
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
 
   useEffect(() => {
     if (selectedAssignment) {
@@ -46,7 +58,7 @@ export default function CreateAssignmentModal({
               fileName: file.fileName,
               fileUrl: file.fileUrl,
               fileSize: file.fileSize,
-              _id: (file as any)._id || (file as any).id || `existing-${idx}`
+              _id: (file as { _id?: string; id?: string })._id || (file as { _id?: string; id?: string }).id || `existing-${idx}`
             };
           }
         }));
@@ -79,23 +91,20 @@ export default function CreateAssignmentModal({
   };
 
   const handleSubmit = async () => {
-    if (!newAssignment.title.trim()) {
-      setError('Assignment title is required');
+    setFieldErrors({});
+    setError('');
+
+    const validation = assignmentSchema.safeParse(newAssignment);
+    if (!validation.success) {
+      const formattedErrors: Record<string, string> = {};
+      validation.error.issues.forEach((issue) => {
+        formattedErrors[issue.path[0]] = issue.message;
+      });
+      setFieldErrors(formattedErrors);
       return;
     }
-    if (!newAssignment.subject) {
-      setError('Subject is required');
-      return;
-    }
-    if (!newAssignment.dueDate) {
-      setError('Due date is required');
-      return;
-    }
+
     const maxMarksNum = parseFloat(newAssignment.maxMarks);
-    if (isNaN(maxMarksNum) || maxMarksNum <= 0) {
-      setError('Please enter a valid maximum marks greater than 0');
-      return;
-    }
 
     if (selectedAssignment && onUpdate) {
       const updatePayload = {
@@ -108,24 +117,32 @@ export default function CreateAssignmentModal({
       };
       const result = await onUpdate(selectedAssignment._id, updatePayload);
       if (result.success) {
+        toast.success('Assignment updated successfully');
         setShowCreateModal(false);
         setNewAssignment({ title: '', subject: '', dueDate: '', maxMarks: '', description: '', files: [] });
+        setFieldErrors({});
         setError('');
         setActiveTab('all-assignments');
         setSelectedAssignment(null);
       } else {
-        setError(result.error || 'Failed to update assignment');
+        const errorMsg = result.error || 'Failed to update assignment';
+        setError(errorMsg);
+        toast.error(errorMsg);
       }
     } else {
       const result = await onSubmit(newAssignment);
       if (result.success) {
+        toast.success('Assignment created successfully');
         setShowCreateModal(false);
         setNewAssignment({ title: '', subject: '', dueDate: '', maxMarks: '', description: '', files: [] });
+        setFieldErrors({});
         setError('');
         setActiveTab('all-assignments');
         setSelectedAssignment(null);
       } else {
-        setError(result.error || 'Failed to create assignment');
+        const errorMsg = result.error || 'Failed to create assignment';
+        setError(errorMsg);
+        toast.error(errorMsg);
       }
     }
   };
@@ -157,16 +174,23 @@ export default function CreateAssignmentModal({
       } else {
         window.open(fileUrl, '_blank', 'noopener,noreferrer');
       }
-    } catch (error) {
+    } catch {
       window.open(fileUrl, '_blank', 'noopener,noreferrer');
     }
   };
 
-  return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn">
-      <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/30 w-full max-w-2xl max-h-[90vh] flex flex-col mx-4">
-        <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-6 rounded-t-3xl">
-          <div className="flex items-center justify-between">
+  return createPortal(
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-[9999] animate-fadeIn p-4 overflow-y-auto">
+      <div
+        className="absolute inset-0 cursor-pointer"
+        onClick={isLoading ? undefined : handleClose}
+      ></div>
+      <div className="relative bg-white/95 backdrop-blur-xl rounded-[2rem] shadow-2xl border border-white/40 w-full max-w-2xl flex flex-col my-auto transform transition-all duration-300 animate-scaleIn">
+        <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 p-8 rounded-t-[2rem] relative overflow-hidden flex-shrink-0">
+          <div className="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-white/10 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 left-0 -mb-4 -ml-4 w-24 h-24 bg-black/10 rounded-full blur-2xl"></div>
+
+          <div className="relative flex items-center justify-between">
             <div>
               <h3 className="text-2xl font-bold text-white">
                 {selectedAssignment ? 'Edit Assignment' : 'Create New Assignment'}
@@ -185,10 +209,14 @@ export default function CreateAssignmentModal({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="flex-1 p-8 space-y-6 overflow-y-auto max-h-[70vh] custom-scrollbar">
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-2xl p-4 text-red-700 text-sm animate-fadeInUp">
-              {error}
+            <div className="bg-red-50 border-l-4 border-red-500 rounded-2xl p-4 flex items-start space-x-3 animate-shake shadow-sm">
+              <FaExclamationCircle className="text-red-500 mt-1 flex-shrink-0" size={18} />
+              <div className="flex-1">
+                <p className="text-red-800 font-bold text-sm tracking-wide">REQUEST FAILED</p>
+                <p className="text-red-600 text-sm mt-1 leading-relaxed font-medium">{error}</p>
+              </div>
             </div>
           )}
           <div className="relative group animate-fadeInUp" style={{ animationDelay: '0.1s' }}>
@@ -197,19 +225,33 @@ export default function CreateAssignmentModal({
             <input
               type="text"
               value={newAssignment.title}
-              onChange={(e) => setNewAssignment({ ...newAssignment, title: e.target.value })}
-              className="relative w-full px-4 py-3 rounded-2xl border-2 border-gray-100 focus:border-pink-500 focus:ring-2 focus:ring-pink-200 transition-all bg-white/80"
+              onChange={(e) => {
+                setNewAssignment({ ...newAssignment, title: e.target.value });
+                if (fieldErrors.title) setFieldErrors({ ...fieldErrors, title: '' });
+              }}
+              className={`relative w-full px-5 py-3.5 rounded-2xl border-2 transition-all bg-white/80 focus:shadow-lg outline-none ${fieldErrors.title ? 'border-red-300 focus:border-red-500 focus:ring-4 focus:ring-red-100' : 'border-gray-100 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100'
+                }`}
               placeholder="Enter assignment title"
               disabled={isLoading}
             />
+            {fieldErrors.title && (
+              <p className="text-red-500 text-xs mt-1.5 ml-1 flex items-center gap-1.5 font-medium animate-fadeInUp">
+                <FaExclamationCircle size={12} />
+                {fieldErrors.title}
+              </p>
+            )}
           </div>
           <div className="relative group animate-fadeInUp" style={{ animationDelay: '0.2s' }}>
             <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl blur opacity-20 group-hover:opacity-30 transition-opacity"></div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Subject</label>
             <select
               value={newAssignment.subject}
-              onChange={(e) => setNewAssignment({ ...newAssignment, subject: e.target.value })}
-              className="relative w-full px-4 py-3 rounded-2xl border-2 border-gray-100 focus:border-pink-500 focus:ring-2 focus:ring-pink-200 transition-all bg-white/80"
+              onChange={(e) => {
+                setNewAssignment({ ...newAssignment, subject: e.target.value });
+                if (fieldErrors.subject) setFieldErrors({ ...fieldErrors, subject: '' });
+              }}
+              className={`relative w-full px-5 py-3.5 rounded-2xl border-2 transition-all bg-white/80 focus:shadow-lg outline-none ${fieldErrors.subject ? 'border-red-300 focus:border-red-500 focus:ring-4 focus:ring-red-100' : 'border-gray-100 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100'
+                }`}
               disabled={isLoading}
             >
               <option value="">Select Subject</option>
@@ -218,6 +260,12 @@ export default function CreateAssignmentModal({
               <option>Data Structures</option>
               <option>Algorithms</option>
             </select>
+            {fieldErrors.subject && (
+              <p className="text-red-500 text-xs mt-1.5 ml-1 flex items-center gap-1.5 font-medium animate-fadeInUp">
+                <FaExclamationCircle size={12} />
+                {fieldErrors.subject}
+              </p>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="relative group animate-fadeInUp" style={{ animationDelay: '0.3s' }}>
@@ -226,10 +274,20 @@ export default function CreateAssignmentModal({
               <input
                 type="date"
                 value={newAssignment.dueDate}
-                onChange={(e) => setNewAssignment({ ...newAssignment, dueDate: e.target.value })}
-                className="relative w-full px-4 py-3 rounded-2xl border-2 border-gray-100 focus:border-pink-500 focus:ring-2 focus:ring-pink-200 transition-all bg-white/80"
+                onChange={(e) => {
+                  setNewAssignment({ ...newAssignment, dueDate: e.target.value });
+                  if (fieldErrors.dueDate) setFieldErrors({ ...fieldErrors, dueDate: '' });
+                }}
+                className={`relative w-full px-5 py-3.5 rounded-2xl border-2 transition-all bg-white/80 focus:shadow-lg outline-none ${fieldErrors.dueDate ? 'border-red-300 focus:border-red-500 focus:ring-4 focus:ring-red-100' : 'border-gray-100 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100'
+                  }`}
                 disabled={isLoading}
               />
+              {fieldErrors.dueDate && (
+                <p className="text-red-500 text-xs mt-1.5 ml-1 flex items-center gap-1.5 font-medium animate-fadeInUp">
+                  <FaExclamationCircle size={12} />
+                  {fieldErrors.dueDate}
+                </p>
+              )}
             </div>
             <div className="relative group animate-fadeInUp" style={{ animationDelay: '0.4s' }}>
               <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl blur opacity-20 group-hover:opacity-30 transition-opacity"></div>
@@ -237,26 +295,48 @@ export default function CreateAssignmentModal({
               <input
                 type="number"
                 value={newAssignment.maxMarks}
-                onChange={(e) => setNewAssignment({ ...newAssignment, maxMarks: e.target.value })}
-                className="relative w-full px-4 py-3 rounded-2xl border-2 border-gray-100 focus:border-pink-500 focus:ring-2 focus:ring-pink-200 transition-all bg-white/80"
+                onChange={(e) => {
+                  setNewAssignment({ ...newAssignment, maxMarks: e.target.value });
+                  if (fieldErrors.maxMarks) setFieldErrors({ ...fieldErrors, maxMarks: '' });
+                }}
+                className={`relative w-full px-5 py-3.5 rounded-2xl border-2 transition-all bg-white/80 focus:shadow-lg outline-none ${fieldErrors.maxMarks ? 'border-red-300 focus:border-red-500 focus:ring-4 focus:ring-red-100' : 'border-gray-100 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100'
+                  }`}
                 placeholder="100"
                 min="1"
                 disabled={isLoading}
               />
+              {fieldErrors.maxMarks && (
+                <p className="text-red-500 text-xs mt-1.5 ml-1 flex items-center gap-1.5 font-medium animate-fadeInUp">
+                  <FaExclamationCircle size={12} />
+                  {fieldErrors.maxMarks}
+                </p>
+              )}
             </div>
           </div>
+
           <div className="relative group animate-fadeInUp" style={{ animationDelay: '0.5s' }}>
             <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl blur opacity-20 group-hover:opacity-30 transition-opacity"></div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
             <textarea
               rows={6}
               value={newAssignment.description}
-              onChange={(e) => setNewAssignment({ ...newAssignment, description: e.target.value })}
-              className="relative w-full px-4 py-3 rounded-2xl border-2 border-gray-100 focus:border-pink-500 focus:ring-2 focus:ring-pink-200 transition-all bg-white/80 resize-none"
+              onChange={(e) => {
+                setNewAssignment({ ...newAssignment, description: e.target.value });
+                if (fieldErrors.description) setFieldErrors({ ...fieldErrors, description: '' });
+              }}
+              className={`relative w-full px-5 py-3.5 rounded-2xl border-2 transition-all bg-white/80 resize-none focus:shadow-lg outline-none ${fieldErrors.description ? 'border-red-300 focus:border-red-500 focus:ring-4 focus:ring-red-100' : 'border-gray-100 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100'
+                }`}
               placeholder="Provide detailed assignment instructions..."
               disabled={isLoading}
             />
+            {fieldErrors.description && (
+              <p className="text-red-500 text-xs mt-1.5 ml-1 flex items-center gap-1.5 font-medium animate-fadeInUp">
+                <FaExclamationCircle size={12} />
+                {fieldErrors.description}
+              </p>
+            )}
           </div>
+
           <div className="space-y-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">Reference Materials</label>
 
@@ -318,25 +398,33 @@ export default function CreateAssignmentModal({
           </div>
         </div>
 
-        <div className="p-6 border-t border-gray-100">
-          <div className="flex justify-end space-x-3">
+        <div className="p-8 border-t border-gray-100 bg-gray-50/50 rounded-b-[2rem] flex-shrink-0">
+          <div className="flex justify-end space-x-4">
             <button
               onClick={handleClose}
-              className="px-6 py-3 bg-gray-200 text-gray-700 rounded-2xl font-medium hover:bg-gray-300 transition-all transform hover:scale-105"
+              className="px-8 py-3.5 bg-white text-gray-700 rounded-2xl font-bold hover:bg-gray-100 transition-all transform active:scale-95 border border-gray-200 shadow-sm"
               disabled={isLoading}
             >
               Cancel
             </button>
             <button
               onClick={handleSubmit}
-              className="px-8 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-2xl font-semibold hover:from-purple-600 hover:to-pink-600 transition-all transform hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-10 py-3.5 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white rounded-2xl font-bold hover:shadow-xl hover:shadow-indigo-200 transition-all transform hover:-translate-y-0.5 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3 shadow-lg"
               disabled={isLoading}
             >
-              {isLoading ? (selectedAssignment ? 'Updating...' : 'Creating...') : (selectedAssignment ? 'Update Assignment' : 'Create Assignment')}
+              {isLoading ? (
+                <>
+                  <div className="h-4 w-4 border-[2.5px] border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <span className="tracking-wide">{selectedAssignment ? 'UPDATING...' : 'CREATING...'}</span>
+                </>
+              ) : (
+                <span className="tracking-wide">{selectedAssignment ? 'UPDATE ASSIGNMENT' : 'CREATE ASSIGNMENT'}</span>
+              )}
             </button>
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

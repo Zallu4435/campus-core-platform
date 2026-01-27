@@ -19,7 +19,6 @@ export const useNotificationManagement = () => {
   const [selectedNotificationId, setSelectedNotificationId] = useState<string | null>(null);
   const [allNotifications, setAllNotifications] = useState<Notification[]>([]);
   const [hasMore, setHasMore] = useState(true);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const limit = 10;
 
   const isAdmin = user?.role === 'admin';
@@ -38,6 +37,7 @@ export const useNotificationManagement = () => {
       });
     },
     enabled: !!user,
+    staleTime: 60 * 1000, // 1 minute stale time to prevent duplicate fetches on mount
   });
 
   useEffect(() => {

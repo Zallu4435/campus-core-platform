@@ -8,7 +8,6 @@ import {
   UserWithCollectionAndPassword,
   UserWithCollection,
   RefreshSessionData,
-  UserCollection
 } from "./types/AuthRepositoryTypes";
 import { UserDTO } from "../dtos/UserDTO";
 import { AuthCollection } from "../constants/AuthConstants";
@@ -40,7 +39,4 @@ export interface IAuthRepository {
   deleteAllSessionsByUserId(userId: string): Promise<void>;
   getAllSessions(): Promise<RefreshSessionData[]>;
   findUsersByIds(ids: string[]): Promise<UserDTO[]>;
-  findTokensByUserId(userId: string): Promise<string[]>;
-  findTokensByCollection(collection: string): Promise<string[]>;
-  removeFcmToken(token: string): Promise<void>;
 }

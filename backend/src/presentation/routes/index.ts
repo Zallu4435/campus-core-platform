@@ -13,7 +13,6 @@ import campusLifeRoutes from "../http/campus-life/campusLifeRoutes";
 import academicRoutes from "../http/academics/AcademicRouter";
 import financialRoutes from "../http/financial/financialRouter";
 import notificationRoutes from '../http/notifications/notificationRouter'
-import fcmTokenRoute from './fcmTokenRoute'
 import diplomaRoutes from '../http/diploma/DiplomaRouter'
 import vedioRoutes from '../http/video/videoRoutes'
 import materialRoutes from '../http/materials/materialRoutes'
@@ -42,8 +41,6 @@ router.use("/admin/materials", materialRoutes);
 router.use("/materials", userMaterialRoutes);
 
 router.use("/assignments", userAssignmentRoutes);
-
-router.use('/fcm', fcmTokenRoute)
 
 router.use("/admin/admissions", adminRoutes);
 

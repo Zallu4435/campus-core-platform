@@ -17,20 +17,17 @@ import {
   getActionButton
 } from '../utils/sessionUtils';
 import { useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
 import type { RootState } from '../../../../../appStore/store';
 import { BackendSession, SessionCardProps } from '../../../../../domain/types/canvas/session';
 
 export const SessionCard: React.FC<SessionCardProps> = ({
   session,
-  index,
   userAccess,
   styles,
   onToggleWatched,
   onJoinSession,
 }) => {
   const backendSession = session as unknown as BackendSession;
-  const navigate = useNavigate();
   const user = useSelector((state: RootState) => state.auth.user);
   const status = (session.status || '').toLowerCase();
 
@@ -74,7 +71,7 @@ export const SessionCard: React.FC<SessionCardProps> = ({
   const isEnrolled = session.isEnrolled ?? userAccess.isEnrolled;
 
   return (
-    <div className={`group relative overflow-hidden ${styles.card.background} backdrop-blur-xl rounded-[2.5rem] border ${styles.border} shadow-2xl transition-all duration-500 hover:scale-[1.01] hover:border-blue-500/30`}>
+    <div className={`group relative overflow-hidden ${styles.card.background} rounded-2xl border ${styles.border} shadow-sm transition-all duration-300 hover:shadow-md hover:border-blue-500/30`}>
       {/* Decorative background pulse for live sessions */}
       {session.isLive && (
         <div className="absolute inset-0 bg-gradient-to-br from-rose-500/10 via-transparent to-transparent animate-pulse -z-10"></div>
@@ -83,12 +80,10 @@ export const SessionCard: React.FC<SessionCardProps> = ({
       <div className="p-4 sm:p-7">
         <div className="flex flex-col lg:flex-row gap-6 sm:gap-10">
           {/* Left: Thumbnail/Avatar Area */}
-          <div className="relative w-full lg:w-48 xl:w-56 h-48 sm:h-56 lg:h-auto shrink-0 overflow-hidden rounded-[2rem] border border-white/10 shadow-inner group-hover:shadow-2xl transition-all duration-500">
-            <div className="absolute inset-0 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center">
-              <div className="relative">
-                <div className={`text-6xl sm:text-7xl lg:text-8xl transform group-hover:scale-110 transition-transform duration-700`}>
-                  {avatar || '👤'}
-                </div>
+          <div className="relative w-full lg:w-40 xl:w-48 h-40 sm:h-48 lg:h-auto shrink-0 overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800 border ${styles.border}">
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-5xl sm:text-6xl lg:text-7xl">
+                {avatar || '👤'}
               </div>
             </div>
             {session.isLive && (
@@ -111,7 +106,7 @@ export const SessionCard: React.FC<SessionCardProps> = ({
                     {getDifficultyBadge(session.difficulty, sessionStyles) as React.ReactElement}
                     {getStatusBadge(status, sessionStyles, session.isLive) as React.ReactElement}
                   </div>
-                  <h3 className={`text-xl sm:text-2xl font-black ${styles.textPrimary} tracking-tight leading-tight group-hover:text-blue-500 transition-colors duration-300`}>
+                  <h3 className={`text-xl sm:text-2xl font-bold ${styles.textPrimary} tracking-tight leading-tight group-hover:text-blue-500 transition-colors duration-300`}>
                     {session.title}
                   </h3>
                 </div>
@@ -128,44 +123,36 @@ export const SessionCard: React.FC<SessionCardProps> = ({
                 {session.description}
               </p>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-blue-500 border border-white/5">
-                    <FaUser className="w-5 h-5" />
-                  </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50">
+                  <FaUser className="w-4 h-4 text-blue-500" />
                   <div className="flex flex-col">
-                    <span className={`${styles.textSecondary} text-[10px] font-bold uppercase tracking-wider opacity-40`}>Instructor</span>
-                    <span className={`text-sm font-bold ${styles.textPrimary}`}>{session.instructor}</span>
+                    <span className={`${styles.textSecondary} text-[10px] font-medium uppercase tracking-wider`}>Instructor</span>
+                    <span className={`text-sm font-semibold ${styles.textPrimary}`}>{session.instructor}</span>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-amber-500 border border-white/5">
-                    <FaCalendarAlt className="w-5 h-5" />
-                  </div>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50">
+                  <FaCalendarAlt className="w-4 h-4 text-amber-500" />
                   <div className="flex flex-col">
-                    <span className={`${styles.textSecondary} text-[10px] font-bold uppercase tracking-wider opacity-40`}>Schedule</span>
-                    <span className={`text-sm font-bold ${styles.textPrimary}`}>{dateStr}</span>
+                    <span className={`${styles.textSecondary} text-[10px] font-medium uppercase tracking-wider`}>Schedule</span>
+                    <span className={`text-sm font-semibold ${styles.textPrimary}`}>{dateStr}</span>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-emerald-500 border border-white/5">
-                    <FaClock className="w-5 h-5" />
-                  </div>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50">
+                  <FaClock className="w-4 h-4 text-emerald-500" />
                   <div className="flex flex-col">
-                    <span className={`${styles.textSecondary} text-[10px] font-bold uppercase tracking-wider opacity-40`}>Time & Duration</span>
-                    <span className={`text-sm font-bold ${styles.textPrimary}`}>{timeStr} • {session.duration} hrs</span>
+                    <span className={`${styles.textSecondary} text-[10px] font-medium uppercase tracking-wider`}>Time & Duration</span>
+                    <span className={`text-sm font-semibold ${styles.textPrimary}`}>{timeStr} • {session.duration} hrs</span>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-indigo-500 border border-white/5">
-                    <FaUsers className="w-5 h-5" />
-                  </div>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50">
+                  <FaUsers className="w-4 h-4 text-indigo-500" />
                   <div className="flex flex-col">
-                    <span className={`${styles.textSecondary} text-[10px] font-bold uppercase tracking-wider opacity-40`}>Joined</span>
-                    <span className={`text-sm font-bold ${styles.textPrimary}`}>
+                    <span className={`${styles.textSecondary} text-[10px] font-medium uppercase tracking-wider`}>Joined</span>
+                    <span className={`text-sm font-semibold ${styles.textPrimary}`}>
                       {session.attendees || 0} / {session.maxAttendees || '∞'}
                     </span>
                   </div>
@@ -173,7 +160,7 @@ export const SessionCard: React.FC<SessionCardProps> = ({
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-center justify-between pt-6 border-t border-white/5 gap-4">
+            <div className={`flex flex-col sm:flex-row items-center justify-between pt-6 border-t ${styles.border} gap-4`}>
               <div className="flex flex-wrap items-center gap-2">
                 {(tags || []).map((tag: string) => (
                   <span key={tag} className={`px-3 py-1 bg-white/5 ${styles.textSecondary} rounded-lg text-[10px] font-bold uppercase border border-white/5 tracking-wider hover:bg-white/10 transition-colors cursor-default`}>
@@ -214,7 +201,7 @@ export const SessionCard: React.FC<SessionCardProps> = ({
         </div>
 
         {session.isLive && (
-          <div className={`mt-6 p-4 bg-rose-500/5 rounded-[1.5rem] border border-rose-500/10 backdrop-blur-md`}>
+          <div className={`mt-6 p-4 bg-rose-500/5 rounded-2xl border ${styles.border}`}>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
                 <div className="flex items-center -space-x-2 group-hover:-space-x-1 transition-all duration-500">

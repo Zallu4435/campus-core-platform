@@ -11,7 +11,6 @@ export interface FacultyUserDocument extends mongoose.Document {
     blocked: boolean;
     createdAt: Date;
     passwordChangedAt?: Date;
-    fcmTokens?: string[];
     // This model seems to be the "User" model.
 }
 
@@ -49,7 +48,6 @@ const FacultyUserSchema = new Schema<FacultyUserDocument>(
 // Re-adding fields from original file to be safe
 FacultyUserSchema.add({
     passwordChangedAt: { type: Date },
-    fcmTokens: [{ type: String }],
 });
 
 // Original pre-save hook for password hashing

@@ -105,7 +105,7 @@ const UniversitySessionsDashboard = () => {
         styles={styles}
       />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
-        <div className={`backdrop-blur-xl bg-white/5 dark:bg-slate-900/5 rounded-[2rem] border ${styles.border} shadow-2xl overflow-hidden p-4 sm:p-8`}>
+        <div className={`shadow-sm ${styles.card.background} rounded-3xl border ${styles.border} overflow-hidden p-4 sm:p-8`}>
           <div className="space-y-8">
             <SessionStats stats={sessionStats} styles={styles} />
 
@@ -123,12 +123,12 @@ const UniversitySessionsDashboard = () => {
 
             <div className="relative space-y-6">
               {isLoading ? (
-                <div className={`${styles.card.background}/40 backdrop-blur-md rounded-2xl shadow-lg border ${styles.border} text-center py-20`}>
+                <div className={`${styles.card.background} rounded-2xl border ${styles.border} text-center py-20`}>
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                  <p className={`${styles.textSecondary} animate-pulse`}>Loading sessions...</p>
+                  <p className={`${styles.textSecondary}`}>Loading sessions...</p>
                 </div>
               ) : error ? (
-                <div className={`${styles.card.background}/40 backdrop-blur-md rounded-2xl shadow-lg border ${styles.border} text-center py-20`}>
+                <div className={`${styles.card.background} rounded-2xl border ${styles.border} text-center py-20`}>
                   <div className={`w-16 h-16 ${styles.status.error} rounded-full flex items-center justify-center mx-auto mb-4`}>
                     <FaFilter className={`w-8 h-8 text-white`} />
                   </div>
@@ -136,7 +136,7 @@ const UniversitySessionsDashboard = () => {
                   <p className={`${styles.textSecondary}`}>Failed to load sessions. Please try again.</p>
                 </div>
               ) : sessions.length === 0 ? (
-                <div className={`${styles.card.background}/40 backdrop-blur-md rounded-2xl shadow-lg border ${styles.border} text-center py-20`}>
+                <div className={`${styles.card.background} rounded-2xl border ${styles.border} text-center py-20`}>
                   <div className={`w-16 h-16 ${styles.backgroundSecondary} rounded-full flex items-center justify-center mx-auto mb-4`}>
                     <FaFilter className={`w-8 h-8 ${styles.icon.secondary}`} />
                   </div>

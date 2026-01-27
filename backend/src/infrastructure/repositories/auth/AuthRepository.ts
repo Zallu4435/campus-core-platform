@@ -308,24 +308,4 @@ export class AuthRepository implements IAuthRepository {
             certificatesUrl: source.certificatesUrl as unknown as string[]
         };
     }
-
-    async findTokensByUserId(userId: string): Promise<string[]> {
-        const user = await UserModel.findById(userId).select("fcmTokens").lean() as unknown as IUserSource;
-        return user?.fcmTokens || [];
-    }
-
-    async findTokensByCollection(collection: string): Promise<string[]> {
-        let Model;
-        if (collection === "user") Model = UserModel;
-        else if (collection === "faculty") Model = FacultyModel;
-        else return [];
-
-        const users = await Model.find().select("fcmTokens").lean() as unknown as (IUserSource | IFacultySource)[];
-        return users.flatMap(u => u.fcmTokens || []);
-    }
-
-    async removeFcmToken(token: string): Promise<void> {
-        await UserModel.updateMany({ fcmTokens: token }, { $pull: { fcmTokens: token } });
-        await FacultyModel.updateMany({ fcmTokens: token }, { $pull: { fcmTokens: token } });
-    }
 }

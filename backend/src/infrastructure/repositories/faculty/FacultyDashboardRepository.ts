@@ -3,6 +3,8 @@ import { IFacultyDashboardRepository } from "../../../application/faculty/dashbo
 import { VideoSessionModel } from "../../database/mongoose/session/session.model";
 import { CourseModel } from "../../database/mongoose/courses/CourseModel";
 import { AssignmentModel } from "../../database/mongoose/assignment/AssignmentModel";
+import { NotificationModel } from "../../database/mongoose/notification/notification.model";
+import { NotificationRecipientType } from "../../../domain/notifications/entities/NotificationTypes";
 import { FacultyDashboardMapper } from "./FacultyDashboardMapper";
 import {
   DashboardStats,
@@ -298,6 +300,32 @@ export class FacultyDashboardRepository implements IFacultyDashboardRepository {
         type: 'announcement',
         message: `Course "${course.title}" was updated`,
         time: course.updatedAt.toISOString()
+      });
+    });
+
+    // Add Notifications
+    const validRecipientTypes = [
+      NotificationRecipientType.ALL,
+      NotificationRecipientType.ALL_FACULTY,
+      NotificationRecipientType.ALL_STUDENTS_AND_FACULTY
+    ];
+
+    const recentNotifications = await NotificationModel.find({
+      $or: [
+        { recipientId: facultyId },
+        { recipientType: { $in: validRecipientTypes } },
+      ]
+    })
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .lean();
+
+    recentNotifications.forEach(notification => {
+      recentActivitiesRaw.push({
+        id: notification._id.toString(),
+        type: 'system', // or 'announcement' or mapped from notification.type
+        message: notification.title,
+        time: notification.createdAt.toISOString()
       });
     });
 

@@ -42,6 +42,7 @@ export interface AddNotificationModalProps {
   onClose: () => void;
   onSubmit: (data: Omit<Notification, '_id' | 'createdAt' | 'status'>) => void;
   recipientTypes: string[];
+  isLoading?: boolean;
 }
 
 export interface NotificationDetailsModalProps {

@@ -153,8 +153,8 @@ export default function FacultyNotificationSettings() {
                       <div
                         key={notification._id}
                         className={`p-4 rounded-lg border transition-all duration-200 ${!notification.isRead
-                            ? 'bg-purple-50 border-purple-200'
-                            : 'bg-slate-50 border-slate-200'
+                          ? 'bg-purple-50 border-purple-200'
+                          : 'bg-slate-50 border-slate-200'
                           }`}
                       >
                         <div className="flex items-start space-x-3">
