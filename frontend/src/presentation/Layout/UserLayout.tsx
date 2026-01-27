@@ -5,7 +5,6 @@ import Footer from '../components/user/Footer';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../appStore/store';
 import { usePreferences } from '../../application/context/PreferencesContext';
-import { socketRef } from '../pages/canvas/chat/ChatComponent';
 import { useLogout } from '../../application/hooks/useAuthQueries';
 
 const UserLayout = () => {
@@ -24,10 +23,6 @@ const UserLayout = () => {
   const { mutate: logoutMutation } = useLogout();
 
   const handleLogout = () => {
-    if (socketRef.current) {
-      socketRef.current.disconnect();
-      socketRef.current = null;
-    }
     logoutMutation();
   };
 

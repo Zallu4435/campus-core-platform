@@ -10,63 +10,98 @@ export const DeleteMessageModal: React.FC<DeleteMessageModalProps> = ({
   onDeleteForEveryone,
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
+  const [animate, setAnimate] = React.useState(false);
+
+  useEffect(() => {
+    if (isVisible) {
+      document.body.style.overflow = 'hidden';
+      // Trigger animation next frame
+      requestAnimationFrame(() => setAnimate(true));
+    } else {
+      setAnimate(false);
+    }
+
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isVisible]);
+
+  // Handle closing with animation
+  const handleClose = () => {
+    setAnimate(false);
+    setTimeout(onClose, 200); // Wait for animation
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
-        onClose();
+        handleClose();
       }
     };
 
     if (isVisible) {
-      document.body.style.overflow = 'hidden';
-      document.body.style.position = 'fixed';
-      document.body.style.width = '100%';
-      
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
-      document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.body.style.width = '';
     };
-  }, [isVisible, onClose]);
+  }, [isVisible]);
 
   if (!isVisible) return null;
 
   const modalContent = (
-    <div className="fixed inset-0 bg-white/10 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
-      <div ref={modalRef} className="bg-white dark:bg-[#202c33] rounded-lg p-4 md:p-6 max-w-sm w-full mx-2 md:mx-4 shadow-xl">
-        <h3 className="text-lg md:text-xl font-medium mb-4 md:mb-6 text-gray-900 dark:text-white">Delete Message</h3>
-        <div className="space-y-2 md:space-y-3">
-          <button
-            onClick={() => {
-              onDeleteForMe();
-              onClose();
-            }}
-            className="w-full px-4 py-3 md:py-4 text-left hover:bg-gray-100 dark:hover:bg-[#2a3942] rounded-lg text-gray-900 dark:text-white text-sm md:text-base transition-colors"
-          >
-            Delete for me
-          </button>
-          {isSentMessage && onDeleteForEveryone && (
+    <div
+      className={`fixed inset-0 z-[9999] flex items-center justify-center p-4 transition-colors duration-200 ${animate ? 'bg-black/60 backdrop-blur-sm' : 'bg-transparent'
+        }`}
+    >
+      <div
+        ref={modalRef}
+        className={`
+          bg-white dark:bg-[#202c33] rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden
+          transform transition-all duration-200 ease-out
+          ${animate ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-4'}
+        `}
+      >
+        <div className="p-6">
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Delete Message?</h3>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">
+            Are you sure you want to delete this message? This action cannot be undone.
+          </p>
+
+          <div className="flex flex-col gap-3">
+            {isSentMessage && onDeleteForEveryone && (
+              <button
+                onClick={() => {
+                  onDeleteForEveryone();
+                  onClose();
+                }}
+                className="w-full flex items-center justify-center px-4 py-3 rounded-xl bg-red-500 hover:bg-red-600 active:bg-red-700 text-white font-medium transition-colors"
+              >
+                Delete for everyone
+              </button>
+            )}
+
             <button
               onClick={() => {
-                onDeleteForEveryone();
+                onDeleteForMe();
                 onClose();
               }}
-              className="w-full px-4 py-3 md:py-4 text-left hover:bg-gray-100 dark:hover:bg-[#2a3942] rounded-lg text-red-600 text-sm md:text-base transition-colors"
+              className={`w-full flex items-center justify-center px-4 py-3 rounded-xl font-medium transition-colors ${isSentMessage && onDeleteForEveryone
+                  ? 'text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  : 'bg-red-500 hover:bg-red-600 text-white'
+                }`}
             >
-              Delete for everyone
+              Delete for me
             </button>
-          )}
-          <button
-            onClick={onClose}
-            className="w-full px-4 py-3 md:py-4 text-left hover:bg-gray-100 dark:hover:bg-[#2a3942] rounded-lg text-gray-500 dark:text-gray-400 mt-4 md:mt-6 border-t border-gray-200 dark:border-gray-600 text-sm md:text-base transition-colors"
-          >
-            Cancel
-          </button>
+
+            <button
+              onClick={handleClose}
+              className="w-full flex items-center justify-center px-4 py-3 rounded-xl text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-[#2a3942] transition-colors font-medium"
+            >
+              Cancel
+            </button>
+          </div>
         </div>
       </div>
     </div>

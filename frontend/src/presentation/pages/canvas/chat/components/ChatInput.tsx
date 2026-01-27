@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FiSmile, FiPaperclip, FiX, FiCornerUpLeft, FiSend, FiMic } from 'react-icons/fi';
+import { FiSmile, FiPaperclip, FiX, FiSend, FiMic } from 'react-icons/fi';
 import { EmojiPicker } from './EmojiPicker';
 import { AttachmentMenu } from './AttachmentMenu';
 import { MediaPreview } from './MediaPreview';
@@ -52,7 +52,7 @@ export const ChatInput: React.FC<ChatInputProps & { disabled?: boolean }> = ({
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
-    
+
 
     typingTimeoutRef.current = setTimeout(() => {
       onTyping(false);
@@ -80,9 +80,7 @@ export const ChatInput: React.FC<ChatInputProps & { disabled?: boolean }> = ({
     }
   };
 
-  const handleCameraSelect = () => {
-    // Camera handling logic
-  };
+
 
   const handleAttachmentClick = () => {
     setShowAttachmentMenu(!showAttachmentMenu);
@@ -190,28 +188,35 @@ export const ChatInput: React.FC<ChatInputProps & { disabled?: boolean }> = ({
   return (
     <div className="relative bg-white dark:bg-[#202c33] p-2">
       {replyToMessage && (
-        <div className="absolute bottom-full left-0 right-0 p-2 md:p-3 bg-white dark:bg-[#2a3942] border border-gray-200 dark:border-[#2a3942] rounded-t-xl max-w-xs mx-auto">
+        <div className="absolute bottom-full left-0 right-0 p-3 bg-gray-50 dark:bg-[#111b21] border-t border-x border-gray-200 dark:border-[#2a3942] rounded-t-xl z-[40] shadow-lg">
           <div className="flex items-center justify-between mb-1">
-            <div className="flex items-center space-x-2">
-              <FiCornerUpLeft className="text-gray-500 dark:text-gray-400 w-4 h-4 md:w-5 md:h-5" />
-              <span className="text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300">Replying to {replyToMessage.senderName}</span>
+            <div className="flex items-center space-x-2 border-l-4 border-green-500 pl-2 w-full overflow-hidden">
+              <div className="flex flex-col min-w-0 flex-1">
+                <span className="text-xs font-semibold text-green-600 dark:text-green-500">
+                  {replyToMessage.senderName}
+                </span>
+                <span className="text-xs md:text-sm text-gray-600 dark:text-gray-400 truncate">
+                  {replyToMessage.type === 'image' ? '[Image]' :
+                    replyToMessage.type === 'audio' ? '[Audio]' :
+                      replyToMessage.type === 'video' ? '[Video]' :
+                        replyToMessage.type === 'document' || replyToMessage.type === 'file' ? `[File] ${replyToMessage.fileName || ''}` :
+                          replyToMessage.content || '...'}
+                </span>
+              </div>
             </div>
             <button
               onClick={onCancelReply}
-              className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+              className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-[#2a3942] text-gray-500 dark:text-gray-400 transition-colors ml-2"
             >
-              <FiX className="w-4 h-4 md:w-5 md:h-5" />
+              <FiX className="w-5 h-5" />
             </button>
-          </div>
-          <div className="text-xs md:text-sm text-gray-600 dark:text-gray-400 truncate">
-            {replyToMessage.content}
           </div>
         </div>
       )}
 
       {showMediaPreview && selectedFiles.length > 0 && (
         <MediaPreview
-          message={{ 
+          message={{
             id: 'temp',
             chatId: selectedChatId || 'temp',
             senderId: 'temp',
@@ -336,7 +341,6 @@ export const ChatInput: React.FC<ChatInputProps & { disabled?: boolean }> = ({
             styles={styles}
             showAttachmentMenu={showAttachmentMenu}
             onFileSelect={handleFileSelect}
-            onCameraSelect={handleCameraSelect}
             onClose={() => setShowAttachmentMenu(false)}
           />
         </div>

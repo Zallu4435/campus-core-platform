@@ -558,4 +558,10 @@ export class ChatRepository implements IChatRepository {
       avatar: u.profilePicture as string
     }));
   }
+
+  async getChatParticipants(chatId: string): Promise<Array<{ id: string }>> {
+    const chat = await ChatModel.findById(chatId).select("participants").lean();
+    if (!chat) return [];
+    return chat.participants.map((p: any) => ({ id: p.toString() }));
+  }
 }

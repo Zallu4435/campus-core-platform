@@ -6,7 +6,7 @@ const EMOJI_CATEGORIES = {
   recent: {
     icon: FiClock,
     label: 'Recent',
-    emojis: ['😊', '😂', '😍', '😘', '😎'] 
+    emojis: ['😊', '😂', '😍', '😘', '😎']
   },
   people: {
     icon: FiSmile,
@@ -135,9 +135,9 @@ export const EmojiPicker: React.FC<EmojiPickerProps> = ({
   const handleEmojiSelect = (emoji: string) => {
     setRecentEmojis(prev => {
       const filtered = prev.filter(e => e !== emoji);
-      return [emoji, ...filtered].slice(0, 20); 
+      return [emoji, ...filtered].slice(0, 20);
     });
-    
+
     onEmojiSelect(emoji);
   };
 
@@ -150,7 +150,7 @@ export const EmojiPicker: React.FC<EmojiPickerProps> = ({
       }
       return EMOJI_CATEGORIES[selectedCategory].emojis;
     }
-    
+
     return Object.values(EMOJI_CATEGORIES)
       .flatMap(category => category.emojis)
       .filter(emoji => {
@@ -199,11 +199,10 @@ export const EmojiPicker: React.FC<EmojiPickerProps> = ({
             <button
               key={key}
               onClick={() => setSelectedCategory(key as keyof typeof EMOJI_CATEGORIES)}
-              className={`flex-1 p-3 flex items-center justify-center transition-colors ${
-                selectedCategory === key
-                  ? 'text-[#00a884] border-b-2 border-[#00a884] bg-[#182229]'
-                  : 'text-[#8696a0] hover:text-[#e9edef] hover:bg-[#2a3942]'
-              }`}
+              className={`flex-1 p-3 flex items-center justify-center transition-colors ${selectedCategory === key
+                ? 'text-[#00a884] border-b-2 border-[#00a884] bg-[#182229]'
+                : 'text-[#8696a0] hover:text-[#e9edef] hover:bg-[#2a3942]'
+                }`}
               title={category.label}
             >
               <IconComponent size={20} />

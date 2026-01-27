@@ -1,6 +1,6 @@
 import React, { useState, useRef, ForwardedRef } from 'react';
 import { formatMessageTime, formatMessageTimeOnly, shouldShowDateHeader } from '../utils/chatUtils';
-import { FiCheck, FiShare2, FiCornerUpLeft, FiSmile, FiFile, FiChevronDown } from 'react-icons/fi';
+import { FiCheck, FiCornerUpLeft, FiSmile, FiFile, FiChevronDown } from 'react-icons/fi';
 import { EmojiPicker } from './EmojiPicker';
 import { MessageDropdown } from './MessageDropdown';
 import { DeleteMessageModal } from './DeleteMessageModal';
@@ -16,7 +16,6 @@ const ChatMessageComponent = ({
   styles,
   onDelete,
   onReply,
-  onForward,
   currentUserId
 }: ChatMessageProps, ref: ForwardedRef<HTMLDivElement>) => {
 
@@ -257,31 +256,48 @@ const ChatMessageComponent = ({
 
     if (isEditing) {
       return (
-        <div className="pr-12 pb-1">
-          <input
-            type="text"
+        <div className="pr-2 pb-1 min-w-[200px]">
+          <textarea
             value={editedContent}
             onChange={(e) => setEditedContent(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') handleEdit();
-              else if (e.key === 'Escape') {
+              if (e.key === 'Enter' && e.ctrlKey) {
+                handleEdit();
+              } else if (e.key === 'Escape') {
                 setIsEditing(false);
                 setEditedContent(message.content);
               }
             }}
-            className="w-full p-1 text-sm border rounded bg-transparent"
+            className="w-full p-2 text-sm border rounded-lg bg-white/10 dark:bg-black/20 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all resize-none min-h-[60px]"
             autoFocus
+            placeholder="Edit message..."
           />
-          {/* Time and status */}
-          <div className="flex items-center justify-end space-x-1 mt-1">
-            <span className="text-xs text-gray-400">
-              {formatMessageTimeOnly(message.createdAt)}
-            </span>
-            {message.senderId === currentUserId && (
-              <div className="flex items-center">
-                {renderStatusIcon()}
-              </div>
-            )}
+          <div className="flex items-center justify-between mt-2">
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={handleEdit}
+                className="px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-xs font-medium rounded-full transition-colors"
+              >
+                Save
+              </button>
+              <button
+                onClick={() => {
+                  setIsEditing(false);
+                  setEditedContent(message.content);
+                }}
+                className="px-3 py-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs font-medium rounded-full transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+            <div className="flex items-center space-x-1">
+              <span className="text-[10px] text-gray-400 italic">
+                Ctrl + Enter to save
+              </span>
+              <span className="text-[10px] text-gray-400">
+                {formatMessageTimeOnly(message.createdAt)}
+              </span>
+            </div>
           </div>
         </div>
       );
@@ -409,13 +425,6 @@ const ChatMessageComponent = ({
         {isSentMessage && !message.isDeleted && (
           <div className="flex items-center space-x-1 mr-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
             <button
-              onClick={() => onForward(message.id)}
-              className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-[#2a3942] text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
-              title="Forward"
-            >
-              <FiShare2 className="w-4 h-4" />
-            </button>
-            <button
               onClick={(e) => {
                 e.stopPropagation();
                 setShowEmojiPicker(!showEmojiPicker);
@@ -475,7 +484,6 @@ const ChatMessageComponent = ({
                 onClose={() => setShowMenu(false)}
                 onReact={() => setShowEmojiPicker(true)}
                 onReply={() => onReply(message)}
-                onForward={() => onForward(message.id)}
                 onEdit={() => setIsEditing(true)}
                 onDelete={handleDeleteForMe}
                 onShowDeleteOptions={() => setShowDeleteOptions(true)}
@@ -507,13 +515,6 @@ const ChatMessageComponent = ({
               title="React"
             >
               <FiSmile className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => onForward(message.id)}
-              className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-[#2a3942] text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
-              title="Forward"
-            >
-              <FiShare2 className="w-4 h-4" />
             </button>
           </div>
         )}
@@ -552,7 +553,7 @@ const ChatMessageComponent = ({
         onRemoveReaction={handleRemoveReaction}
         position={modalPosition}
       />
-    </div>
+    </div >
   );
 };
 

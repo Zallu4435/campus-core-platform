@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { io, Socket } from 'socket.io-client';
 import { ChatList } from './components/ChatList';
 import { ChatHeader } from './components/ChatHeader';
 import { ChatMessage } from './components/ChatMessage';
@@ -16,9 +15,7 @@ import GroupSettingsModal from './components/GroupSettingsModal';
 import { useChatQueries } from './hooks/useChatQueries';
 import { useChatMutations } from './hooks/useChatMutations';
 import { chatService } from './services/chatService';
-import { useQueryClient } from '@tanstack/react-query';
-
-export const socketRef = React.createRef<Socket | null>();
+import { useChatSocket } from './hooks/useChatSocket';
 
 export const ChatComponent: React.FC = () => {
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
@@ -33,7 +30,6 @@ export const ChatComponent: React.FC = () => {
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
   const [, setOldestMessageTimestamp] = useState<string | null>(null);
   const [loadingMoreMessages, setLoadingMoreMessages] = useState(false);
-  const [socketError, setSocketError] = useState<string | null>(null);
   const [showGroupSettings, setShowGroupSettings] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -51,11 +47,11 @@ export const ChatComponent: React.FC = () => {
     shouldScrollToBottom: true,
     oldScrollHeight: 0,
   }).current;
-  const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
 
   const currentUser = useSelector((state: RootState) => state.auth.user);
   const currentUserId = currentUser?.id;
-  const queryClient = useQueryClient();
+
+  const { socketError, onlineUsers, emitTyping } = useChatSocket(selectedChatId);
 
   const {
     chatsResponse,
@@ -274,8 +270,7 @@ export const ChatComponent: React.FC = () => {
   };
 
   const handleTyping = (isTyping: boolean) => {
-    if (!selectedChatId || !socketRef.current) return;
-    socketRef.current.emit('typing', { chatId: selectedChatId, isTyping });
+    emitTyping(isTyping);
   };
 
 
@@ -445,51 +440,6 @@ export const ChatComponent: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    if (!socketRef.current || !currentUser?.id) return;
-
-    const handleNewMessage = (message: Message) => {
-      const normalizedMessage = { ...message, id: message.id || message._id };
-
-      if (normalizedMessage.chatId === selectedChatId && normalizedMessage.id) {
-        const validMessage: Message = {
-          ...normalizedMessage,
-          id: normalizedMessage.id
-        };
-        setAllMessages(prev => {
-          const idx = prev.findIndex(m => m.id === validMessage.id);
-          if (idx !== -1) {
-            const updated = [...prev];
-            updated[idx] = validMessage;
-            return updated;
-          }
-          const updated = [...prev, validMessage];
-          return updated;
-        });
-        if (normalizedMessage.senderId !== currentUser.id) {
-          chatMutations.markMessagesAsRead.mutateAsync(selectedChatId!);
-        }
-      }
-
-      queryClient.invalidateQueries({ queryKey: ['chats'] });
-    };
-
-    const handleChatUpdate = () => {
-      queryClient.invalidateQueries({ queryKey: ['chats'] });
-    };
-
-    socketRef.current.on('message', handleNewMessage);
-    socketRef.current.on('chat', handleChatUpdate);
-
-    socketRef.current.emit('joinChat', { chatId: selectedChatId });
-
-    return () => {
-      socketRef.current?.off('message', handleNewMessage);
-      socketRef.current?.off('chat', handleChatUpdate);
-      socketRef.current?.emit('leaveChat', { chatId: selectedChatId });
-    };
-  }, [selectedChatId, currentUser?.id, socketRef.current]);
-
   const [showMobileChat, setShowMobileChat] = useState(false);
 
   useEffect(() => {
@@ -506,82 +456,6 @@ export const ChatComponent: React.FC = () => {
     setMessagesPage(1);
     setHasMoreMessages(true);
   };
-
-  useEffect(() => {
-    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-    const socketUrl = apiBaseUrl.replace('/api', '') + '/chat';
-
-    const socket = io(socketUrl, {
-      path: '/socket.io',
-      transports: ['websocket', 'polling'],
-      withCredentials: true,
-    });
-    socketRef.current = socket;
-
-    socket.on('connect_error', (err) => {
-      setSocketError('Socket connection error: ' + (err.message || err));
-      console.error('[Socket.IO] Connection error:', err);
-    });
-    socket.on('connect', () => {
-      setSocketError(null);
-      if (socket.connected) {
-        console.log('Socket is connected (checked in code)!');
-      }
-    });
-    socket.on('disconnect', (reason) => {
-      console.warn('[Socket.IO] Disconnected:', reason);
-      if (!socket.connected) {
-        console.log('Socket is NOT connected (checked in code)!');
-      }
-    });
-    socket.onAny((event, ...args) => {
-      console.log(`[Socket.IO] Event: ${event}`, ...args);
-    });
-
-    return () => {
-      socket.disconnect();
-      socketRef.current = null;
-    };
-  }, []);
-
-
-  useEffect(() => {
-    if (!socketRef.current) return;
-    const handleUserStatus = (data: { userId: string; status: 'online' | 'offline' }) => {
-      setOnlineUsers(prev => {
-        const newSet = new Set(prev);
-        if (data.status === 'online') {
-          newSet.add(data.userId);
-        } else {
-          newSet.delete(data.userId);
-        }
-        return newSet;
-      });
-    };
-    socketRef.current.on('userStatus', handleUserStatus);
-    return () => {
-      socketRef.current?.off('userStatus', handleUserStatus);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!socketRef.current || !selectedChatId) return;
-    socketRef.current.emit('joinChat', { chatId: selectedChatId });
-    return () => {
-      socketRef.current?.emit('leaveChat', { chatId: selectedChatId });
-    };
-  }, [selectedChatId]);
-
-  useEffect(() => {
-    if (!socketRef.current) return;
-    const handleOnlineUsers = (userIds: string[]) => {
-      setOnlineUsers(new Set(userIds));
-    };
-    socketRef.current.on('onlineUsers', handleOnlineUsers);
-    return () => {
-      socketRef.current?.off('onlineUsers', handleOnlineUsers);
-    };
-  }, []);
 
   if (loading) return <div className={`flex h-screen items-center justify-center ${styles.background}`}><div className="animate-spin h-12 w-12 border-t-2 border-b-2 border-blue-500 rounded-full" /></div>;
   if (socketError) return (
@@ -800,9 +674,12 @@ export const ChatComponent: React.FC = () => {
               )}
               <div className="flex-1 overflow-y-auto overflow-x-hidden p-4" onScroll={handleScroll} ref={scrollRef}>
                 {/* Debug button to force re-render */}
-                <button onClick={() => setAllMessages([...allMessages])} style={{ marginBottom: 8, background: '#eee', padding: 4, borderRadius: 4 }}>
-                  Force Re-render (Debug)
-                </button>
+
+                {loadingMoreMessages && (
+                  <div className="flex justify-center p-2">
+                    <div className="animate-spin h-6 w-6 border-t-2 border-b-2 border-blue-500 rounded-full" />
+                  </div>
+                )}
                 {isLoadingMessages && messagesPage === 1 ? (
                   <div className="flex h-full items-center justify-center">
                     <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-blue-500 rounded-full" />
@@ -827,12 +704,8 @@ export const ChatComponent: React.FC = () => {
                           message={message}
                           previousMessage={index > 0 ? allMessages[index - 1] : undefined}
                           styles={styles}
-                          onReaction={handleReaction}
-                          onRemoveReaction={handleRemoveReaction}
                           onDelete={handleDeleteMessage}
-                          onEdit={handleEditMessage}
                           onReply={handleReplyToMessage}
-                          onForward={() => { }}
                           currentUserId={currentUserId || ''}
                         />
                       );

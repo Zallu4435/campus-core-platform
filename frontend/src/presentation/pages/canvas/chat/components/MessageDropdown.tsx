@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { FiSmile, FiCornerUpLeft, FiShare2, FiEdit2, FiTrash2, FiInfo, FiDownload, FiPaperclip, FiStar } from 'react-icons/fi';
+import { FiSmile, FiCornerUpLeft, FiEdit2, FiTrash2, FiDownload } from 'react-icons/fi';
 import { MessageDropdownProps } from '../../../../../domain/types/canvas/chat';
 
 export const MessageDropdown: React.FC<MessageDropdownProps> = ({
@@ -9,7 +9,6 @@ export const MessageDropdown: React.FC<MessageDropdownProps> = ({
   onClose,
   onReact,
   onReply,
-  onForward,
   onEdit,
   onDelete,
   onShowDeleteOptions
@@ -51,7 +50,7 @@ export const MessageDropdown: React.FC<MessageDropdownProps> = ({
         <FiSmile className="w-4 h-4 mr-3" />
         React
       </button>
-      
+
       <button
         onClick={() => {
           onReply();
@@ -62,19 +61,8 @@ export const MessageDropdown: React.FC<MessageDropdownProps> = ({
         <FiCornerUpLeft className="w-4 h-4 mr-3" />
         Reply
       </button>
-      
-      <button
-        onClick={() => {
-          onForward();
-          onClose();
-        }}
-        className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#2a3942] w-full text-left"
-      >
-        <FiShare2 className="w-4 h-4 mr-3" />
-        Forward
-      </button>
 
-      {isSentMessage && (
+      {isSentMessage && message.type === 'text' && (Date.now() - new Date(message.createdAt).getTime()) < 24 * 60 * 60 * 1000 && (
         <button
           onClick={() => {
             onEdit();
@@ -108,14 +96,6 @@ export const MessageDropdown: React.FC<MessageDropdownProps> = ({
         </button>
       )}
 
-      <button
-        onClick={onClose}
-        className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#2a3942] w-full text-left"
-      >
-        <FiInfo className="w-4 h-4 mr-3" />
-        Info
-      </button>
-
       {message.attachments && message.attachments.length > 0 && (
         <a
           href={message.attachments[0].url}
@@ -130,22 +110,6 @@ export const MessageDropdown: React.FC<MessageDropdownProps> = ({
           Download
         </a>
       )}
-
-      <button
-        onClick={onClose}
-        className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#2a3942] w-full text-left"
-      >
-        <FiPaperclip className="w-4 h-4 mr-3" />
-        Pin
-      </button>
-
-      <button
-        onClick={onClose}
-        className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#2a3942] w-full text-left"
-      >
-        <FiStar className="w-4 h-4 mr-3" />
-        Star
-      </button>
     </div>
   );
 };

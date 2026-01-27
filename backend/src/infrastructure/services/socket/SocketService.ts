@@ -213,9 +213,9 @@ export class SocketService {
     this.chatNamespace.to(chatId).emit("message", message);
 
     try {
-      const chat = await this.chatRepository.getChatDetails(chatId, message.senderId);
-      if (chat) {
-        chat.participants.forEach((participant) => {
+      const participants = await this.chatRepository.getChatParticipants(chatId);
+      if (participants.length > 0) {
+        participants.forEach((participant) => {
           if (participant.id !== message.senderId) {
             const socketId = this.userSockets.get(participant.id);
             if (socketId) {

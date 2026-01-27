@@ -14,20 +14,21 @@ export interface User {
 }
 
 export interface Attachment {
-  id?: string;
-  type: 'image' | 'document' | 'audio' | 'video' | 'file';
-  url: string;
-  name: string;
-  size?: number;
-  mimeType?: string;
+    id?: string;
+    type: 'image' | 'document' | 'audio' | 'video' | 'file';
+    url: string;
+    name: string;
+    size?: number;
+    mimeType?: string;
 }
 
 export interface Reaction {
-    id: string;
+    id?: string;
     emoji: string;
     userId: string;
-    createdAt: string;
-    count: number;
+    userName?: string;
+    createdAt?: string;
+    count?: number;
 }
 
 export interface ReplyTo {
@@ -185,7 +186,6 @@ export interface AttachmentMenuProps {
     styles: Styles;
     showAttachmentMenu: boolean;
     onFileSelect: () => void;
-    onCameraSelect: () => void;
     onClose: () => void;
 }
 
@@ -249,11 +249,7 @@ export interface ChatMessageProps {
     currentUserId: string;
     previousMessage?: Message;
     onReply: (message: Message) => void;
-    onForward: (messageId: string) => void;
     onDelete: (messageId: string, deleteForEveryone: boolean) => void;
-    onEdit: (messageId: string, newContent: string) => void;
-    onReaction: (messageId: string, emoji: string) => void;
-    onRemoveReaction: (messageId: string, emoji: string) => void;
     styles: Styles;
 }
 
@@ -326,11 +322,7 @@ export interface LiveWaveformProps {
     isRecording: boolean;
 }
 
-export interface Attachment {
-    url: string;
-    name: string;
-    type: 'image' | 'video' | 'audio' | 'document' | 'file';
-}
+
 
 export interface MediaPreviewProps {
     message: Message;
@@ -395,18 +387,13 @@ export interface MessageDropdownProps {
     onClose: () => void;
     onReact: () => void;
     onReply: () => void;
-    onForward: () => void;
     onEdit: () => void;
     onDelete: () => void;
     onShowDeleteOptions: () => void;
 }
 
 
-export interface Reaction {
-    emoji: string;
-    userId: string;
-    userName: string;
-}
+
 
 export interface MessageReactionsModalProps {
     isVisible: boolean;

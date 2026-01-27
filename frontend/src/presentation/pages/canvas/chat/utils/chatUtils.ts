@@ -34,10 +34,16 @@ export const getStyles = (isDarkMode: boolean): Styles => ({
 export const formatMessageTime = (date: string | Date): string => {
   const messageDate = new Date(date);
   const now = new Date();
-  const diffInDays = Math.floor((now.getTime() - messageDate.getTime()) / (1000 * 60 * 60 * 24));
+
+  // Reset hours to compare just the dates
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const msgDate = new Date(messageDate.getFullYear(), messageDate.getMonth(), messageDate.getDate());
+
+  const diffInTime = today.getTime() - msgDate.getTime();
+  const diffInDays = Math.floor(diffInTime / (1000 * 3600 * 24));
 
   if (diffInDays === 0) {
-    return messageDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return 'Today';
   }
 
   if (diffInDays === 1) {
@@ -58,7 +64,11 @@ export const formatMessageTime = (date: string | Date): string => {
 export const formatChatTime = (date: string | Date): string => {
   const messageDate = new Date(date);
   const now = new Date();
-  const diffInDays = Math.floor((now.getTime() - messageDate.getTime()) / (1000 * 60 * 60 * 24));
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const msgDate = new Date(messageDate.getFullYear(), messageDate.getMonth(), messageDate.getDate());
+
+  const diffInTime = today.getTime() - msgDate.getTime();
+  const diffInDays = Math.floor(diffInTime / (1000 * 3600 * 24));
 
   if (diffInDays === 0) {
     return messageDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -82,8 +92,8 @@ export const formatChatTime = (date: string | Date): string => {
 export const shouldShowDateHeader = (currentMessage: Message, previousMessage?: Message): boolean => {
   if (!previousMessage) return true;
 
-  const currentDate = new Date(currentMessage.time || '');
-  const previousDate = new Date(previousMessage.time || '');
+  const currentDate = new Date(currentMessage.createdAt || '');
+  const previousDate = new Date(previousMessage.createdAt || '');
 
   return currentDate.toDateString() !== previousDate.toDateString();
 };

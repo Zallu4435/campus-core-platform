@@ -7,7 +7,6 @@ import {
   IoPeopleOutline as Group,
 } from 'react-icons/io5';
 import { debounce } from 'lodash';
-import toast from 'react-hot-toast';
 import AddNotificationModal from './AddNotificationModal';
 import NotificationDetailsModal from './NotificationDetailsModal';
 import { useNotificationManagement } from '../../../../application/hooks/useNotificationManagement';
