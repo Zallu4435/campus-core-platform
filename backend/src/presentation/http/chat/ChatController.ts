@@ -223,6 +223,7 @@ export class ChatController {
     };
 
     await this._markMessagesAsReadUseCase.execute(params);
+    socketService.handleMessagesRead(chatId, req.user.userId);
 
     return this._httpSuccess.success_200({ message: 'Messages marked as read' });
   }

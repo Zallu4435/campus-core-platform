@@ -19,6 +19,7 @@ interface SocketMessage {
 
 interface MessageStatusData {
   messageId: string;
+  chatId: string;
   status: MessageStatus;
 }
 
@@ -156,7 +157,9 @@ export class SocketService {
     socket.on("messageStatus", async (data: MessageStatusData) => {
       try {
         await this.chatRepository.updateMessageStatus(data.messageId, data.status);
-        socket.to(data.messageId).emit("messageStatus", data);
+        if (data.chatId) {
+          socket.to(data.chatId).emit("messageStatus", data);
+        }
       } catch (error) { }
     });
 
@@ -228,6 +231,7 @@ export class SocketService {
               socketIds.forEach(socketId => {
                 this.chatNamespace.to(socketId).emit("messageStatus", {
                   messageId: message.id,
+                  chatId: message.chatId,
                   status: "delivered"
                 });
               });
@@ -246,6 +250,10 @@ export class SocketService {
 
   public async handleDeletedChat(chatId: string) {
     this.chatNamespace.to(chatId).emit('chatDeleted', { chatId });
+  }
+
+  public handleMessagesRead(chatId: string, userId: string) {
+    this.chatNamespace.to(chatId).emit("messagesRead", { chatId, userId });
   }
 
   public emitToUser(userId: string, event: string, data: any) {
