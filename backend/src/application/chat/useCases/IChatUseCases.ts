@@ -21,7 +21,8 @@ import {
   ReplyToMessageRequestDTO,
   DeleteChatRequestDTO,
   BlockChatRequestDTO,
-  ClearChatRequestDTO
+  ClearChatRequestDTO,
+  ToggleMuteRequestDTO
 } from "../dtos/ChatRequestDTOs";
 import {
   GetChatsResponseDTO,
@@ -121,4 +122,8 @@ export interface IBlockChatUseCase {
 
 export interface IClearChatUseCase {
   execute(params: ClearChatRequestDTO): Promise<void>;
+}
+
+export interface IToggleMuteUseCase {
+  execute(params: ToggleMuteRequestDTO): Promise<void>;
 }

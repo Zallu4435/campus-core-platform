@@ -30,6 +30,7 @@ export interface IChatSource {
         userId: string;
         clearedAt?: Date;
         isDeleted?: boolean;
+        isMuted?: boolean;
     }[];
     createdAt: Date;
     updatedAt: Date;

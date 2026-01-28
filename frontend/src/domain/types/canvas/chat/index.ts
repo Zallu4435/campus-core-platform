@@ -140,6 +140,7 @@ export interface Chat {
     unreadCount: number;
     updatedAt: Date;
     blockedUsers?: { blocker: string; blocked: string }[];
+    isMuted?: boolean;
 }
 
 export interface PaginatedResponse<T> {
@@ -254,6 +255,7 @@ export interface ChatMessageProps {
     onReplyClick?: (messageId: string) => void;
     styles: Styles;
     participants?: Participant[];
+    isGroup?: boolean;
 }
 
 export interface CreateGroupModalProps {

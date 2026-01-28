@@ -15,27 +15,46 @@ const GroupSettingsModal: React.FC<GroupSettingsModalProps> = ({
   const [showMemberSearch, setShowMemberSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUsers, setSelectedUsers] = useState<User[]>([]);
-  const [isMuted, setIsMuted] = useState(false);
+  const [isMuted, setIsMuted] = useState(chat.isMuted || false);
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
   const [newDescription, setNewDescription] = useState(chat.description || '');
   const [newName, setNewName] = useState(chat.name || '');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
 
-  const { chatDetails, isLoadingChatDetails, searchUsers } = useChatQueries({ chatId: chat.id, query: searchQuery, chatsPage: 1, chatsLimit: 20 });
+  const { chatDetails, isLoadingChatDetails, searchUsers } = useChatQueries({ chatId: chat.id, query: debouncedSearchQuery, chatsPage: 1, chatsLimit: 20 });
   const {
     addGroupMember,
     removeGroupMember,
     updateGroupAdmin,
     updateGroupSettings,
     updateGroupInfo,
+    toggleMute,
   } = useChatMutations(chat.id, currentUser.id);
 
-  const group = chatDetails || chat;
+  const group = (chatDetails as any)?.chat || chat;
 
   if (isLoadingChatDetails || !group || !group.participants) return <div>Loading...</div>;
 
-  const participantIds = (group?.participants ?? []).map((p) => p.id);
-  const filteredSearchResults = searchUsers?.items?.filter((user: User) => !participantIds.includes(user.id)) || [];
+  const participantIds = (group?.participants ?? []).map((p: User) => p.id);
+  const filteredSearchResults = (searchUsers?.data || searchUsers?.items || []).filter((user: User) => !participantIds.includes(user.id));
+
+  // Debounce search query
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Close modal when chat changes
+  const initialChatId = React.useRef(chat.id);
+  React.useEffect(() => {
+    if (initialChatId.current !== chat.id) {
+      onClose();
+    }
+  }, [chat.id, onClose]);
 
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
@@ -74,11 +93,17 @@ const GroupSettingsModal: React.FC<GroupSettingsModalProps> = ({
     setSearchQuery('');
   };
 
-  const handleToggleMute = () => {
-    setIsMuted(!isMuted);
+  const handleToggleMute = async () => {
+    try {
+      await toggleMute.mutateAsync(chat.id);
+      setIsMuted(!isMuted);
+      toast.success(isMuted ? 'Notifications unmuted' : 'Notifications muted');
+    } catch (error) {
+      toast.error('Failed to toggle notifications');
+    }
   };
 
-  const firstAdmin = Array.isArray(group.admins) && group.admins.length > 0 ? group.admins[0] : undefined;
+  const currentUserIsAdmin = group.admins?.includes(currentUser.id);
 
 
   const handleSaveName = () => {
@@ -96,8 +121,8 @@ const GroupSettingsModal: React.FC<GroupSettingsModalProps> = ({
   };
 
   const handleSettingToggle = (settingKey: GroupSettingKey, currentValue: boolean) => {
-    if (!firstAdmin) return;
-    
+    if (!currentUserIsAdmin) return;
+
     const updates: Partial<Chat['settings']> = { [settingKey]: !currentValue };
     updateGroupSettings.mutate(updates, {
       onSuccess: () => {
@@ -163,7 +188,9 @@ const GroupSettingsModal: React.FC<GroupSettingsModalProps> = ({
                         )}
                       </div>
                       <div className="flex-1 min-w-0 text-left items-start">
-                        <div className="font-medium text-gray-900 dark:text-white w-full whitespace-normal break-words text-left">{user.name}</div>
+                        <div className="font-medium text-gray-900 dark:text-white w-full whitespace-normal break-words text-left">
+                          {user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.name || 'Unknown'}
+                        </div>
                         <div className="text-sm text-gray-500 dark:text-gray-400 w-full whitespace-normal break-words text-left">{user.email}</div>
                       </div>
                     </button>
@@ -205,7 +232,7 @@ const GroupSettingsModal: React.FC<GroupSettingsModalProps> = ({
         </div>
 
         <div className={`absolute inset-0 w-full h-full overflow-y-auto px-6 py-4 space-y-8 transition-all duration-300 ${showMemberSearch ? 'opacity-50 pointer-events-none' : ''}`}
-             style={{ maxHeight: '100%' }}>
+          style={{ maxHeight: '100%' }}>
           <div className="space-y-6">
             <div className="rounded-xl p-4 border border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between mb-3">
@@ -213,7 +240,7 @@ const GroupSettingsModal: React.FC<GroupSettingsModalProps> = ({
                   <FiUsers className="w-5 h-5 text-gray-700 dark:text-gray-300" />
                   <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Group Name</span>
                 </label>
-                {firstAdmin && (
+                {(currentUserIsAdmin || !group.settings?.onlyAdminsCanChangeInfo) && (
                   <button
                     onClick={() => setIsEditingName(true)}
                     className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 group"
@@ -258,7 +285,7 @@ const GroupSettingsModal: React.FC<GroupSettingsModalProps> = ({
                   <FiMessageSquare className="w-5 h-5 text-gray-700 dark:text-gray-300" />
                   <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Description</span>
                 </label>
-                {firstAdmin && (
+                {(currentUserIsAdmin || !group.settings?.onlyAdminsCanChangeInfo) && (
                   <button
                     onClick={() => setIsEditingDescription(true)}
                     className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 group"
@@ -304,7 +331,7 @@ const GroupSettingsModal: React.FC<GroupSettingsModalProps> = ({
                 <span>Members</span>
                 <span className="text-sm font-normal text-gray-500 dark:text-gray-400">({group.participants.length})</span>
               </h3>
-              {firstAdmin && (
+              {(currentUserIsAdmin || !group.settings?.onlyAdminsCanAddMembers) && (
                 <button
                   onClick={() => setShowMemberSearch(true)}
                   className="p-2 rounded-lg bg-orange-500 text-white hover:bg-orange-600 transition-all duration-200 flex items-center space-x-2"
@@ -349,7 +376,7 @@ const GroupSettingsModal: React.FC<GroupSettingsModalProps> = ({
                       </div>
                     </div>
                   </div>
-                  {firstAdmin && participant.id !== currentUser.id && (
+                  {currentUserIsAdmin && participant.id !== currentUser.id && (
                     <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                       {!Array.isArray(group.admins) || !group.admins.includes(participant.id) ? (
                         <button
@@ -396,11 +423,11 @@ const GroupSettingsModal: React.FC<GroupSettingsModalProps> = ({
                   <div
                     key={setting.key}
                     className="flex items-center justify-between p-4 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all duration-200 group cursor-pointer"
-                    style={{ userSelect: 'none', opacity: !firstAdmin ? 0.5 : 1 }}
+                    style={{ userSelect: 'none', opacity: !currentUserIsAdmin ? 0.5 : 1 }}
                     onClick={() => handleSettingToggle(setting.key, checked)}
                     tabIndex={0}
                     onKeyDown={e => {
-                      if (!firstAdmin) return;
+                      if (!currentUserIsAdmin) return;
                       if (e.key === 'Enter' || e.key === ' ') {
                         handleSettingToggle(setting.key, checked);
                       }
@@ -423,7 +450,7 @@ const GroupSettingsModal: React.FC<GroupSettingsModalProps> = ({
                         className="sr-only"
                         tabIndex={-1}
                       />
-                      <div className={`w-12 h-6 rounded-full transition-all duration-200 ${checked ? 'bg-blue-500' : 'bg-gray-200 dark:bg-gray-600'} ${!firstAdmin ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                      <div className={`w-12 h-6 rounded-full transition-all duration-200 ${checked ? 'bg-blue-500' : 'bg-gray-200 dark:bg-gray-600'} ${!currentUserIsAdmin ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                       >
                         <div className={`w-5 h-5 bg-white rounded-full shadow-lg transform transition-transform duration-200 ${checked ? 'translate-x-6' : 'translate-x-0.5'} mt-0.5`} />
                       </div>
@@ -468,8 +495,7 @@ const GroupSettingsModal: React.FC<GroupSettingsModalProps> = ({
         <div className="space-y-2">
           <button
             onClick={onLeaveGroup}
-            className="w-full flex items-center justify-center space-x-2 p-3 rounded-lg border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200 font-medium"
-            disabled={!firstAdmin || group.participants.length <= 1}
+            className="w-full flex items-center justify-center space-x-2 p-3 rounded-lg border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200 font-medium cursor-pointer"
           >
             <FiLogOut className="w-4 h-4" />
             <span>Leave Group</span>

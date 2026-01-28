@@ -18,7 +18,8 @@ const ChatMessageComponent = ({
   onReply,
   onReplyClick,
   currentUserId,
-  participants = []
+  participants = [],
+  isGroup = false
 }: ChatMessageProps, ref: ForwardedRef<HTMLDivElement>) => {
 
   const getUserName = (userId: string) => {
@@ -29,6 +30,27 @@ const ChatMessageComponent = ({
       return `${participant.firstName || ''} ${participant.lastName || ''}`.trim() || 'User';
     }
     return `User ${userId.slice(-4)}`;
+  };
+
+  const getUserColor = (userId: string) => {
+    const colors = [
+      'text-blue-500', 'text-emerald-500', 'text-purple-500', 'text-pink-500',
+      'text-orange-500', 'text-teal-500', 'text-indigo-500', 'text-rose-500'
+    ];
+    let hash = 0;
+    for (let i = 0; i < userId.length; i++) {
+      hash = userId.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return colors[Math.abs(hash) % colors.length];
+  };
+
+  const renderSenderName = () => {
+    if (!isGroup || isSentMessage || message.isDeleted) return null;
+    return (
+      <div className={`text-xs font-bold mb-1 ${getUserColor(message.senderId)}`}>
+        {getUserName(message.senderId)}
+      </div>
+    );
   };
 
   const [showMenu, setShowMenu] = useState(false);
@@ -424,18 +446,21 @@ const ChatMessageComponent = ({
       )}
 
       <div id={`message-${message.id}`} className={`group relative flex mb-4 ${isSentMessage ? 'justify-end' : 'justify-start'}`}>
-        {isSentMessage && !message.isDeleted && (
-          <div className="flex items-center space-x-1 mr-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowEmojiPicker(!showEmojiPicker);
-              }}
-              className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-[#2a3942] text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
-              title="React"
-            >
-              <FiSmile className="w-4 h-4" />
-            </button>
+        {!isSentMessage && isGroup && (
+          <div className="flex-shrink-0 mr-2 mt-auto mb-1 self-end">
+            <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden border border-gray-100 dark:border-gray-600">
+              {participants.find(p => p.id === message.senderId)?.avatar ? (
+                <img
+                  src={participants.find(p => p.id === message.senderId)?.avatar}
+                  alt={getUserName(message.senderId)}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-xs font-bold text-gray-500">
+                  {getUserName(message.senderId).charAt(0).toUpperCase()}
+                </span>
+              )}
+            </div>
           </div>
         )}
 
@@ -461,6 +486,7 @@ const ChatMessageComponent = ({
                 }`}
             />
 
+            {renderSenderName()}
             {renderForwardedFrom()}
             {renderReplyTo()}
             {renderMessageContent()}

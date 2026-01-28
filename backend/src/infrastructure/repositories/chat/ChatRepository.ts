@@ -125,6 +125,14 @@ export class ChatRepository implements IChatRepository {
       }
     }
 
+    // Check group permissions
+    if (chat.type === 'group' && chat.settings?.onlyAdminsCanPost) {
+      if (!chat.admins.includes(senderId)) {
+        throw new Error('Only admins can send messages in this group');
+      }
+    }
+
+
     let hydratedReplyTo = undefined;
     if (replyTo) {
       const original = await MessageModel.findById(replyTo.messageId);
@@ -431,17 +439,30 @@ export class ChatRepository implements IChatRepository {
   }
 
   async addGroupMember(params: { chatId: string; userId: string; addedBy: string }): Promise<void> {
-    const { chatId, userId } = params;
+    const { chatId, userId, addedBy } = params;
+
+    // Check if settings require admin permission
+    const chat = await ChatModel.findById(chatId);
+    if (!chat) throw new Error("Chat not found");
+
+    if (chat.settings?.onlyAdminsCanAddMembers) {
+      if (!(await this.isAdmin(chatId, addedBy))) {
+        throw new Error("Only admins can add members to this group");
+      }
+    }
+
     await ChatModel.findByIdAndUpdate(chatId, { $addToSet: { participants: userId } });
   }
 
   async removeGroupMember(params: { chatId: string; userId: string; removedBy: string }): Promise<void> {
-    const { chatId, userId } = params;
+    const { chatId, userId, removedBy } = params;
+    if (!(await this.isAdmin(chatId, removedBy))) throw new Error("Unauthorized: Only admins can remove members");
     await ChatModel.findByIdAndUpdate(chatId, { $pull: { participants: userId, admins: userId } });
   }
 
   async updateGroupAdmin(params: { chatId: string; userId: string; isAdmin: boolean; updatedBy: string }): Promise<void> {
-    const { chatId, userId, isAdmin } = params;
+    const { chatId, userId, isAdmin, updatedBy } = params;
+    if (!(await this.isAdmin(chatId, updatedBy))) throw new Error("Unauthorized: Only admins can update admin status");
     if (isAdmin) {
       await ChatModel.findByIdAndUpdate(chatId, { $addToSet: { admins: userId } });
     } else {
@@ -450,7 +471,8 @@ export class ChatRepository implements IChatRepository {
   }
 
   async updateGroupSettings(params: { chatId: string; settings: Record<string, unknown>; updatedBy: string }): Promise<void> {
-    const { chatId, settings } = params;
+    const { chatId, settings, updatedBy } = params;
+    if (!(await this.isAdmin(chatId, updatedBy))) throw new Error("Unauthorized: Only admins can update group settings");
     const updateQuery: { [key: string]: boolean } = {};
     for (const key in settings) {
       if (Object.prototype.hasOwnProperty.call(settings, key)) {
@@ -461,7 +483,18 @@ export class ChatRepository implements IChatRepository {
   }
 
   async updateGroupInfo(params: { chatId: string; name?: string; description?: string; avatar?: string; updatedBy: string }): Promise<void> {
-    const { chatId, name, description, avatar } = params;
+    const { chatId, name, description, avatar, updatedBy } = params;
+
+    // Check if settings require admin permission
+    const chat = await ChatModel.findById(chatId);
+    if (!chat) throw new Error("Chat not found");
+
+    if (chat.settings?.onlyAdminsCanChangeInfo) {
+      if (!(await this.isAdmin(chatId, updatedBy))) {
+        throw new Error("Only admins can change group info");
+      }
+    }
+
     const update: Record<string, unknown> = {};
     if (name) update.name = name;
     if (description) update.description = description;
@@ -469,11 +502,44 @@ export class ChatRepository implements IChatRepository {
     await ChatModel.findByIdAndUpdate(chatId, { $set: update });
   }
 
+  async toggleMute(params: { chatId: string; userId: string }): Promise<void> {
+    const { chatId, userId } = params;
+    const chat = await ChatModel.findById(chatId);
+    if (!chat) throw new Error("Chat not found");
+
+    const metaIndex = chat.userChatMeta.findIndex(meta => meta.userId === userId);
+    if (metaIndex === -1) {
+      // If no meta exists, create it
+      chat.userChatMeta.push({ userId, isMuted: true });
+    } else {
+      // Toggle existing meta
+      chat.userChatMeta[metaIndex].isMuted = !chat.userChatMeta[metaIndex].isMuted;
+    }
+    await chat.save();
+  }
+
+  private async isAdmin(chatId: string, userId: string): Promise<boolean> {
+    const chat = await ChatModel.findById(chatId);
+    if (!chat) return false;
+    return chat.admins.includes(userId);
+  }
+
   async leaveGroup(params: { chatId: string; userId: string }): Promise<void> {
     const { chatId, userId } = params;
-    await ChatModel.findByIdAndUpdate(chatId, {
-      $pull: { participants: userId, admins: userId }
-    });
+    const chat = await ChatModel.findById(chatId);
+    if (!chat) throw new Error('Chat not found');
+
+    const otherParticipants = chat.participants.filter(p => p.toString() !== userId);
+
+    if (otherParticipants.length === 0) {
+      // If no one is left, delete the chat
+      await ChatModel.findByIdAndDelete(chatId);
+      await MessageModel.deleteMany({ chatId });
+    } else {
+      await ChatModel.findByIdAndUpdate(chatId, {
+        $pull: { participants: userId, admins: userId }
+      });
+    }
   }
 
   async editMessage(params: { chatId: string; messageId: string; content: string; userId: string }): Promise<void> {

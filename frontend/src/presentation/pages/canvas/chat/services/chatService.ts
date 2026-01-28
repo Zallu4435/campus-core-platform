@@ -331,6 +331,17 @@ class ChatService {
       throw new Error('Failed to clear chat');
     }
   }
+
+  async toggleMute(chatId: string): Promise<void> {
+    try {
+      await httpClient.post(`/chats/${chatId}/toggle-mute`);
+    } catch (error: unknown) {
+      if (isAxiosErrorWithApiError(error)) {
+        throw new Error(error.response?.data?.error || error.response?.data?.message || 'Failed to toggle mute');
+      }
+      throw new Error('Failed to toggle mute');
+    }
+  }
 }
 
 export const chatService = new ChatService(); 

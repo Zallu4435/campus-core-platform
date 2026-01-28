@@ -164,4 +164,9 @@ export interface BlockChatRequestDTO {
 export interface ClearChatRequestDTO {
   chatId: string;
   userId: string;
+}
+
+export interface ToggleMuteRequestDTO {
+  chatId: string;
+  userId: string;
 } 

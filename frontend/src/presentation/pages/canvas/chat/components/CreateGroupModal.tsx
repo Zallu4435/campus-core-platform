@@ -13,7 +13,7 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
     document.body.style.overflow = 'hidden';
     document.body.style.position = 'fixed';
     document.body.style.width = '100%';
-    
+
     return () => {
       document.body.style.overflow = originalStyle;
       document.body.style.position = '';
@@ -38,9 +38,14 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
   const [showSettings, setShowSettings] = useState(false);
   const [groupAvatar, setGroupAvatar] = useState<File | null>(null);
   const [groupAvatarPreview, setGroupAvatarPreview] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{ name?: string; description?: string }>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
+    setError(null);
+    setFieldErrors({});
     if (query.trim()) {
       try {
         const result = await onSearch(query);
@@ -72,6 +77,8 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
   const handleUserSelect = (user: User) => {
     setSelectedUsers(prev => [...prev, user]);
     setSearchResults(prev => prev.filter(u => u.id !== user.id));
+    setError(null);
+    setFieldErrors({});
   };
 
   const handleUserRemove = (userId: string) => {
@@ -81,11 +88,17 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
   const handleNext = () => {
     if (selectedUsers.length > 0) {
       setStep('info');
+      setError(null);
+      setFieldErrors({});
+    } else {
+      setError('Please select at least one participant');
     }
   };
 
   const handleBack = () => {
     setStep('participants');
+    setError(null);
+    setFieldErrors({});
   };
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -99,19 +112,61 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
   };
 
   const handleSubmit = async () => {
-    if (groupName.trim() && selectedUsers.length > 0) {
-      const params = {
-        name: groupName.trim(),
-        description: description.trim(),
-        participants: selectedUsers.map(user => user.id),
-        settings,
-        avatar: groupAvatar ? groupAvatar : undefined,
-      };
-      try {
-        await onCreateGroup(params);
-      } catch (err) {
-        console.error('Error in CreateGroupModal handleSubmit:', err);
+    setError(null);
+    setFieldErrors({});
+
+    const newFieldErrors: { name?: string; description?: string } = {};
+
+    // Frontend Validation
+    if (!groupName.trim()) {
+      newFieldErrors.name = 'Group subject is required';
+    } else if (groupName.trim().length < 3) {
+      newFieldErrors.name = 'Group subject must be at least 3 characters';
+    }
+
+    if (!description.trim()) {
+      newFieldErrors.description = 'Group description is required';
+    } else if (description.trim().length < 10) {
+      newFieldErrors.description = 'Description must be at least 10 characters';
+    }
+
+    if (Object.keys(newFieldErrors).length > 0) {
+      setFieldErrors(newFieldErrors);
+      setError('Please fix the errors below');
+      return;
+    }
+
+    if (selectedUsers.length === 0) {
+      setError('At least one participant is required');
+      setStep('participants');
+      return;
+    }
+
+    setIsSubmitting(true);
+    const params = {
+      name: groupName.trim(),
+      description: description.trim(),
+      participants: selectedUsers.map(user => user.id),
+      settings,
+      avatar: groupAvatar ? groupAvatar : undefined,
+    };
+
+    try {
+      await onCreateGroup(params);
+    } catch (err: any) {
+      console.error('Error in CreateGroupModal handleSubmit:', err);
+      // Handle backend errors
+      const backendMessage = err.response?.data?.message || err.message || 'Failed to create group. Please try again.';
+      setError(backendMessage);
+
+      // Try to map backend error to fields if possible
+      if (backendMessage.toLowerCase().includes('name')) {
+        setFieldErrors(prev => ({ ...prev, name: backendMessage }));
+      } else if (backendMessage.toLowerCase().includes('description')) {
+        setFieldErrors(prev => ({ ...prev, description: backendMessage }));
       }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -123,8 +178,8 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
             <FiX size={20} />
           </button>
           <div className="flex-1">
-            <h2 className="text-lg font-medium">Add group participants</h2>
-            <p className="text-sm opacity-90">{selectedUsers.length} of 1024 selected</p>
+            <h2 className="text-lg font-medium">Add participants</h2>
+            <p className="text-sm opacity-90">{selectedUsers.length} selected</p>
           </div>
         </div>
 
@@ -166,6 +221,13 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {error && step === 'participants' && (
+          <div className="px-6 py-3 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-sm border-b border-red-200 dark:border-red-800 flex items-center">
+            <FiX className="mr-2 flex-shrink-0" />
+            <span>{error}</span>
           </div>
         )}
 
@@ -225,6 +287,13 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
         </div>
 
         <div className="flex-1 flex flex-col">
+          {error && step === 'info' && (
+            <div className="px-6 py-3 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-sm border-b border-red-200 dark:border-red-800 flex items-center">
+              <FiX className="mr-2 flex-shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
           <div className="px-6 py-8 border-b border-gray-200 dark:border-[#2a3942]">
             <div className="flex items-center space-x-4">
               <div className="relative">
@@ -254,12 +323,23 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
                 <input
                   type="text"
                   value={groupName}
-                  onChange={(e) => setGroupName(e.target.value)}
+                  onChange={(e) => {
+                    setGroupName(e.target.value);
+                    if (fieldErrors.name) setFieldErrors(prev => ({ ...prev, name: undefined }));
+                    setError(null);
+                  }}
                   placeholder="Group subject"
-                  className="w-full py-2 px-0 text-lg bg-transparent border-0 border-b border-gray-300 dark:border-[#2a3942] focus:outline-none focus:border-[#00a884] text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                  className={`w-full py-2 px-0 text-lg bg-transparent border-0 border-b ${fieldErrors.name ? 'border-red-500' : 'border-gray-300'
+                    } dark:border-[#2a3942] focus:outline-none ${fieldErrors.name ? 'focus:border-red-500' : 'focus:border-[#00a884]'
+                    } text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400`}
                   required
                   maxLength={25}
                 />
+                {fieldErrors.name && (
+                  <div className="text-xs text-red-500 mt-1">
+                    {fieldErrors.name}
+                  </div>
+                )}
                 <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   {25 - groupName.length} characters remaining
                 </div>
@@ -271,12 +351,23 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
             <div className="relative">
               <textarea
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Group description (optional)"
-                className="w-full py-2 px-0 bg-transparent border-0 border-b border-gray-300 dark:border-[#2a3942] focus:outline-none focus:border-[#00a884] text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 resize-none"
+                onChange={(e) => {
+                  setDescription(e.target.value);
+                  if (fieldErrors.description) setFieldErrors(prev => ({ ...prev, description: undefined }));
+                  setError(null);
+                }}
+                placeholder="Group description (required)"
+                className={`w-full py-2 px-0 bg-transparent border-0 border-b ${fieldErrors.description ? 'border-red-500' : 'border-gray-300'
+                  } dark:border-[#2a3942] focus:outline-none ${fieldErrors.description ? 'focus:border-red-500' : 'focus:border-[#00a884]'
+                  } text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 resize-none`}
                 rows={1}
                 maxLength={512}
               />
+              {fieldErrors.description && (
+                <div className="text-xs text-red-500 mt-1">
+                  {fieldErrors.description}
+                </div>
+              )}
               <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 {512 - description.length} characters remaining
               </div>
@@ -310,6 +401,12 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
                 </div>
               ))}
             </div>
+          </div>
+
+          <div className="px-6 py-4 text-center">
+            {error && step === 'info' && (
+              <p className="text-red-500 text-sm mb-2">{error}</p>
+            )}
           </div>
 
           <div className="px-6 py-4">
@@ -389,10 +486,14 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
             <button
               type="button"
               onClick={handleSubmit}
-              disabled={!groupName.trim()}
-              className="w-12 h-12 bg-[#00a884] text-white rounded-full flex items-center justify-center ml-auto hover:bg-[#008a72] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isSubmitting || !groupName.trim()}
+              className="w-12 h-12 bg-[#00a884] text-white rounded-full flex items-center justify-center ml-auto hover:bg-[#008a72] transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
             >
-              <FiCheck size={20} />
+              {isSubmitting ? (
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <FiCheck size={20} />
+              )}
             </button>
           </div>
         </div>

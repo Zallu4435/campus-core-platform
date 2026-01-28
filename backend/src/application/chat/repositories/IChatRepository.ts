@@ -50,6 +50,7 @@ export interface IChatRepository {
   blockChat(params: { chatId: string; userId: string }): Promise<void>;
   updateMessageStatus(messageId: string, status: string): Promise<void>;
   clearChat(params: { chatId: string; userId: string }): Promise<void>;
+  toggleMute(params: { chatId: string; userId: string }): Promise<void>;
 
   // Helper methods
   getUnreadCountForChat(params: { chatId: string; userId: string }): Promise<number>;

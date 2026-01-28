@@ -54,7 +54,58 @@ export const ChatComponent: React.FC = () => {
   const currentUser = useSelector((state: RootState) => state.auth.user);
   const currentUserId = currentUser?.id;
 
-  const { socketError, onlineUsers, emitTyping } = useChatSocket(selectedChatId);
+  const { socketError, onlineUsers, emitTyping } = useChatSocket(selectedChatId, {
+    onChatDeleted: (data) => {
+      if (selectedChatId === data.chatId) {
+        setSelectedChatId(null);
+        setShowMobileChat(false);
+        if (data.initiatorId !== currentUserId) {
+          toast.error('This chat has been deleted');
+        }
+      }
+    },
+    onParticipantRemoved: (data) => {
+      if (selectedChatId === data.chatId) {
+        setSelectedChatId(null);
+        setShowMobileChat(false);
+        if (data.initiatorId !== currentUserId) {
+          toast.error('You have been removed from this group');
+        }
+      }
+    },
+    onChatBlocked: (data) => {
+      if (selectedChatId === data.chatId) {
+        // The memoized isBlockedByMe/isBlockedMe will update after query invalidation
+        if (data.isBlocked) {
+          if (data.initiatorId !== currentUserId) {
+            if (data.blockerId !== currentUserId) {
+              toast.error('You have been blocked');
+            } else {
+              toast.success('User blocked');
+              setSelectedChatId(null); // Optionally close the chat if I'm the blocker
+            }
+          }
+        } else {
+          if (data.initiatorId !== currentUserId) {
+            toast.success('User unblocked');
+          }
+        }
+      }
+    },
+    onGroupUpdated: (data) => {
+      if (selectedChatId === data.chatId && data.initiatorId !== currentUserId) {
+        if (data.type === 'settings') {
+          toast.success('Group settings updated');
+        } else if (data.type === 'admin') {
+          toast.success(`Admin status updated`);
+        } else if (data.type === 'info') {
+          toast.success('Group information updated');
+        } else if (data.type === 'memberLeft') {
+          toast.success('A member has left the group');
+        }
+      }
+    }
+  });
 
   const {
     chatsResponse,
@@ -112,6 +163,21 @@ export const ChatComponent: React.FC = () => {
   const isBlockedMe = Array.isArray(flatChat?.blockedUsers) && flatChat.blockedUsers.some(
     (entry: { blocker: string; blocked: string }) => entry.blocked === currentUserId
   );
+
+  // Check if user has permission to send messages
+  const canSendMessages = useMemo(() => {
+    if (!flatChat) return true;
+    if (flatChat.type !== 'group') return true;
+    if (!flatChat.settings?.onlyAdminsCanPost) return true;
+    return flatChat.admins?.includes(currentUserId || '') || false;
+  }, [flatChat, currentUserId]);
+
+  const inputDisabledReason = useMemo(() => {
+    if (isBlockedByMe || isBlockedMe) return 'This chat is blocked';
+    if (!canSendMessages) return 'Only admins can send messages in this group';
+    return undefined;
+  }, [isBlockedByMe, isBlockedMe, canSendMessages]);
+
 
   const visibleMessages = useMemo(() => {
     return allMessages.filter(message => {
@@ -413,14 +479,23 @@ export const ChatComponent: React.FC = () => {
 
   const handleLeaveGroup = async () => {
     if (!flatChat) return;
+    const isLastAdmin = flatChat.type === 'group' &&
+      flatChat.admins?.length === 1 &&
+      flatChat.admins.includes(currentUserId || '');
+
+    if (isLastAdmin && flatChat.participants.length > 1) {
+      toast.error("You can't leave the group without selecting another admin first.", { id: 'leave-group' });
+      return;
+    }
+
     try {
       await chatMutations.leaveGroup.mutateAsync();
       setSelectedChatId(null);
       setShowGroupSettings(false);
-      toast.success('Left group');
+      toast.success('Left group', { id: 'leave-group' });
     } catch (error) {
       console.error('Error leaving group:', error);
-      toast.error('Failed to leave group');
+      toast.error('Failed to leave group', { id: 'leave-group' });
     }
   };
 
@@ -770,6 +845,7 @@ export const ChatComponent: React.FC = () => {
                         onReplyClick={handleReplyClick}
                         currentUserId={currentUserId || ''}
                         participants={flatChat?.participants || []}
+                        isGroup={flatChat?.type === 'group'}
                       />
                     );
                   })
@@ -790,7 +866,8 @@ export const ChatComponent: React.FC = () => {
                 onCancelReply={() => setReplyToMessage(null)}
                 selectedChatId={selectedChatId || ''}
                 currentUserId={currentUserId || ''}
-                disabled={isBlockedByMe || isBlockedMe}
+                disabled={isBlockedByMe || isBlockedMe || !canSendMessages}
+                disabledReason={inputDisabledReason}
               />
             </>
           ) : pendingUser ? (

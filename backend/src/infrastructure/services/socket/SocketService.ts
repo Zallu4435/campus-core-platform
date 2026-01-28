@@ -243,13 +243,43 @@ export class SocketService {
     }
   }
 
-  public async handleUpdatedChat(chat: any) {
-    if (!chat || !chat.id) return;
-    this.chatNamespace.to(chat.id).emit('chat', chat);
+  public async handleUpdatedChat(chat: any, initiatorId?: string) {
+    const chatId = chat?.id || chat?.chat?.id;
+    if (!chatId) return;
+    this.chatNamespace.to(chatId).emit('chat', { ...chat, initiatorId });
   }
 
-  public async handleDeletedChat(chatId: string) {
-    this.chatNamespace.to(chatId).emit('chatDeleted', { chatId });
+  public async handleParticipantAdded(chatId: string, userId: string, chatDetails: any, initiatorId?: string) {
+    // 1. Notify the new user about the chat (so it appears in their sidebar)
+    this.emitToUser(userId, 'chat', { ...chatDetails, initiatorId });
+
+    // 2. Notify the group about the update (so they see the new participant)
+    this.chatNamespace.to(chatId).emit('chat', { ...chatDetails, initiatorId });
+    this.chatNamespace.to(chatId).emit('groupUpdated', { chatId, type: 'memberAdded', userId, initiatorId });
+  }
+
+  public async handleNewChat(chat: any) {
+    if (!chat || !chat.id || !chat.participants) return;
+    chat.participants.forEach(userId => {
+      this.emitToUser(typeof userId === 'string' ? userId : userId.id, 'chat', chat);
+    });
+  }
+
+  public async handleDeletedChat(chatId: string, initiatorId?: string) {
+    this.chatNamespace.to(chatId).emit('chatDeleted', { chatId, initiatorId });
+  }
+
+  public handleParticipantRemoved(chatId: string, userId: string, initiatorId?: string) {
+    this.emitToUser(userId, 'participantRemoved', { chatId, initiatorId });
+    this.chatNamespace.to(chatId).emit('chatUpdated', { chatId, initiatorId }); // Notify others
+  }
+
+  public handleChatBlocked(chatId: string, blockerId: string, blockedId: string, isBlocked: boolean, initiatorId?: string) {
+    this.chatNamespace.to(chatId).emit('chatBlocked', { chatId, blockerId, blockedId, isBlocked, initiatorId });
+  }
+
+  public handleGroupUpdated(chatId: string, data: any, initiatorId?: string) {
+    this.chatNamespace.to(chatId).emit('groupUpdated', { chatId, ...data, initiatorId });
   }
 
   public handleMessagesRead(chatId: string, userId: string) {

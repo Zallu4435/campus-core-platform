@@ -1,5 +1,39 @@
 import { IChatRepository } from "../repositories/IChatRepository";
 import {
+  GetChatsRequestDTO,
+  SearchChatsRequestDTO,
+  GetChatMessagesRequestDTO,
+  SendMessageRequestDTO,
+  MarkMessagesAsReadRequestDTO,
+  AddReactionRequestDTO,
+  RemoveReactionRequestDTO,
+  SearchUsersRequestDTO,
+  CreateChatRequestDTO,
+  CreateGroupChatRequestDTO,
+  AddGroupMemberRequestDTO,
+  RemoveGroupMemberRequestDTO,
+  UpdateGroupAdminRequestDTO,
+  UpdateGroupSettingsRequestDTO,
+  UpdateGroupInfoRequestDTO,
+  LeaveGroupRequestDTO,
+  EditMessageRequestDTO,
+  DeleteMessageRequestDTO,
+  ReplyToMessageRequestDTO,
+  DeleteChatRequestDTO,
+  BlockChatRequestDTO,
+  ClearChatRequestDTO,
+  ToggleMuteRequestDTO
+} from "../dtos/ChatRequestDTOs";
+import {
+  GetChatsResponseDTO,
+  GetChatMessagesResponseDTO,
+  ChatDetailsResponseDTO,
+  SearchUsersResponseDTO,
+  ChatSummaryDTO,
+} from "../dtos/ChatResponseDTOs";
+import { Message, MessageType } from "../../../domain/chat/entities/Message";
+import { Chat } from "../../../domain/chat/entities/Chat";
+import {
   IGetChatsUseCase,
   ISearchChatsUseCase,
   IGetChatMessagesUseCase,
@@ -22,41 +56,11 @@ import {
   IReplyToMessageUseCase,
   IDeleteChatUseCase,
   IBlockChatUseCase,
-  IClearChatUseCase
+  IClearChatUseCase,
+  IToggleMuteUseCase
 } from "./IChatUseCases";
-import {
-  GetChatsRequestDTO,
-  SearchChatsRequestDTO,
-  GetChatMessagesRequestDTO,
-  SendMessageRequestDTO,
-  MarkMessagesAsReadRequestDTO,
-  AddReactionRequestDTO,
-  RemoveReactionRequestDTO,
-  SearchUsersRequestDTO,
-  CreateChatRequestDTO,
-  CreateGroupChatRequestDTO,
-  AddGroupMemberRequestDTO,
-  RemoveGroupMemberRequestDTO,
-  UpdateGroupAdminRequestDTO,
-  UpdateGroupSettingsRequestDTO,
-  UpdateGroupInfoRequestDTO,
-  LeaveGroupRequestDTO,
-  EditMessageRequestDTO,
-  DeleteMessageRequestDTO,
-  ReplyToMessageRequestDTO,
-  DeleteChatRequestDTO,
-  BlockChatRequestDTO,
-  ClearChatRequestDTO
-} from "../dtos/ChatRequestDTOs";
-import {
-  GetChatsResponseDTO,
-  GetChatMessagesResponseDTO,
-  ChatDetailsResponseDTO,
-  SearchUsersResponseDTO,
-  ChatSummaryDTO,
-} from "../dtos/ChatResponseDTOs";
-import { Message, MessageType } from "../../../domain/chat/entities/Message";
-import { Chat } from "../../../domain/chat/entities/Chat";
+import { IStorageService } from '../../../application/shared/services/IStorageService';
+import Logger from '../../../shared/utils/logger';
 
 export class GetChatsUseCase implements IGetChatsUseCase {
   constructor(private _chatRepository: IChatRepository) { }
@@ -95,6 +99,7 @@ export class GetChatsUseCase implements IGetChatsUseCase {
         admins: chat.admins,
         unreadCount,
         updatedAt: chat.updatedAt,
+        isMuted: chat.userChatMeta?.find(m => m.userId === userId)?.isMuted || false,
       };
     }));
 
@@ -155,6 +160,7 @@ export class SearchChatsUseCase implements ISearchChatsUseCase {
         admins: chat.admins,
         unreadCount,
         updatedAt: chat.updatedAt,
+        isMuted: chat.userChatMeta?.find(m => m.userId === userId)?.isMuted || false,
       };
     }));
 
@@ -224,10 +230,6 @@ export class GetChatMessagesUseCase implements IGetChatMessagesUseCase {
     };
   }
 }
-
-
-import { IStorageService } from '../../../application/shared/services/IStorageService';
-import Logger from '../../../shared/utils/logger';
 
 export class SendMessageUseCase implements ISendMessageUseCase {
   constructor(
@@ -327,6 +329,7 @@ export class GetChatDetailsUseCase implements IGetChatDetailsUseCase {
         settings: chat.settings || { onlyAdminsCanPost: false, onlyAdminsCanAddMembers: false, onlyAdminsCanChangeInfo: false },
         blockedUsers: chat.blockedUsers,
         unreadCount,
+        isMuted: chat.userChatMeta?.find(m => m.userId === userId)?.isMuted || false,
       },
       messages: messages.map((message: Message) => ({
         id: message.id,
@@ -478,5 +481,13 @@ export class ClearChatUseCase implements IClearChatUseCase {
 
   async execute(params: ClearChatRequestDTO): Promise<void> {
     return this._chatRepository.clearChat(params);
+  }
+}
+
+export class ToggleMuteUseCase implements IToggleMuteUseCase {
+  constructor(private _chatRepository: IChatRepository) { }
+
+  async execute(params: ToggleMuteRequestDTO): Promise<void> {
+    return this._chatRepository.toggleMute(params);
   }
 }

@@ -40,6 +40,7 @@ export interface ChatSummaryDTO {
   unreadCount: number;
   updatedAt: Date;
   blockedUsers?: { blocker: string; blocked: string }[];
+  isMuted?: boolean;
 }
 
 export interface MessageSummaryDTO {

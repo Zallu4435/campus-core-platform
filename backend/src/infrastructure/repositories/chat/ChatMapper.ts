@@ -32,6 +32,7 @@ export class ChatMapper {
             createdAt: raw.createdAt,
             updatedAt: raw.updatedAt,
             blockedUsers: raw.blockedUsers,
+            userChatMeta: raw.userChatMeta
         });
     }
 

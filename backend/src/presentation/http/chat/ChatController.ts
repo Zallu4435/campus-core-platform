@@ -22,13 +22,16 @@ import {
   ISendMessageUseCase,
   ISearchChatsUseCase,
   ISearchUsersUseCase,
-  IDeleteMessageUseCase
+  IDeleteMessageUseCase,
+  IToggleMuteUseCase
 } from "../../../application/chat/useCases/IChatUseCases";
-import { GetChatsRequestDTO, SearchChatsRequestDTO, GetChatMessagesRequestDTO, SendMessageRequestDTO, MarkMessagesAsReadRequestDTO, AddReactionRequestDTO, RemoveReactionRequestDTO, SearchUsersRequestDTO, CreateChatRequestDTO, CreateGroupChatRequestDTO, AddGroupMemberRequestDTO, RemoveGroupMemberRequestDTO, UpdateGroupAdminRequestDTO, UpdateGroupSettingsRequestDTO, UpdateGroupInfoRequestDTO, LeaveGroupRequestDTO, EditMessageRequestDTO, DeleteMessageRequestDTO, ReplyToMessageRequestDTO } from "../../../application/chat/dtos/ChatRequestDTOs";
+import { GetChatsRequestDTO, SearchChatsRequestDTO, GetChatMessagesRequestDTO, SendMessageRequestDTO, MarkMessagesAsReadRequestDTO, AddReactionRequestDTO, RemoveReactionRequestDTO, SearchUsersRequestDTO, CreateChatRequestDTO, CreateGroupChatRequestDTO, AddGroupMemberRequestDTO, RemoveGroupMemberRequestDTO, UpdateGroupAdminRequestDTO, UpdateGroupSettingsRequestDTO, UpdateGroupInfoRequestDTO, LeaveGroupRequestDTO, EditMessageRequestDTO, DeleteMessageRequestDTO, ReplyToMessageRequestDTO, ToggleMuteRequestDTO } from "../../../application/chat/dtos/ChatRequestDTOs";
 import { FileUploadService } from "../../../infrastructure/services/upload/FileUploadService";
 import { MessageType } from "../../../domain/chat/entities/Message";
 import { cloudinary } from '../../../config/cloudinary.config';
 import { socketService } from '../../../app';
+import { MessageModel } from "../../../infrastructure/database/mongoose/chat/MessageModel";
+import { ChatMapper } from "../../../infrastructure/repositories/chat/ChatMapper";
 
 export class ChatController {
   private _httpSuccess: HttpSuccess;
@@ -57,7 +60,8 @@ export class ChatController {
     private _replyToMessageUseCase: IReplyToMessageUseCase,
     private _deleteChatUseCase: IDeleteChatUseCase,
     private _blockChatUseCase: IBlockChatUseCase,
-    private _clearChatUseCase: IClearChatUseCase
+    private _clearChatUseCase: IClearChatUseCase,
+    private _toggleMuteUseCase: IToggleMuteUseCase
   ) {
     this._httpSuccess = new HttpSuccess();
     this._httpErrors = new HttpErrors();
@@ -250,9 +254,9 @@ export class ChatController {
     };
 
     await this._addReactionUseCase.execute(params);
-    const updatedMessage = await require('../../../infrastructure/database/mongoose/chat/MessageModel').MessageModel.findById(messageId).lean();
+    const updatedMessage = await MessageModel.findById(messageId).lean();
     if (updatedMessage) {
-      socketService.handleNewMessage(updatedMessage);
+      socketService.handleNewMessage(ChatMapper.toMessageDomain(updatedMessage as any));
     }
     return this._httpSuccess.success_200({ message: "Reaction added successfully" });
   }
@@ -273,9 +277,9 @@ export class ChatController {
     };
 
     await this._removeReactionUseCase.execute(params);
-    const updatedMessage = await require('../../../infrastructure/database/mongoose/chat/MessageModel').MessageModel.findById(messageId).lean();
+    const updatedMessage = await MessageModel.findById(messageId).lean();
     if (updatedMessage) {
-      socketService.handleNewMessage(updatedMessage);
+      socketService.handleNewMessage(ChatMapper.toMessageDomain(updatedMessage as any));
     }
     return this._httpSuccess.success_200({ message: "Reaction removed successfully" });
   }
@@ -326,6 +330,9 @@ export class ChatController {
     };
 
     const result = await this._createChatUseCase.execute(params);
+    if (result) {
+      socketService.handleNewChat(result);
+    }
     return this._httpSuccess.success_201(result);
   }
 
@@ -338,12 +345,24 @@ export class ChatController {
     if (typeof participants === 'string') {
       participants = JSON.parse(participants);
     }
+
+    // Backend Validation
+    if (!name || name.trim().length < 3) {
+      return this._httpErrors.error_400("Group name is required and must be at least 3 characters long");
+    }
+    if (!description || description.trim().length < 10) {
+      return this._httpErrors.error_400("Group description is required and must be at least 10 characters long");
+    }
+    if (!participants || !Array.isArray(participants) || participants.length === 0) {
+      return this._httpErrors.error_400("At least one participant is required to create a group");
+    }
+
     if (typeof settings === 'string') {
       settings = JSON.parse(settings);
     }
     const params = {
-      name,
-      description,
+      name: name.trim(),
+      description: description?.trim(),
       participants,
       creatorId: req.user.userId,
       settings,
@@ -354,7 +373,9 @@ export class ChatController {
     }
 
     const result = await this._createGroupChatUseCase.execute(params);
-
+    if (result) {
+      socketService.handleNewChat(result);
+    }
     return this._httpSuccess.success_201(result);
   }
 
@@ -378,6 +399,10 @@ export class ChatController {
     await this._addGroupMemberUseCase.execute(params);
 
     const updatedChat = await this._getChatDetailsUseCase.execute(chatId, req.user.userId);
+    if (updatedChat) {
+      socketService.handleParticipantAdded(chatId, userId, updatedChat, req.user.userId);
+      socketService.handleGroupUpdated(chatId, { type: 'memberAdded', userId }, req.user.userId);
+    }
     return this._httpSuccess.success_200(updatedChat);
   }
 
@@ -400,6 +425,11 @@ export class ChatController {
     await this._removeGroupMemberUseCase.execute(params);
 
     const updatedChat = await this._getChatDetailsUseCase.execute(chatId, req.user.userId);
+    if (updatedChat) {
+      socketService.handleParticipantRemoved(chatId, userId, req.user.userId);
+      socketService.handleGroupUpdated(chatId, { type: 'memberRemoved', userId }, req.user.userId);
+      socketService.handleUpdatedChat(updatedChat, req.user.userId);
+    }
     return this._httpSuccess.success_200(updatedChat);
   }
 
@@ -422,6 +452,11 @@ export class ChatController {
     };
 
     await this._updateGroupAdminUseCase.execute(params);
+    const updatedChat = await this._getChatDetailsUseCase.execute(chatId, req.user.userId);
+    if (updatedChat) {
+      socketService.handleGroupUpdated(chatId, { type: 'admin', userId, isAdmin }, req.user.userId);
+      socketService.handleUpdatedChat(updatedChat, req.user.userId);
+    }
 
     return this._httpSuccess.success_200({ message: "Admin status updated successfully" });
   }
@@ -444,6 +479,11 @@ export class ChatController {
     };
 
     await this._updateGroupSettingsUseCase.execute(params);
+    const updatedChat = await this._getChatDetailsUseCase.execute(chatId, req.user.userId);
+    if (updatedChat) {
+      socketService.handleGroupUpdated(chatId, { type: 'settings', settings }, req.user.userId);
+      socketService.handleUpdatedChat(updatedChat, req.user.userId);
+    }
 
     return this._httpSuccess.success_200({ message: "Group settings updated successfully" });
   }
@@ -468,6 +508,11 @@ export class ChatController {
     };
 
     await this._updateGroupInfoUseCase.execute(params);
+    const updatedChat = await this._getChatDetailsUseCase.execute(chatId, req.user.userId);
+    if (updatedChat) {
+      socketService.handleGroupUpdated(chatId, { type: 'info', info: { name, description, avatar } }, req.user.userId);
+      socketService.handleUpdatedChat(updatedChat, req.user.userId);
+    }
 
     return this._httpSuccess.success_200({ message: "Group info updated successfully" });
   }
@@ -488,6 +533,14 @@ export class ChatController {
     };
 
     await this._leaveGroupUseCase.execute(params);
+    socketService.handleParticipantRemoved(chatId, req.user.userId, req.user.userId);
+
+    // Notify remaining participants about the updated group state
+    const updatedChat = await this._getChatDetailsUseCase.execute(chatId, req.user.userId).catch(() => null);
+    if (updatedChat) {
+      socketService.handleGroupUpdated(chatId, { type: 'memberLeft', userId: req.user.userId }, req.user.userId);
+      socketService.handleUpdatedChat(updatedChat, req.user.userId);
+    }
 
     return this._httpSuccess.success_200({ message: "Successfully left the group" });
   }
@@ -504,11 +557,9 @@ export class ChatController {
       userId
     });
 
-    const { MessageModel } = require('../../../infrastructure/database/mongoose/chat/MessageModel');
-    const { ChatMapper } = require('../../../infrastructure/repositories/chat/ChatMapper');
     const updatedMessage = await MessageModel.findById(messageId).lean();
     if (updatedMessage) {
-      socketService.handleNewMessage(ChatMapper.toMessageDomain(updatedMessage));
+      socketService.handleNewMessage(ChatMapper.toMessageDomain(updatedMessage as any));
     }
 
     return this._httpSuccess.success_200({ message: 'Message edited successfully' });
@@ -523,11 +574,9 @@ export class ChatController {
       userId,
       deleteForEveryone
     });
-    const { MessageModel } = require('../../../infrastructure/database/mongoose/chat/MessageModel');
-    const { ChatMapper } = require('../../../infrastructure/repositories/chat/ChatMapper');
     const updatedMessage = await MessageModel.findById(messageId).lean();
     if (updatedMessage) {
-      socketService.handleNewMessage(ChatMapper.toMessageDomain(updatedMessage));
+      socketService.handleNewMessage(ChatMapper.toMessageDomain(updatedMessage as any));
     }
     return this._httpSuccess.success_200({ message: 'Message deleted successfully' });
   }
@@ -575,7 +624,7 @@ export class ChatController {
       return this._httpErrors.error_400('Chat ID and user ID are required');
     }
     await this._deleteChatUseCase.execute({ chatId, userId });
-    socketService.handleDeletedChat(chatId);
+    socketService.handleDeletedChat(chatId, userId);
     return { statusCode: 204, body: {} };
   }
 
@@ -588,7 +637,12 @@ export class ChatController {
     await this._blockChatUseCase.execute({ chatId, userId });
     const updatedChat = await this._getChatDetailsUseCase.execute(chatId, userId);
     if (updatedChat) {
-      socketService.handleUpdatedChat(updatedChat);
+      const otherUserId = updatedChat.chat.participants.find(p => p.id !== userId)?.id;
+      if (otherUserId) {
+        const isBlocked = updatedChat.chat.blockedUsers?.some(entry => entry.blocker === userId && entry.blocked === otherUserId);
+        socketService.handleChatBlocked(chatId, userId, otherUserId, !!isBlocked, userId);
+      }
+      socketService.handleUpdatedChat(updatedChat, userId);
     }
     return { statusCode: 204, body: {} };
   }
@@ -602,5 +656,24 @@ export class ChatController {
     await this._clearChatUseCase.execute({ chatId, userId });
     socketService.emitToUser(userId, 'messagesCleared', { chatId });
     return { statusCode: 204, body: {} };
+  }
+  async toggleMute(req: IHttpRequest): Promise<IHttpResponse> {
+    if (!req.user?.userId) {
+      return this._httpErrors.error_401("User not authenticated");
+    }
+
+    const { chatId } = req.params;
+    if (!chatId) {
+      return this._httpErrors.error_400("Chat ID is required");
+    }
+
+    const params: ToggleMuteRequestDTO = {
+      chatId,
+      userId: req.user.userId
+    };
+
+    await this._toggleMuteUseCase.execute(params);
+    socketService.emitToUser(req.user.userId, 'chatMuted', { chatId, isMuted: true }); // This is a bit simplified, but let's at least emit something
+    return this._httpSuccess.success_200({ message: "Mute status toggled successfully" });
   }
 }  

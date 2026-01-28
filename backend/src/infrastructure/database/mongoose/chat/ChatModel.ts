@@ -27,6 +27,7 @@ export interface IChat extends Document {
     userId: string;
     clearedAt?: Date; // timestamp for when the user cleared chat
     isDeleted?: boolean; // if user is removed or deleted
+    isMuted?: boolean; // if user has muted notifications
   }[];
   createdAt: Date;
   updatedAt: Date;
@@ -34,8 +35,8 @@ export interface IChat extends Document {
 
 const chatSchema = new Schema<IChat>(
   {
-    type: { 
-      type: String, 
+    type: {
+      type: String,
       required: true,
       enum: Object.values(ChatType)
     },
@@ -68,7 +69,8 @@ const chatSchema = new Schema<IChat>(
       {
         userId: { type: String, required: true },
         clearedAt: { type: Date, default: null },
-        isDeleted: { type: Boolean, default: false }
+        isDeleted: { type: Boolean, default: false },
+        isMuted: { type: Boolean, default: false }
       }
     ]
   },

@@ -6,14 +6,15 @@ import { MediaPreview } from './MediaPreview';
 import LiveWaveform from './LiveWaveform';
 import { ChatInputProps } from '../../../../../domain/types/canvas/chat';
 
-export const ChatInput: React.FC<ChatInputProps & { disabled?: boolean }> = ({
+export const ChatInput: React.FC<ChatInputProps & { disabled?: boolean; disabledReason?: string }> = ({
   onSendMessage,
   onTyping,
   styles,
   replyToMessage,
   onCancelReply,
   selectedChatId,
-  disabled = false
+  disabled = false,
+  disabledReason
 }) => {
   const [message, setMessage] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -241,6 +242,15 @@ export const ChatInput: React.FC<ChatInputProps & { disabled?: boolean }> = ({
           onRemoveMedia={handleRemoveMedia}
           onSendMedia={handleSendAllMedia}
         />
+      )}
+
+      {/* Disabled Message */}
+      {disabled && disabledReason && (
+        <div className="px-4 py-3 bg-yellow-50 dark:bg-yellow-900/20 border-t border-yellow-200 dark:border-yellow-800">
+          <p className="text-sm text-yellow-800 dark:text-yellow-200 text-center">
+            🔒 {disabledReason}
+          </p>
+        </div>
       )}
 
       <div className="relative px-2 py-2 flex items-center min-h-[64px]">

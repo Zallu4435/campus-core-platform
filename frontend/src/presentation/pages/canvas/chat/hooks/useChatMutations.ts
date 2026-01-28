@@ -13,6 +13,11 @@ export const useChatMutations = (chatId?: string, currentUserId?: string) => {
       requireIds();
       return chatService.addGroupMember(chatId!, userId, currentUserId!);
     },
+    onError: (error: Error) => {
+      if (error.message.includes('Only admins')) {
+        console.error('Permission denied:', error.message);
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['chat', chatId] });
       queryClient.invalidateQueries({ queryKey: ['chats'] });
@@ -54,6 +59,11 @@ export const useChatMutations = (chatId?: string, currentUserId?: string) => {
     mutationFn: async (info: { name?: string; description?: string; avatar?: string }) => {
       requireIds();
       return chatService.updateGroupInfo(chatId!, info, currentUserId!);
+    },
+    onError: (error: Error) => {
+      if (error.message.includes('Only admins')) {
+        console.error('Permission denied:', error.message);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['chat', chatId] });
@@ -101,6 +111,12 @@ export const useChatMutations = (chatId?: string, currentUserId?: string) => {
         params.type as 'text' | 'image' | 'file' | 'audio' | 'video' | undefined,
         params.replyTo
       ),
+    onError: (error: Error) => {
+      if (error.message.includes('Only admins')) {
+        // Permission error - already shown in UI, but provide toast for attempts
+        console.error('Permission denied:', error.message);
+      }
+    },
     onSettled: (_data, _error, params) => {
       queryClient.invalidateQueries({ queryKey: ['messages', params?.chatId] });
       queryClient.invalidateQueries({ queryKey: ['chats'] });
@@ -191,6 +207,14 @@ export const useChatMutations = (chatId?: string, currentUserId?: string) => {
     }
   });
 
+  const toggleMute = useMutation({
+    mutationFn: async (chatId: string) => chatService.toggleMute(chatId),
+    onSuccess: (_data, chatId) => {
+      queryClient.invalidateQueries({ queryKey: ['chats'] });
+      queryClient.invalidateQueries({ queryKey: ['chat', chatId] });
+    }
+  });
+
   return {
     // Group mutations
     addGroupMember,
@@ -217,5 +241,6 @@ export const useChatMutations = (chatId?: string, currentUserId?: string) => {
     addReaction,
     removeReaction,
     markMessagesAsRead,
+    toggleMute,
   };
 }; 

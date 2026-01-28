@@ -3,7 +3,15 @@ import { io, Socket } from 'socket.io-client';
 import { Message } from '../../../../../domain/types/canvas/chat';
 import { useQueryClient } from '@tanstack/react-query';
 
-export const useChatSocket = (selectedChatId: string | null) => {
+export const useChatSocket = (
+    selectedChatId: string | null,
+    callbacks?: {
+        onChatDeleted?: (data: { chatId: string, initiatorId?: string }) => void;
+        onParticipantRemoved?: (data: { chatId: string, initiatorId?: string }) => void;
+        onChatBlocked?: (data: { chatId: string, blockerId: string, blockedId: string, isBlocked: boolean, initiatorId?: string }) => void;
+        onGroupUpdated?: (data: any & { initiatorId?: string }) => void;
+    }
+) => {
     const [socketError, setSocketError] = useState<string | null>(null);
     const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
     const socketRef = useRef<Socket | null>(null);
@@ -96,16 +104,50 @@ export const useChatSocket = (selectedChatId: string | null) => {
 
         const handleChatUpdate = (data: any) => {
             queryClient.invalidateQueries({ queryKey: ['chats'] });
-            const updatedChatId = data?.id || selectedChatId;
+            const updatedChatId = data?.id || data?.chat?.id || selectedChatId;
             if (updatedChatId) {
                 queryClient.invalidateQueries({ queryKey: ['chat', updatedChatId] });
+                queryClient.invalidateQueries({ queryKey: ['messages', updatedChatId] });
             }
         };
 
-        const handleChatDeleted = () => {
+        const handleChatDeleted = (data: { chatId: string, initiatorId?: string }) => {
             queryClient.invalidateQueries({ queryKey: ['chats'] });
-            if (selectedChatId) {
-                queryClient.invalidateQueries({ queryKey: ['chat', selectedChatId] });
+            const deletedChatId = data?.chatId || selectedChatId;
+            if (deletedChatId) {
+                queryClient.invalidateQueries({ queryKey: ['chat', deletedChatId] });
+            }
+            if (callbacks?.onChatDeleted && deletedChatId) {
+                callbacks.onChatDeleted({ chatId: deletedChatId, initiatorId: data.initiatorId });
+            }
+        };
+
+        const handleParticipantRemoved = (data: { chatId: string, initiatorId?: string }) => {
+            queryClient.invalidateQueries({ queryKey: ['chats'] });
+            if (data.chatId) {
+                queryClient.invalidateQueries({ queryKey: ['chat', data.chatId] });
+            }
+            if (callbacks?.onParticipantRemoved) {
+                callbacks.onParticipantRemoved(data);
+            }
+        };
+
+        const handleChatBlocked = (data: { chatId: string, blockerId: string, blockedId: string, isBlocked: boolean }) => {
+            queryClient.invalidateQueries({ queryKey: ['chat', data.chatId] });
+            queryClient.invalidateQueries({ queryKey: ['chats'] });
+            if (callbacks?.onChatBlocked) {
+                callbacks.onChatBlocked(data);
+            }
+        };
+
+        const handleGroupUpdated = (data: any) => {
+            queryClient.invalidateQueries({ queryKey: ['chats'] });
+            if (data.chatId) {
+                queryClient.invalidateQueries({ queryKey: ['chat', data.chatId] });
+                queryClient.invalidateQueries({ queryKey: ['messages', data.chatId] });
+            }
+            if (callbacks?.onGroupUpdated) {
+                callbacks.onGroupUpdated(data);
             }
         };
 
@@ -134,6 +176,9 @@ export const useChatSocket = (selectedChatId: string | null) => {
         socket.on('message', handleNewMessage);
         socket.on('chat', handleChatUpdate);
         socket.on('chatDeleted', handleChatDeleted);
+        socket.on('participantRemoved', handleParticipantRemoved);
+        socket.on('chatBlocked', handleChatBlocked);
+        socket.on('groupUpdated', handleGroupUpdated);
         socket.on('messagesCleared', handleMessagesCleared);
         socket.on('messagesRead', handleMessagesRead);
         socket.on('messageStatus', handleMessageStatus);
@@ -142,6 +187,9 @@ export const useChatSocket = (selectedChatId: string | null) => {
             socket.off('message', handleNewMessage);
             socket.off('chat', handleChatUpdate);
             socket.off('chatDeleted', handleChatDeleted);
+            socket.off('participantRemoved', handleParticipantRemoved);
+            socket.off('chatBlocked', handleChatBlocked);
+            socket.off('groupUpdated', handleGroupUpdated);
             socket.off('messagesCleared', handleMessagesCleared);
             socket.off('messagesRead', handleMessagesRead);
             socket.off('messageStatus', handleMessageStatus);

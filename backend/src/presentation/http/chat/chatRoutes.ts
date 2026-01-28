@@ -109,4 +109,8 @@ chatRouter.delete('/:chatId/messages', authMiddleware, (req, res, next) => {
   expressAdapter(req, res, next, chatController.clearChat.bind(chatController));
 });
 
+chatRouter.post('/:chatId/toggle-mute', authMiddleware, (req, res, next) => {
+  expressAdapter(req, res, next, chatController.toggleMute.bind(chatController));
+});
+
 export default chatRouter;

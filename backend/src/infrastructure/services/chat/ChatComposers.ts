@@ -23,7 +23,8 @@ import {
   ReplyToMessageUseCase,
   DeleteChatUseCase,
   BlockChatUseCase,
-  ClearChatUseCase
+  ClearChatUseCase,
+  ToggleMuteUseCase
 } from "../../../application/chat/useCases/ChatUseCases";
 import {
   ISendMessageUseCase,
@@ -49,6 +50,7 @@ import {
   IBlockChatUseCase,
   IClearChatUseCase,
   IGetChatMessagesUseCase,
+  IToggleMuteUseCase,
 } from "../../../application/chat/useCases/IChatUseCases";
 import { storageService } from "../shared/CloudinaryStorageService";
 
@@ -80,6 +82,7 @@ export const getChatComposer = () => {
   const deleteChatUseCase: IDeleteChatUseCase = new DeleteChatUseCase(chatRepository);
   const blockChatUseCase: IBlockChatUseCase = new BlockChatUseCase(chatRepository);
   const clearChatUseCase: IClearChatUseCase = new ClearChatUseCase(chatRepository);
+  const toggleMuteUseCase: IToggleMuteUseCase = new ToggleMuteUseCase(chatRepository);
 
   return new ChatController(
     getChatsUseCase,
@@ -104,6 +107,7 @@ export const getChatComposer = () => {
     replyToMessageUseCase,
     deleteChatUseCase,
     blockChatUseCase,
-    clearChatUseCase
+    clearChatUseCase,
+    toggleMuteUseCase
   );
 }; 

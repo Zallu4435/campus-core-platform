@@ -13,6 +13,13 @@ export interface GroupInfo {
   settings: GroupSettings;
 }
 
+export interface UserChatMeta {
+  userId: string;
+  clearedAt?: Date;
+  isDeleted?: boolean;
+  isMuted?: boolean;
+}
+
 export interface ChatProps {
   id: string;
   participants: string[];
@@ -29,6 +36,7 @@ export interface ChatProps {
   rules?: string;
   joinLink?: string;
   blockedUsers?: { blocker: string; blocked: string }[];
+  userChatMeta?: UserChatMeta[];
 }
 
 export enum ChatType {
@@ -117,6 +125,10 @@ export class Chat {
 
   get blockedUsers(): { blocker: string; blocked: string }[] | undefined {
     return this.props.blockedUsers;
+  }
+
+  get userChatMeta(): UserChatMeta[] | undefined {
+    return this.props.userChatMeta;
   }
 
   updateLastMessage(message: Message): void {
