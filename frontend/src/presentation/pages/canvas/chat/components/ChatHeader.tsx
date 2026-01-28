@@ -58,21 +58,30 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         )}
 
         <div className="relative w-10 h-10 md:w-12 md:h-12 flex-shrink-0">
-          {chat.avatar ? (
-            <img
-              src={chat.avatar}
-              alt={displayName}
-              className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover"
-            />
-          ) : chat.type === 'group' ? (
-            <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-              <FiUsers size={24} className="md:w-7 md:h-7 text-gray-500 dark:text-gray-400" />
-            </div>
-          ) : (
-            <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-              <FiUser size={24} className="md:w-7 md:h-7 text-gray-500 dark:text-gray-400" />
-            </div>
-          )}
+          {(() => {
+            const effectiveAvatar = chat.avatar || (chat.type === 'direct' ? otherParticipant?.avatar : null);
+            if (effectiveAvatar) {
+              return (
+                <img
+                  src={effectiveAvatar}
+                  alt={displayName}
+                  className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover"
+                />
+              );
+            }
+            if (chat.type === 'group') {
+              return (
+                <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                  <FiUsers size={24} className="md:w-7 md:h-7 text-gray-500 dark:text-gray-400" />
+                </div>
+              );
+            }
+            return (
+              <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                <FiUser size={24} className="md:w-7 md:h-7 text-gray-500 dark:text-gray-400" />
+              </div>
+            );
+          })()}
           {isOnline && (
             <div className="absolute bottom-0 right-0 w-2.5 h-2.5 md:w-3 md:h-3 bg-green-500 rounded-full border-2 border-white dark:border-[#202c33]" />
           )}

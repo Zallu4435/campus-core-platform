@@ -171,6 +171,15 @@ export const ChatComponent: React.FC = () => {
   };
 
   useEffect(() => {
+    if (selectedChatId && visibleMessages.length > 0) {
+      const hasUnread = visibleMessages.some(m => m.status !== 'read' && m.senderId !== currentUserId);
+      if (hasUnread) {
+        chatMutations.markMessagesAsRead.mutate(selectedChatId);
+      }
+    }
+  }, [visibleMessages, selectedChatId, currentUserId]);
+
+  useEffect(() => {
     if (!isLoadingMessages) {
       setLoadingMoreMessages(false);
     }
@@ -547,7 +556,7 @@ export const ChatComponent: React.FC = () => {
         `}
       >
         <div className="p-4 border-b border-gray-200 dark:border-[#2a3942] flex items-center justify-between relative z-10 bg-white dark:bg-[#202c33]">
-          <span className="text-lg font-semibold">WhatsApp</span>
+          <span className="text-lg font-semibold">Chats</span>
           <div className="flex items-center space-x-2">
             <button onClick={() => setShowSearchBar(true)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-[#2a3942]">
               <FiPlus className="w-5 h-5 text-gray-600 dark:text-gray-300" />
@@ -760,6 +769,7 @@ export const ChatComponent: React.FC = () => {
                         onReply={handleReplyToMessage}
                         onReplyClick={handleReplyClick}
                         currentUserId={currentUserId || ''}
+                        participants={flatChat?.participants || []}
                       />
                     );
                   })

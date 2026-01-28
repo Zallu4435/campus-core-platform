@@ -60,11 +60,13 @@ export const ChatList: React.FC<ChatListProps> = ({
                   }`}
               >
                 <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                  {chat.avatar ? (
-                    <img src={chat.avatar} alt={chat.name || 'Chat'} className="w-full h-full rounded-full" />
-                  ) : (
-                    <FiUsers size={24} className="text-gray-500 dark:text-gray-400" />
-                  )}
+                  {(() => {
+                    const effectiveAvatar = chat.avatar || (chat.type === 'direct' ? chat.participants.find(p => p.id !== currentUserId)?.avatar : null);
+                    if (effectiveAvatar) {
+                      return <img src={effectiveAvatar} alt={chat.name || 'Chat'} className="w-full h-full rounded-full object-cover" />;
+                    }
+                    return <FiUsers size={24} className="text-gray-500 dark:text-gray-400" />;
+                  })()}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">

@@ -17,8 +17,19 @@ const ChatMessageComponent = ({
   onDelete,
   onReply,
   onReplyClick,
-  currentUserId
+  currentUserId,
+  participants = []
 }: ChatMessageProps, ref: ForwardedRef<HTMLDivElement>) => {
+
+  const getUserName = (userId: string) => {
+    if (userId === currentUserId) return 'You';
+    const participant = participants.find(p => p.id === userId);
+    if (participant) {
+      if (participant.name) return participant.name;
+      return `${participant.firstName || ''} ${participant.lastName || ''}`.trim() || 'User';
+    }
+    return `User ${userId.slice(-4)}`;
+  };
 
   const [showMenu, setShowMenu] = useState(false);
   const [showDeleteOptions, setShowDeleteOptions] = useState(false);
@@ -119,7 +130,7 @@ const ChatMessageComponent = ({
         acc[reaction.emoji] = { userIds: [], users: [] };
       }
       acc[reaction.emoji].userIds.push(reaction.userId);
-      acc[reaction.emoji].users.push(`User ${reaction.userId.slice(-4)}`);
+      acc[reaction.emoji].users.push(getUserName(reaction.userId));
       return acc;
     }, {} as { [key: string]: { userIds: string[], users: string[] } });
 
@@ -534,7 +545,7 @@ const ChatMessageComponent = ({
             id: reaction.id || `reaction-${reaction.emoji}-${reaction.userId}`,
             emoji: reaction.emoji,
             userId: reaction.userId,
-            userName: `User ${reaction.userId.slice(-4)}`,
+            userName: getUserName(reaction.userId),
             createdAt: reaction.createdAt || new Date().toISOString(),
             count: 1
           }))

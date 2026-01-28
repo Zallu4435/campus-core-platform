@@ -253,6 +253,7 @@ export interface ChatMessageProps {
     onDelete: (messageId: string, deleteForEveryone: boolean) => void;
     onReplyClick?: (messageId: string) => void;
     styles: Styles;
+    participants?: Participant[];
 }
 
 export interface CreateGroupModalProps {

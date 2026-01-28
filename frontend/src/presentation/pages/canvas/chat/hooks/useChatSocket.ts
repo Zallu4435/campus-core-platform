@@ -116,16 +116,35 @@ export const useChatSocket = (selectedChatId: string | null) => {
             }
         };
 
+        const handleMessagesRead = (data: { chatId: string; userId: string }) => {
+            if (data.chatId === selectedChatId) {
+                queryClient.invalidateQueries({ queryKey: ['messages', selectedChatId] });
+                queryClient.invalidateQueries({ queryKey: ['chat', selectedChatId] });
+            }
+            queryClient.invalidateQueries({ queryKey: ['chats'] });
+        };
+
+        const handleMessageStatus = (data: { messageId: string; chatId: string; status: string }) => {
+            if (data.chatId === selectedChatId) {
+                queryClient.invalidateQueries({ queryKey: ['messages', selectedChatId] });
+            }
+            queryClient.invalidateQueries({ queryKey: ['chats'] });
+        };
+
         socket.on('message', handleNewMessage);
         socket.on('chat', handleChatUpdate);
         socket.on('chatDeleted', handleChatDeleted);
         socket.on('messagesCleared', handleMessagesCleared);
+        socket.on('messagesRead', handleMessagesRead);
+        socket.on('messageStatus', handleMessageStatus);
 
         return () => {
             socket.off('message', handleNewMessage);
             socket.off('chat', handleChatUpdate);
             socket.off('chatDeleted', handleChatDeleted);
             socket.off('messagesCleared', handleMessagesCleared);
+            socket.off('messagesRead', handleMessagesRead);
+            socket.off('messageStatus', handleMessageStatus);
         };
     }, [selectedChatId, queryClient]);
 
