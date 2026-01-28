@@ -31,8 +31,16 @@ const LiveWaveform: React.FC<LiveWaveformProps> = ({ stream, isRecording }) => {
         if (!ctx || !analyserRef.current) return;
         analyserRef.current.getByteTimeDomainData(dataArray);
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.lineWidth = 2;
-        ctx.strokeStyle = '#22c55e';
+
+        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = '#22c55e'; // Green-500
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        // Add a subtle glow
+        ctx.shadowBlur = 4;
+        ctx.shadowColor = 'rgba(34, 197, 94, 0.4)';
+
         ctx.beginPath();
         const sliceWidth = canvas.width / bufferLength;
         let x = 0;
@@ -60,9 +68,9 @@ const LiveWaveform: React.FC<LiveWaveformProps> = ({ stream, isRecording }) => {
   return (
     <canvas
       ref={canvasRef}
-      width={160}
+      width={200}
       height={32}
-      style={{ background: '#d1fae5', borderRadius: 8, margin: '0 8px', width: 160, height: 32, display: 'block' }}
+      className="w-full max-w-[200px] h-8 opacity-80"
     />
   );
 };

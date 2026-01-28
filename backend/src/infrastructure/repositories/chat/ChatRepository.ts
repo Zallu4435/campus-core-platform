@@ -8,6 +8,8 @@ import { Chat, ChatType, ChatFilter } from "../../../domain/chat/entities/Chat";
 import { ChatMapper } from "./ChatMapper";
 import mongoose, { FilterQuery } from "mongoose";
 import { IChatSource, IMessageSource } from "./infraTypes";
+import { IUser } from "../../../domain/auth/entities/AuthTypes";
+import { IMessage } from "../../database/mongoose/chat/MessageModel";
 
 export class ChatRepository implements IChatRepository {
   async getChats(params: { userId: string; page: number; limit: number }): Promise<PaginatedResult<Chat>> {
@@ -195,7 +197,7 @@ export class ChatRepository implements IChatRepository {
     const message = await MessageModel.findById(messageId).lean();
     if (!message) return;
 
-    const existingReaction = message.reactions?.find((r: any) => r.userId.toString() === userId);
+    const existingReaction = message.reactions?.find((r) => r.userId.toString() === userId);
 
     // 2. Clear all reactions for this user on this message
     await MessageModel.findByIdAndUpdate(
@@ -268,12 +270,12 @@ export class ChatRepository implements IChatRepository {
     return {
       chat: ChatMapper.toChatDomain(chat as unknown as IChatSource),
       messages: (messages as unknown as IMessageSource[]).map(ChatMapper.toMessageDomain),
-      participants: participants.map((p: Record<string, any>) => ({
-        id: (p._id as mongoose.Types.ObjectId).toString(),
-        firstName: p.firstName as string,
-        lastName: p.lastName as string,
-        email: p.email as string,
-        avatar: p.profilePicture as string
+      participants: participants.map((p) => ({
+        id: (p as IUser & { _id: mongoose.Types.ObjectId })._id.toString(),
+        firstName: (p as IUser).firstName,
+        lastName: (p as IUser).lastName,
+        email: (p as IUser).email,
+        avatar: (p as IUser).profilePicture,
       })),
       unreadCount
     };
@@ -282,32 +284,30 @@ export class ChatRepository implements IChatRepository {
   async searchUsers(params: { userId: string; query: string; page: number; limit: number }): Promise<PaginatedResult<{ id: string; firstName: string; lastName: string; email: string; avatar?: string; type: 'user' }>> {
     const { query, page, limit, userId } = params;
     const skip = (page - 1) * limit;
-    const searchQuery = String(query).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const searchTokens = String(query).trim().split(/\s+/).filter(Boolean);
+    const searchRegexes = searchTokens.map(token => new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'));
 
-    const users = await UserModel.find({
+    const searchCriteria = {
       _id: { $ne: new mongoose.Types.ObjectId(userId) },
-      $or: [
-        { firstName: { $regex: searchQuery, $options: 'i' } },
-        { lastName: { $regex: searchQuery, $options: 'i' } },
-        { email: { $regex: searchQuery, $options: 'i' } }
-      ]
-    })
+      $and: searchRegexes.map(regex => ({
+        $or: [
+          { firstName: { $regex: regex } },
+          { lastName: { $regex: regex } },
+          { email: { $regex: regex } }
+        ]
+      }))
+    };
+
+    const users = await UserModel.find(searchCriteria)
       .select('firstName lastName email profilePicture')
       .skip(skip)
       .limit(limit)
       .lean();
 
-    const totalItems = await UserModel.countDocuments({
-      _id: { $ne: new mongoose.Types.ObjectId(userId) },
-      $or: [
-        { firstName: { $regex: searchQuery, $options: 'i' } },
-        { lastName: { $regex: searchQuery, $options: 'i' } },
-        { email: { $regex: searchQuery, $options: 'i' } }
-      ]
-    });
+    const totalItems = await UserModel.countDocuments(searchCriteria);
 
     return {
-      data: (users as unknown as Array<{ _id: mongoose.Types.ObjectId; firstName: string; lastName: string; email: string; profilePicture?: string }>).map(user => ({
+      data: (users as unknown as (IUser & { _id: mongoose.Types.ObjectId })[]).map(user => ({
         id: user._id.toString(),
         firstName: user.firstName,
         lastName: user.lastName,
@@ -349,7 +349,7 @@ export class ChatRepository implements IChatRepository {
     const chat = await ChatModel.create({
       type,
       name: type === 'direct' ? `${participant.firstName} ${participant.lastName}` : name,
-      avatar: type === 'direct' ? ((participant as unknown as { profilePicture: string }).profilePicture || '') : avatar,
+      avatar: type === 'direct' ? ((participant as unknown as IUser).profilePicture || '') : avatar,
       participants: [creatorId, participantId],
       createdBy: creatorId,
       admins: [creatorId],
@@ -368,8 +368,8 @@ export class ChatRepository implements IChatRepository {
       name: chat.name,
       avatar: chat.avatar,
       participants: [
-        { id: creatorId, firstName: creator.firstName, lastName: creator.lastName, email: creator.email, avatar: (creator as unknown as { profilePicture: string }).profilePicture, isOnline: false },
-        { id: participantId, firstName: participant.firstName, lastName: participant.lastName, email: participant.email, avatar: (participant as unknown as { profilePicture: string }).profilePicture, isOnline: false }
+        { id: creatorId, firstName: creator.firstName, lastName: creator.lastName, email: creator.email, avatar: (creator as unknown as IUser).profilePicture, isOnline: false },
+        { id: participantId, firstName: participant.firstName, lastName: participant.lastName, email: participant.email, avatar: (participant as unknown as IUser).profilePicture, isOnline: false }
       ],
       unreadCount: 0,
       updatedAt: chat.updatedAt
@@ -422,7 +422,7 @@ export class ChatRepository implements IChatRepository {
         firstName: participant.firstName,
         lastName: participant.lastName,
         email: participant.email,
-        avatar: (participant as unknown as { profilePicture: string }).profilePicture,
+        avatar: (participant as unknown as IUser).profilePicture,
         isOnline: false
       })),
       unreadCount: 0,
@@ -454,7 +454,7 @@ export class ChatRepository implements IChatRepository {
     const updateQuery: { [key: string]: boolean } = {};
     for (const key in settings) {
       if (Object.prototype.hasOwnProperty.call(settings, key)) {
-        updateQuery[`settings.${key}`] = Boolean((settings as Record<string, unknown>)[key]);
+        updateQuery[`settings.${key}`] = Boolean(settings[key]);
       }
     }
     await ChatModel.findByIdAndUpdate(chatId, { $set: updateQuery });
@@ -487,7 +487,7 @@ export class ChatRepository implements IChatRepository {
     await message.save();
 
     const chat = await ChatModel.findById(chatId);
-    if (chat?.lastMessage && (chat.lastMessage as unknown as { id: string }).id === messageId) {
+    if (chat?.lastMessage && (chat.lastMessage as IChatSource['lastMessage'])!.id === messageId) {
       await ChatModel.findByIdAndUpdate(chatId, {
         "lastMessage.content": content
       });
@@ -551,7 +551,7 @@ export class ChatRepository implements IChatRepository {
       updatedAt: new Date()
     });
 
-    return ChatMapper.toMessageDomain(message.toObject());
+    return ChatMapper.toMessageDomain(message.toObject() as unknown as IMessageSource);
   }
 
   async deleteChat(params: { chatId: string; userId: string }): Promise<void> {
@@ -611,8 +611,8 @@ export class ChatRepository implements IChatRepository {
 
   async getUsersByIds(ids: string[]): Promise<Array<{ id: string; firstName: string; lastName: string; email: string; avatar?: string }>> {
     const users = await UserModel.find({ _id: { $in: ids } }).select("firstName lastName email profilePicture").lean();
-    return users.map((u: Record<string, unknown>) => ({
-      id: (u._id as mongoose.Types.ObjectId).toString(),
+    return (users as unknown as (IUser & { _id: mongoose.Types.ObjectId })[]).map((u) => ({
+      id: u._id.toString(),
       firstName: u.firstName as string,
       lastName: u.lastName as string,
       email: u.email as string,
@@ -623,6 +623,6 @@ export class ChatRepository implements IChatRepository {
   async getChatParticipants(chatId: string): Promise<Array<{ id: string }>> {
     const chat = await ChatModel.findById(chatId).select("participants").lean();
     if (!chat) return [];
-    return chat.participants.map((p: any) => ({ id: p.toString() }));
+    return chat.participants.map((p) => ({ id: p.toString() }));
   }
 }

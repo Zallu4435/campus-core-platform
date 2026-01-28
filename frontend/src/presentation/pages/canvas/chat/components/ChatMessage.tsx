@@ -16,6 +16,7 @@ const ChatMessageComponent = ({
   styles,
   onDelete,
   onReply,
+  onReplyClick,
   currentUserId
 }: ChatMessageProps, ref: ForwardedRef<HTMLDivElement>) => {
 
@@ -149,6 +150,9 @@ const ChatMessageComponent = ({
     );
   };
 
+  // DEBUG LOG
+
+
   const renderReplyTo = () => {
     if (!message.replyTo) return null;
 
@@ -157,13 +161,19 @@ const ChatMessageComponent = ({
       : message.replyTo;
 
     return (
-      <div className="mb-2 p-2 bg-black bg-opacity-10 rounded-lg flex items-start">
-        <FiCornerUpLeft className="w-4 h-4 text-gray-500 mr-2 flex-shrink-0 mt-0.5" />
-        <div className="text-sm text-gray-600 dark:text-gray-400 truncate flex-1">
-          <div className="font-medium text-xs opacity-75 mb-1">
-            {replyTo.senderId === currentUserId ? 'You' : replyTo.senderName}
+      <div
+        className={`mb-2 p-2 rounded-lg flex items-start cursor-pointer hover:bg-opacity-20 transition-all border-l-4 border-green-500 ${isSentMessage
+          ? 'bg-white/10 text-white/90'
+          : 'bg-black/5 dark:bg-white/5 text-gray-700 dark:text-gray-300'
+          }`}
+        onClick={() => onReplyClick && onReplyClick(replyTo.id)}
+      >
+        <FiCornerUpLeft className={`w-4 h-4 mr-2 flex-shrink-0 mt-0.5 ${isSentMessage ? 'text-white/70' : 'text-gray-500'}`} />
+        <div className="text-sm truncate flex-1">
+          <div className="font-medium text-[11px] opacity-75 mb-0.5 uppercase tracking-wider">
+            {replyTo.senderId === currentUserId ? 'You' : (replyTo.senderName || 'User')}
           </div>
-          <div className="truncate">{replyTo.content}</div>
+          <div className="truncate text-[13px]">{replyTo.content}</div>
         </div>
       </div>
     );
@@ -313,78 +323,58 @@ const ChatMessageComponent = ({
 
         {message.attachments && message.attachments.length > 0 && (
           <div className="mt-2 space-y-2">
-            {message.attachments.some(att => att.type === 'image') ? (
-              renderMediaGrid()
-            ) : (
-              message.attachments.map((attachment, idx) => {
-                switch (attachment.type) {
-                  case 'video':
-                    return (
-                      <div key={attachment.id || idx} className="relative">
-                        <video
-                          src={attachment.url}
-                          controls
-                          className="max-w-sm rounded-lg"
-                        >
-                          Your browser does not support the video tag.
-                        </video>
+            {message.attachments.some(att => att.type === 'image') && renderMediaGrid()}
+
+            {message.attachments.filter(att => att.type !== 'image').map((attachment, idx) => {
+              switch (attachment.type) {
+                case 'video':
+                  return (
+                    <div key={attachment.id || idx} className="relative">
+                      <video
+                        src={attachment.url}
+                        controls
+                        className="max-w-sm rounded-lg"
+                      >
+                        Your browser does not support the video tag.
+                      </video>
+                    </div>
+                  );
+                case 'audio':
+                  return (
+                    <div key={attachment.id || idx} className="relative">
+                      <AudioPlayer src={attachment.url} />
+                    </div>
+                  );
+                case 'document':
+                case 'file':
+                  return (
+                    <div key={attachment.id || idx} className="flex items-center space-x-2 p-2 bg-black bg-opacity-10 rounded-lg">
+                      <FiFile className="w-6 h-6 text-gray-500 dark:text-gray-400" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{attachment.name}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{(attachment.size ? (attachment.size / 1024).toFixed(1) : '0')} KB</p>
                       </div>
-                    );
-                  case 'audio':
-                    return (
-                      <div key={attachment.id || idx} className="relative">
-                        <AudioPlayer src={attachment.url} />
-                      </div>
-                    );
-                  case 'document':
-                    return (
-                      <div key={attachment.id || idx} className="flex items-center space-x-2 p-2 bg-black bg-opacity-10 rounded-lg">
-                        <FiFile className="w-6 h-6 text-gray-500 dark:text-gray-400" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{attachment.name}</p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">{(attachment.size ? (attachment.size / 1024).toFixed(1) : '0')} KB</p>
-                        </div>
-                        <a
-                          href={attachment.url}
-                          download={attachment.name}
-                          className="flex-shrink-0 p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                          </svg>
-                        </a>
-                      </div>
-                    );
-                  case 'file':
-                    return (
-                      <div key={attachment.id || idx} className="flex items-center space-x-2 p-2 bg-black bg-opacity-10 rounded-lg">
-                        <FiFile className="w-6 h-6 text-gray-500 dark:text-gray-400" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{attachment.name}</p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">{(attachment.size ? (attachment.size / 1024).toFixed(1) : '0')} KB</p>
-                        </div>
-                        <a
-                          href={attachment.url}
-                          download={attachment.name}
-                          className="flex-shrink-0 p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                          </svg>
-                        </a>
-                      </div>
-                    );
-                  default:
-                    return (
-                      <div key={attachment.id || idx} className="relative">
-                        <a href={attachment.url} target="_blank" rel="noopener noreferrer">
-                          Download {attachment.name || 'file'}
-                        </a>
-                      </div>
-                    );
-                }
-              })
-            )}
+                      <a
+                        href={attachment.url}
+                        download={attachment.name}
+                        className="flex-shrink-0 p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                      </a>
+                    </div>
+                  );
+                default:
+                  return (
+                    <div key={attachment.id || idx} className="relative">
+                      <a href={attachment.url} target="_blank" rel="noopener noreferrer">
+                        Download {attachment.name || 'file'}
+                      </a>
+                    </div>
+                  );
+              }
+            })}
           </div>
         )}
 
@@ -393,6 +383,7 @@ const ChatMessageComponent = ({
             ? 'text-white text-opacity-70'
             : 'text-gray-500 dark:text-gray-400'
             }`}>
+            {message.isEdited && <span className="text-[10px] mr-1 italic">Edited</span>}
             {formatMessageTimeOnly(message.createdAt)}
           </span>
           {message.senderId === currentUserId && (
@@ -421,7 +412,7 @@ const ChatMessageComponent = ({
         </div>
       )}
 
-      <div className={`group relative flex mb-4 ${isSentMessage ? 'justify-end' : 'justify-start'}`}>
+      <div id={`message-${message.id}`} className={`group relative flex mb-4 ${isSentMessage ? 'justify-end' : 'justify-start'}`}>
         {isSentMessage && !message.isDeleted && (
           <div className="flex items-center space-x-1 mr-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
             <button

@@ -77,9 +77,13 @@ class ChatService {
     }
   }
 
-  async sendMessage(chatId: string, content: string, type: 'text' | 'image' | 'file' | 'audio' | 'video' = 'text'): Promise<Message> {
+  async sendMessage(chatId: string, content: string, type: 'text' | 'image' | 'file' | 'audio' | 'video' = 'text', replyTo?: { id: string; content: string; senderId: string; senderName: string; type: string; createdAt: string }): Promise<Message> {
     try {
-      const response = await httpClient.post(`/chats/${chatId}/messages`, { content, type });
+      const response = await httpClient.post(`/chats/${chatId}/messages`, {
+        content,
+        type,
+        replyTo: replyTo ? JSON.stringify(replyTo) : undefined
+      });
       return response.data;
     } catch (error: unknown) {
       if (isAxiosErrorWithApiError(error)) {
@@ -89,8 +93,11 @@ class ChatService {
     }
   }
 
-  async sendFile(chatId: string, formData: FormData): Promise<Message> {
+  async sendFile(chatId: string, formData: FormData, replyTo?: { id: string; content: string; senderId: string; senderName: string; type: string; createdAt: string }): Promise<Message> {
     try {
+      if (replyTo) {
+        formData.append('replyTo', JSON.stringify(replyTo));
+      }
       const response = await httpClient.post(`/chats/${chatId}/messages`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });

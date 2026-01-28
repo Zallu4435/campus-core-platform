@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { ChatList } from './components/ChatList';
 import { ChatHeader } from './components/ChatHeader';
 import { ChatMessage } from './components/ChatMessage';
@@ -16,6 +16,7 @@ import { useChatQueries } from './hooks/useChatQueries';
 import { useChatMutations } from './hooks/useChatMutations';
 import { chatService } from './services/chatService';
 import { useChatSocket } from './hooks/useChatSocket';
+import { debounce } from 'lodash';
 
 export const ChatComponent: React.FC = () => {
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
@@ -26,11 +27,13 @@ export const ChatComponent: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [, setShowNewChat] = useState(false);
   const [searchResults, setSearchResults] = useState<User[]>([]);
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
   const [, setOldestMessageTimestamp] = useState<string | null>(null);
   const [loadingMoreMessages, setLoadingMoreMessages] = useState(false);
   const [showGroupSettings, setShowGroupSettings] = useState(false);
+  const [showMobileChat, setShowMobileChat] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const styles = getStyles(isDarkMode);
@@ -59,21 +62,49 @@ export const ChatComponent: React.FC = () => {
     chatDetails,
     messagesResponse,
     isLoadingMessages,
+    searchUsers
   } = useChatQueries({
     chatId: selectedChatId || undefined,
     messagesPage,
     messagesLimit: 20,
     chatsPage,
     chatsLimit: 20,
-    query: searchQuery
+    query: debouncedQuery
   });
+
+  useEffect(() => {
+    if (searchUsers?.data) {
+      setSearchResults(searchUsers.data);
+      setIsSearching(false);
+    }
+  }, [searchUsers]);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 300);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchQuery]);
 
   const messages = messagesResponse?.messages || [];
   const chats = chatsResponse?.data || [];
 
   const chatMutations = useChatMutations(selectedChatId || undefined, currentUserId);
 
-  const flatChat = chatDetails;
+  const flatChat = useMemo(() => {
+    if (!chatDetails) return null;
+    // Hydrate participants from the separate participants array in ChatDetails
+    const chatBase = 'chat' in chatDetails ? (chatDetails as any).chat : chatDetails;
+    const participants = 'participants' in chatDetails ? (chatDetails as any).participants : chatBase.participants;
+
+    return {
+      ...chatBase,
+      participants
+    } as Chat;
+  }, [chatDetails]);
 
   const isBlockedByMe = Array.isArray(flatChat?.blockedUsers) && flatChat.blockedUsers.some(
     (entry: { blocker: string; blocked: string }) => entry.blocker === currentUserId
@@ -81,6 +112,21 @@ export const ChatComponent: React.FC = () => {
   const isBlockedMe = Array.isArray(flatChat?.blockedUsers) && flatChat.blockedUsers.some(
     (entry: { blocker: string; blocked: string }) => entry.blocked === currentUserId
   );
+
+  const visibleMessages = useMemo(() => {
+    return allMessages.filter(message => {
+      // Filter out messages deleted for everyone if I'm the sender (or others if business logic dictates)
+      if (message.isDeleted && message.deletedForEveryone && message.senderId === currentUserId) {
+        return false;
+      }
+      // Filter out messages deleted for specific users
+      if (Array.isArray(message.deletedFor) && currentUserId && message.deletedFor.includes(currentUserId)) {
+        return false;
+      }
+      // Ensure the message has a valid ID
+      return !!(message.id && message.id !== 'false' && typeof message.id === 'string');
+    });
+  }, [allMessages, currentUserId]);
 
   useEffect(() => {
     setLoading(isLoadingChats);
@@ -171,11 +217,13 @@ export const ChatComponent: React.FC = () => {
         setSearchQuery('');
         setSearchResults([]);
         setShowNewChat(false);
+        setShowMobileChat(true);
         return;
       }
       const existingChat = chatArray.find((chat) => chat.type === 'direct' && chat.participants.some((p) => p.id === user.id));
       if (existingChat) {
         setSelectedChatId(existingChat.id);
+        setPendingUser(null);
       } else {
         const userWithName = {
           ...user,
@@ -187,6 +235,7 @@ export const ChatComponent: React.FC = () => {
       setSearchQuery('');
       setSearchResults([]);
       setShowNewChat(false);
+      setShowMobileChat(true);
     } catch (error) {
       console.error('Error in handleUserSelect:', error);
       const userWithName = {
@@ -198,17 +247,12 @@ export const ChatComponent: React.FC = () => {
       setSearchQuery('');
       setSearchResults([]);
       setShowNewChat(false);
+      setShowMobileChat(true);
     }
   };
 
 
-  const handleEditMessage = async (messageId: string, newContent: string) => {
-    try {
-      await chatMutations.editMessage.mutateAsync({ chatId: selectedChatId!, messageId, newContent });
-    } catch (error) {
-      toast.error('Failed to edit message');
-    }
-  };
+
 
   const handleDeleteMessage = async (messageId: string, deleteForEveryone: boolean) => {
     try {
@@ -255,7 +299,33 @@ export const ChatComponent: React.FC = () => {
         files.forEach(file => formData.append('files', file));
         if (message.trim()) formData.append('content', message.trim());
         if (replyTo) formData.append('replyTo', JSON.stringify(replyTo));
-        await chatMutations.sendFile.mutateAsync({ chatId: selectedChatId, formData, file: files[0] });
+        await chatMutations.sendFile.mutateAsync({
+          chatId: selectedChatId,
+          formData,
+          file: files[0],
+          replyTo: replyTo ? {
+            id: replyTo.id,
+            content: replyTo.content,
+            senderId: replyTo.senderId,
+            senderName: replyTo.senderName,
+            type: replyTo.type,
+            createdAt: replyTo.createdAt?.toString() || new Date().toISOString()
+          } : undefined
+        });
+      } else if (replyTo) {
+        await chatMutations.sendMessage.mutateAsync({
+          chatId: selectedChatId,
+          content: message,
+          type: 'text',
+          replyTo: replyTo ? {
+            id: replyTo.id,
+            content: replyTo.content,
+            senderId: replyTo.senderId,
+            senderName: replyTo.senderName,
+            type: replyTo.type,
+            createdAt: replyTo.createdAt?.toString() || new Date().toISOString()
+          } : undefined
+        });
       } else {
         await chatMutations.sendMessage.mutateAsync({ chatId: selectedChatId, content: message, type: 'text' });
       }
@@ -274,21 +344,7 @@ export const ChatComponent: React.FC = () => {
   };
 
 
-  const handleReaction = async (messageId: string, emoji: string) => {
-    try {
-      await chatMutations.addReaction.mutateAsync({ messageId, emoji });
-    } catch (error) {
-      console.error('Error adding reaction:', error);
-    }
-  };
 
-  const handleRemoveReaction = async (messageId: string) => {
-    try {
-      await chatMutations.removeReaction.mutateAsync({ messageId });
-    } catch (error) {
-      console.error('Error removing reaction:', error);
-    }
-  };
 
 
   const handleUpdateGroup = async (updates: {
@@ -417,13 +473,16 @@ export const ChatComponent: React.FC = () => {
   };
   const handleBlock = async () => {
     if (!flatChat) return;
-    if (window.confirm(`Are you sure you want to block this ${flatChat.type === 'group' ? 'group' : 'user'}?`)) {
+    const action = isBlockedByMe ? 'unblock' : 'block';
+    if (window.confirm(`Are you sure you want to ${action} this ${flatChat.type === 'group' ? 'group' : 'user'}?`)) {
       try {
         await chatMutations.blockChat.mutateAsync(flatChat.id);
-        setSelectedChatId(null);
-        toast.success(`${flatChat.type === 'group' ? 'Group' : 'User'} blocked`);
+        if (!isBlockedByMe) {
+          setSelectedChatId(null);
+        }
+        toast.success(`${flatChat.type === 'group' ? 'Group' : 'User'} ${action}ed`);
       } catch (error) {
-        toast.error('Failed to block');
+        toast.error(`Failed to ${action}`);
       }
     }
   };
@@ -440,7 +499,16 @@ export const ChatComponent: React.FC = () => {
     }
   };
 
-  const [showMobileChat, setShowMobileChat] = useState(false);
+  const handleReplyClick = (messageId: string) => {
+    const element = document.getElementById(`message-${messageId}`);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      element.classList.add('highlight-message');
+      setTimeout(() => {
+        element.classList.remove('highlight-message');
+      }, 2000);
+    }
+  };
 
   useEffect(() => {
     if (selectedChatId) {
@@ -451,6 +519,7 @@ export const ChatComponent: React.FC = () => {
   const handleMobileBack = () => {
     setShowMobileChat(false);
     setSelectedChatId(null);
+    setPendingUser(null);
     setReplyToMessage(null);
     setAllMessages([]);
     setMessagesPage(1);
@@ -538,21 +607,14 @@ export const ChatComponent: React.FC = () => {
                 type="text"
                 placeholder="Search users..."
                 value={searchQuery}
-                onChange={async (e) => {
+                onChange={(e) => {
                   const query = e.target.value;
                   setSearchQuery(query);
                   if (query.trim()) {
                     setIsSearching(true);
-                    try {
-                      const response = await chatService.searchUsers(query);
-                      setSearchResults(response.data ?? response.items ?? []);
-                    } catch {
-                      setSearchResults([]);
-                    } finally {
-                      setIsSearching(false);
-                    }
                   } else {
                     setSearchResults([]);
+                    setIsSearching(false);
                   }
                 }}
                 className="flex-1 px-4 py-2 rounded-lg bg-gray-100 dark:bg-[#2c3e50] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -680,36 +742,27 @@ export const ChatComponent: React.FC = () => {
                     <div className="animate-spin h-6 w-6 border-t-2 border-b-2 border-blue-500 rounded-full" />
                   </div>
                 )}
-                {isLoadingMessages && messagesPage === 1 ? (
+                {isLoadingMessages && messagesPage === 1 && allMessages.length === 0 ? (
                   <div className="flex h-full items-center justify-center">
                     <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-blue-500 rounded-full" />
                   </div>
-                ) : allMessages.length > 0 ? (
-                  allMessages
-                    .filter(message => {
-                      if (message.isDeleted && message.deletedForEveryone && message.senderId === currentUserId) {
-                        return false;
-                      }
-                      if (Array.isArray(message.deletedFor) && currentUserId && message.deletedFor.includes(currentUserId)) {
-                        return false;
-                      }
-                      return message.id && message.id !== 'false' && typeof message.id === 'string';
-                    })
-                    .map((message: Message, index: number) => {
-                      const isLast = index === allMessages.length - 1;
-                      return (
-                        <ChatMessage
-                          key={message.id}
-                          ref={isLast ? messagesEndRef : undefined}
-                          message={message}
-                          previousMessage={index > 0 ? allMessages[index - 1] : undefined}
-                          styles={styles}
-                          onDelete={handleDeleteMessage}
-                          onReply={handleReplyToMessage}
-                          currentUserId={currentUserId || ''}
-                        />
-                      );
-                    })
+                ) : visibleMessages.length > 0 ? (
+                  visibleMessages.map((message: Message, index: number) => {
+                    const isLast = index === visibleMessages.length - 1;
+                    return (
+                      <ChatMessage
+                        key={message.id}
+                        ref={isLast ? messagesEndRef : undefined}
+                        message={message}
+                        previousMessage={index > 0 ? visibleMessages[index - 1] : undefined}
+                        styles={styles}
+                        onDelete={handleDeleteMessage}
+                        onReply={handleReplyToMessage}
+                        onReplyClick={handleReplyClick}
+                        currentUserId={currentUserId || ''}
+                      />
+                    );
+                  })
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full text-center p-8 text-gray-500 dark:text-gray-400">
                     <FiMessageSquare size={60} className="mb-4" />
@@ -732,21 +785,74 @@ export const ChatComponent: React.FC = () => {
             </>
           ) : pendingUser ? (
             <>
-              <div className="p-4 border-b border-gray-200 dark:border-[#2a3942] flex items-center justify-between min-w-0">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white truncate">
-                  {pendingUser.name || `${pendingUser.firstName || ''} ${pendingUser.lastName || ''}`.trim()}
-                </h2>
-              </div>
+              <ChatHeader
+                chat={{
+                  id: 'pending',
+                  type: 'direct',
+                  name: pendingUser.name || `${pendingUser.firstName || ''} ${pendingUser.lastName || ''}`.trim(),
+                  avatar: pendingUser.avatar,
+                  participants: [
+                    {
+                      id: pendingUser.id,
+                      firstName: pendingUser.firstName || '',
+                      lastName: pendingUser.lastName || '',
+                      email: pendingUser.email,
+                      avatar: pendingUser.avatar,
+                      isOnline: pendingUser.isOnline || false,
+                      name: pendingUser.name
+                    }
+                  ],
+                  admins: [],
+                  isAdmin: false,
+                  settings: {
+                    onlyAdminsCanPost: false,
+                    onlyAdminsCanAddMembers: false,
+                    onlyAdminsCanChangeInfo: false,
+                    onlyAdminsCanPinMessages: false,
+                    onlyAdminsCanSendMedia: true,
+                    onlyAdminsCanSendLinks: true
+                  },
+                  unreadCount: 0,
+                  updatedAt: new Date()
+                }}
+                styles={styles}
+                onInfoClick={() => { }}
+                onSettingsClick={() => { }}
+                isDarkMode={isDarkMode}
+                onToggleTheme={() => setIsDarkMode((prev) => !prev)}
+                onDeleteChat={() => { }}
+                onBlock={() => { }}
+                onClearChat={() => { }}
+                currentUserId={currentUserId || ''}
+                isBlockedByMe={false}
+                isBlockedMe={false}
+                onBack={showMobileChat ? handleMobileBack : undefined}
+                onlineUsers={onlineUsers}
+              />
               <div className="flex-1 flex flex-col items-center justify-center text-center p-4 md:p-8 bg-gray-50 dark:bg-gray-800/50">
-                <div className="w-20 h-20 md:w-24 md:h-24 flex items-center justify-center bg-gray-200 dark:bg-gray-700 rounded-full mb-4 md:mb-6">
-                  <FiMessageSquare size={48} className="md:w-[60px] md:h-[60px] text-gray-400 dark:text-gray-500" />
+                <div className="relative mb-6">
+                  {pendingUser.avatar ? (
+                    <img
+                      src={pendingUser.avatar}
+                      alt={pendingUser.name}
+                      className="w-24 h-24 md:w-32 md:h-32 rounded-full object-cover border-4 border-white dark:border-[#2a3942] shadow-xl"
+                    />
+                  ) : (
+                    <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-blue-500 flex items-center justify-center text-white text-3xl font-bold shadow-xl">
+                      {pendingUser.firstName?.[0] || pendingUser.name?.[0] || 'U'}
+                    </div>
+                  )}
+                  <div className="absolute -bottom-2 -right-2 bg-green-500 w-6 h-6 rounded-full border-4 border-white dark:border-[#2a3942]"></div>
                 </div>
-                <h2 className="text-xl md:text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-2">
-                  No Messages Yet
+                <h2 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                  {pendingUser.name || `${pendingUser.firstName} ${pendingUser.lastName}`}
                 </h2>
-                <p className="text-sm md:text-md text-gray-500 dark:text-gray-400 mb-4 md:mb-6 max-w-sm px-2">
-                  Start a conversation by sending a message.
+                <p className="text-sm md:text-lg text-gray-500 dark:text-gray-400 mb-8 max-w-sm px-4">
+                  Say hi to {pendingUser.firstName || pendingUser.name}! Start the conversation by sending a message.
                 </p>
+                <div className="flex flex-col items-center space-y-2 opacity-50">
+                  <FiMessageSquare size={32} className="text-blue-500 animate-bounce" />
+                </div>
               </div>
               <div className="border-t border-gray-200 dark:border-[#2a3942] p-4">
                 <ChatInput

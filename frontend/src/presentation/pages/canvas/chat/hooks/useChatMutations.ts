@@ -1,7 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { chatService } from '../services/chatService';
-import { toast } from 'react-hot-toast';
-import { Message } from '../../../../../domain/types/canvas/chat';
 
 export const useChatMutations = (chatId?: string, currentUserId?: string) => {
   const queryClient = useQueryClient();
@@ -96,131 +94,34 @@ export const useChatMutations = (chatId?: string, currentUserId?: string) => {
   });
 
   const sendMessage = useMutation({
-    mutationFn: async (params: { chatId: string; content: string; type?: string }) =>
-      chatService.sendMessage(params.chatId, params.content, params.type as 'text' | 'image' | 'file' | 'audio' | 'video' | undefined),
-    onMutate: async (params) => {
-      await queryClient.cancelQueries({ queryKey: ['messages', params.chatId] });
-      const previousMessages = queryClient.getQueryData(['messages', params.chatId]);
-      const optimisticMessage = {
-        id: `temp-${Date.now()}`,
-        chatId: params.chatId,
-        senderId: currentUserId,
-        senderName: '',
-        content: params.content,
-        type: (params.type || 'text') as 'text' | 'image' | 'file' | 'audio' | 'video',
-        status: 'sending',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        reactions: [],
-        attachments: [],
-        isDeleted: false,
-        deletedForEveryone: false,
-      };
-      queryClient.setQueryData(['messages', params?.chatId], (old: Message[] = []) => [...old, optimisticMessage]);
-      return { previousMessages };
-    },
-    onError: (_err, params, context) => {
-      queryClient.setQueryData(['messages', params?.chatId], context?.previousMessages);
-    },
+    mutationFn: async (params: { chatId: string; content: string; type?: string; replyTo?: { id: string; content: string; senderId: string; senderName: string; type: string; createdAt: string } }) =>
+      chatService.sendMessage(
+        params.chatId,
+        params.content,
+        params.type as 'text' | 'image' | 'file' | 'audio' | 'video' | undefined,
+        params.replyTo
+      ),
     onSettled: (_data, _error, params) => {
       queryClient.invalidateQueries({ queryKey: ['messages', params?.chatId] });
+      queryClient.invalidateQueries({ queryKey: ['chats'] });
     }
   });
 
   const sendFile = useMutation({
-    mutationFn: (params: { chatId: string; formData: FormData; file: File }) =>
-      chatService.sendFile(params.chatId, params.formData),
-    
-    onMutate: async (variables) => {
-      if (!currentUserId) throw new Error('User not authenticated');
-      await queryClient.cancelQueries({ queryKey: ['messages', variables.chatId] });
-      
-      const optimisticMessage = {
-        id: `temp-${Date.now()}`,
-        chatId: variables.chatId,
-        senderId: currentUserId,
-        senderName: 'You',
-        content: variables.formData.get('content') as string || '',
-        type: (variables.file.type.startsWith('image/') ? 'image' : 'document') as 'image' | 'document',
-        status: 'sending' as const,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        attachments: [{
-          id: `temp-attach-${Date.now()}`,
-          url: URL.createObjectURL(variables.file),
-          name: variables.file.name,
-          size: variables.file.size,
-          mimeType: variables.file.type,
-          type: (variables.file.type.startsWith('image/') ? 'image' : 'document') as 'image' | 'document',
-        }],
-        reactions: [],
-        isDeleted: false,
-      };
-
-      const previousMessages = queryClient.getQueryData(['messages', variables.chatId]);
-
-      queryClient.setQueryData(['messages', variables.chatId], (oldData: { pages: { messages: Message[] }[] }) => {
-        if (!oldData || !oldData.pages) {
-          return {
-            pages: [{ messages: [optimisticMessage], hasMore: true }],
-            pageParams: [1],
-          };
-        }
-        const newPages = [...oldData.pages];
-        newPages[newPages.length - 1] = {
-          ...newPages[newPages.length - 1],
-          messages: [...newPages[newPages.length - 1].messages, optimisticMessage],
-        };
-        return { ...oldData, pages: newPages };
-      });
-      
-      return { previousMessages, optimisticMessage };
-    },
-
-    onError: (_err, variables, context) => {
-      if (context?.previousMessages) {
-        queryClient.setQueryData(['messages', variables.chatId], context.previousMessages);
-      }
-      toast.error('Failed to send file.');
-    },
-
-    onSettled: (_data, _error, variables, context) => {
-      if (context?.optimisticMessage?.attachments?.[0]?.url) {
-        URL.revokeObjectURL(context.optimisticMessage.attachments[0].url);
-      }
+    mutationFn: (params: { chatId: string; formData: FormData; file: File; replyTo?: { id: string; content: string; senderId: string; senderName: string; type: string; createdAt: string } }) =>
+      chatService.sendFile(params.chatId, params.formData, params.replyTo),
+    onSettled: (_data, _error, variables) => {
       queryClient.invalidateQueries({ queryKey: ['messages', variables.chatId] });
+      queryClient.invalidateQueries({ queryKey: ['chats'] });
     },
   });
 
   const deleteMessage = useMutation({
     mutationFn: async (params: { chatId: string; messageId: string; deleteForEveryone: boolean }) =>
       chatService.deleteMessage(params.chatId, params.messageId, params.deleteForEveryone),
-    onMutate: async (params) => {
-      await queryClient.cancelQueries({ queryKey: ['messages', params.chatId] });
-      const previousMessages = queryClient.getQueryData(['messages', params.chatId]);
-      queryClient.setQueryData(['messages', params.chatId], (old: { pages: { messages: Message[] }[] } | Message[]) => {
-        if (!old) return old;
-        if (Array.isArray(old)) {
-          return old.filter((msg) => msg.id !== params.messageId);
-        }
-        if (old.pages) {
-          return {
-            ...old,
-            pages: old.pages.map((page: { messages: Message[] }) => ({
-              ...page,
-              messages: page.messages.filter((msg) => msg.id !== params.messageId)
-            }))
-          };
-        }
-        return old;
-      });
-      return { previousMessages };
-    },
-    onError: (_err, params, context) => {
-      queryClient.setQueryData(['messages', params.chatId], context?.previousMessages);
-    },
     onSettled: (_data, _error, params) => {
       queryClient.invalidateQueries({ queryKey: ['messages', params?.chatId] });
+      queryClient.invalidateQueries({ queryKey: ['chats'] });
     }
   });
 
@@ -276,15 +177,17 @@ export const useChatMutations = (chatId?: string, currentUserId?: string) => {
 
   const blockChat = useMutation({
     mutationFn: async (chatId: string) => chatService.blockChat(chatId),
-    onSuccess: () => {
+    onSuccess: (_data, chatId) => {
       queryClient.invalidateQueries({ queryKey: ['chats'] });
+      queryClient.invalidateQueries({ queryKey: ['chat', chatId] });
     }
   });
 
   const clearChat = useMutation({
     mutationFn: async (chatId: string) => chatService.clearChat(chatId),
-    onSuccess: () => {
+    onSuccess: (_data, chatId) => {
       queryClient.invalidateQueries({ queryKey: ['messages', chatId] });
+      queryClient.invalidateQueries({ queryKey: ['chat', chatId] });
     }
   });
 

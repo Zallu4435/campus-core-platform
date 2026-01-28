@@ -58,6 +58,7 @@ export interface Message {
     fileName?: string;
     fileSize?: number;
     fileType?: string;
+    isEdited?: boolean;
     replyToId?: string;
     replyTo?: ReplyTo;
     forwardedFrom?: ForwardedFrom;
@@ -220,7 +221,7 @@ export interface ChatInfoProps {
 
 
 export interface ChatInputProps {
-    onSendMessage: (message: string, file?: File, replyTo?: Message) => void;
+    onSendMessage: (message: string, fileOrFiles?: File | File[], replyTo?: Message) => void;
     onTyping: (isTyping: boolean) => void;
     styles: Styles;
     replyToMessage?: Message | null;
@@ -250,6 +251,7 @@ export interface ChatMessageProps {
     previousMessage?: Message;
     onReply: (message: Message) => void;
     onDelete: (messageId: string, deleteForEveryone: boolean) => void;
+    onReplyClick?: (messageId: string) => void;
     styles: Styles;
 }
 

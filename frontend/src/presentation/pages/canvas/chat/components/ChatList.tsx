@@ -1,11 +1,11 @@
 import React from 'react';
-import { FiUsers} from 'react-icons/fi';
+import { FiUsers } from 'react-icons/fi';
 import { formatChatTime } from '../utils/chatUtils';
 import { ChatListProps, Message } from '../../../../../domain/types/canvas/chat';
 
 const formatLastMessage = (message: Message): string => {
   if (!message) return '';
-  
+
   if (message.attachments && message.attachments.length > 0) {
     const attachment = message.attachments[0];
     switch (attachment.type) {
@@ -23,7 +23,7 @@ const formatLastMessage = (message: Message): string => {
         return '📎 Attachment';
     }
   }
-  
+
   switch (message.type) {
     case 'audio':
       return '🎵 Audio';
@@ -66,9 +66,9 @@ export const ChatList: React.FC<ChatListProps> = ({
                     <FiUsers size={24} className="text-gray-500 dark:text-gray-400" />
                   )}
                 </div>
-                <div className="flex-1 min-w-0 w-full">
+                <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-medium text-gray-900 dark:text-white w-full whitespace-normal break-words text-left">
+                    <h3 className="text-sm font-medium text-gray-900 dark:text-white truncate text-left">
                       {chat.type === 'group' ? (
                         <>
                           {chat.name}
@@ -79,28 +79,20 @@ export const ChatList: React.FC<ChatListProps> = ({
                       )}
                     </h3>
                     {chat.lastMessage && (
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                      <span className="text-xs text-gray-500 dark:text-gray-400 ml-2 flex-shrink-0">
                         {formatChatTime(chat.lastMessage.createdAt)}
                       </span>
                     )}
                   </div>
                   <div className="flex items-center justify-between">
-                    <p className="text-sm text-gray-500 dark:text-gray-400 w-full whitespace-normal break-words text-left">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 truncate text-left">
                       {chat.lastMessage ? (
                         <>
-                          {chat.type === 'group' && (
+                          {(chat.type === 'group' || chat.type === 'direct') && (
                             <span className="font-medium">
                               {chat.lastMessage.senderId === currentUserId
                                 ? 'You'
-                                : chat.participants.find(p => p.id === chat.lastMessage?.senderId)?.firstName + ' ' + chat.participants.find(p => p.id === chat.lastMessage?.senderId)?.lastName}
-                              :
-                            </span>
-                          )}
-                          {chat.type === 'direct' && (
-                            <span className="font-medium">
-                              {chat.lastMessage.senderId === currentUserId
-                                ? 'You'
-                                : chat.participants.find(p => p.id === chat.lastMessage?.senderId)?.firstName + ' ' + chat.participants.find(p => p.id === chat.lastMessage?.senderId)?.lastName}
+                                : chat.participants.find(p => p.id === chat.lastMessage?.senderId)?.firstName}
                               :
                             </span>
                           )}{' '}
@@ -134,7 +126,7 @@ export const ChatList: React.FC<ChatListProps> = ({
                       )}
                     </p>
                     {chat.unreadCount > 0 && (
-                      <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-medium text-white bg-green-500 rounded-full">
+                      <span className="ml-2 flex-shrink-0 inline-flex items-center justify-center w-5 h-5 text-xs font-medium text-white bg-green-500 rounded-full">
                         {chat.unreadCount}
                       </span>
                     )}

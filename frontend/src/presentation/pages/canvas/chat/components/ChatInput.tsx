@@ -38,7 +38,7 @@ export const ChatInput: React.FC<ChatInputProps & { disabled?: boolean }> = ({
     e.preventDefault();
     if (disabled) return;
     if (message.trim() || selectedFiles.length > 0) {
-      onSendMessage(message.trim(), selectedFiles.length > 0 ? selectedFiles[0] : undefined, replyToMessage || undefined);
+      onSendMessage(message.trim(), selectedFiles.length > 0 ? selectedFiles : undefined, replyToMessage || undefined);
       setMessage('');
       setSelectedFiles([]);
       setPreviewUrls([]);
@@ -111,7 +111,7 @@ export const ChatInput: React.FC<ChatInputProps & { disabled?: boolean }> = ({
 
   const handleSendAllMedia = async (media: { url: string; name: string; type: string; caption: string }[]) => {
     if (!selectedChatId || selectedFiles.length === 0) return;
-    onSendMessage(media[0]?.caption || '', selectedFiles[0], replyToMessage || undefined);
+    onSendMessage(media[0]?.caption || '', selectedFiles, replyToMessage || undefined);
     setMessage('');
     clearSelectedFiles();
     setShowMediaPreview(false);
@@ -185,10 +185,16 @@ export const ChatInput: React.FC<ChatInputProps & { disabled?: boolean }> = ({
     };
   }, []);
 
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   return (
-    <div className="relative bg-white dark:bg-[#202c33] p-2">
+    <div className="relative bg-white dark:bg-[#202c33] border-t border-gray-200 dark:border-[#2a3942]">
       {replyToMessage && (
-        <div className="absolute bottom-full left-0 right-0 p-3 bg-gray-50 dark:bg-[#111b21] border-t border-x border-gray-200 dark:border-[#2a3942] rounded-t-xl z-[40] shadow-lg">
+        <div className="absolute bottom-full left-0 right-0 p-3 bg-gray-50 dark:bg-[#111b21] border-t border-x border-gray-200 dark:border-[#2a3942] rounded-t-xl z-[40] shadow-lg animate-in slide-in-from-bottom-2 duration-200">
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center space-x-2 border-l-4 border-green-500 pl-2 w-full overflow-hidden">
               <div className="flex flex-col min-w-0 flex-1">
@@ -237,91 +243,141 @@ export const ChatInput: React.FC<ChatInputProps & { disabled?: boolean }> = ({
         />
       )}
 
-      {selectedFiles.length > 0 && selectedFiles.every(file => !(file.type.startsWith('image/') || file.type.startsWith('video/'))) && (
-        <div className="absolute bottom-full left-0 right-0 p-2 md:p-3 bg-white dark:bg-[#2a3942] border border-gray-200 dark:border-[#2a3942] rounded-t-xl max-w-xs mx-auto">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300">{selectedFiles.map(f => f.name).join(', ')}</span>
+      <div className="relative px-2 py-2 flex items-center min-h-[64px]">
+        {/* Recording Overlay */}
+        {recording && (
+          <div className="absolute inset-0 bg-white dark:bg-[#202c33] z-50 flex items-center px-4 animate-in fade-in slide-in-from-bottom-1 duration-200">
+            <div className="flex items-center space-x-3 w-full">
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.6)]" />
+                <span className="text-sm font-medium dark:text-white min-w-[40px] tabular-nums">
+                  {formatTime(recordingTime)}
+                </span>
+              </div>
+              <div className="flex-1 overflow-hidden h-8 bg-gray-100 dark:bg-[#2c3e50] rounded-full px-2 flex items-center">
+                <LiveWaveform stream={mediaStream} isRecording={recording} />
+              </div>
+              <div className="flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={cancelRecording}
+                  className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-all"
+                  title="Discard"
+                >
+                  <FiX className="w-5 h-5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={stopRecording}
+                  className="p-3 bg-green-500 text-white rounded-full hover:bg-green-600 shadow-md transform hover:scale-105 transition-all"
+                  title="Review Recording"
+                >
+                  <FiSend className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Audio Preview Overlay */}
+        {audioBlob && !recording && (
+          <div className="absolute inset-0 bg-white dark:bg-[#202c33] z-50 flex items-center px-4 animate-in fade-in duration-200">
+            <div className="flex items-center space-x-3 w-full bg-gray-50 dark:bg-[#111b21] p-2 rounded-xl border border-gray-100 dark:border-[#2a3942]">
+              <div className="p-2 bg-green-500/10 text-green-500 rounded-lg">
+                <FiMic className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <audio
+                  controls
+                  src={URL.createObjectURL(audioBlob)}
+                  className="w-full h-8 custom-audio-player"
+                />
+              </div>
+              <div className="flex items-center space-x-1">
+                <button
+                  type="button"
+                  onClick={cancelRecording}
+                  className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-all"
+                >
+                  <FiX className="w-5 h-5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={sendAudio}
+                  className="p-2.5 bg-green-500 text-white rounded-full hover:bg-green-600 shadow-lg transition-transform active:scale-95"
+                >
+                  <FiSend className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Standard Input Row */}
+        <div className={`flex items-center space-x-1 md:space-x-2 w-full transition-opacity duration-200 ${(recording || audioBlob) ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            className="hidden"
+            accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt"
+            multiple
+          />
+
+          <div className="flex items-center">
             <button
-              onClick={clearSelectedFiles}
-              className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+              ref={attachmentRef}
+              type="button"
+              onClick={handleAttachmentClick}
+              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-[#2c3e50] text-gray-600 dark:text-gray-400 transition-colors"
             >
-              <FiX className="w-4 h-4 md:w-5 md:h-5" />
+              <FiPaperclip className="w-5 h-5" />
+            </button>
+
+            <button
+              ref={emojiRef}
+              type="button"
+              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-[#2c3e50] text-gray-600 dark:text-gray-400 transition-colors"
+            >
+              <FiSmile className="w-5 h-5" />
             </button>
           </div>
+
+          <form onSubmit={handleSubmit} className="flex-1 flex items-center space-x-2">
+            <input
+              type="text"
+              value={message}
+              onChange={handleChange}
+              className="flex-1 px-4 py-2.5 rounded-full bg-gray-100 dark:bg-[#2c3e50] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500/50 text-[15px] border-none placeholder:text-gray-500 dark:placeholder:text-gray-400"
+              placeholder={disabled ? 'Chat is disabled' : 'Type a message...'}
+              disabled={disabled}
+            />
+
+            {!message.trim() && selectedFiles.length === 0 ? (
+              <button
+                type="button"
+                onClick={startRecording}
+                className="p-2.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#2c3e50] rounded-full transition-all active:scale-90"
+                title="Voice Message"
+              >
+                <FiMic className="w-6 h-6" />
+              </button>
+            ) : (
+              <button
+                type="submit"
+                className="p-2.5 bg-green-500 text-white rounded-full hover:bg-green-600 shadow-md hover:shadow-lg transition-all active:scale-95 disabled:opacity-50"
+                disabled={disabled}
+              >
+                <FiSend className="w-5 h-5" />
+              </button>
+            )}
+          </form>
         </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="flex items-center space-x-1 md:space-x-2 p-2 border-t border-gray-200 dark:border-[#2a3942] bg-white dark:bg-[#202c33]">
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleFileChange}
-          className="hidden"
-          accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt"
-          multiple
-        />
-
-        <button
-          ref={attachmentRef}
-          type="button"
-          onClick={handleAttachmentClick}
-          className="p-1.5 md:p-2 rounded-full hover:bg-gray-100 dark:hover:bg-[#2c3e50] flex-shrink-0"
-        >
-          <FiPaperclip className="w-4 h-4 md:w-5 md:h-5 text-gray-600 dark:text-gray-300" />
-        </button>
-
-        <button
-          ref={emojiRef}
-          type="button"
-          onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-          className="p-1.5 md:p-2 rounded-full hover:bg-gray-100 dark:hover:bg-[#2c3e50] flex-shrink-0"
-        >
-          <FiSmile className="w-4 h-4 md:w-5 md:h-5 text-gray-600 dark:text-gray-300" />
-        </button>
-
-        {!recording && !audioBlob && (
-          <button type="button" onClick={startRecording} className="p-1.5 md:p-2 rounded-full hover:bg-gray-100 dark:hover:bg-[#2c3e50] flex-shrink-0" title="Record Audio">
-            <FiMic className="w-4 h-4 md:w-5 md:h-5 text-gray-600 dark:text-gray-300" />
-          </button>
-        )}
-        {recording && (
-          <div className="flex items-center space-x-2 mb-2 w-full">
-            <LiveWaveform stream={mediaStream} isRecording={recording} />
-            <span className="text-xs text-red-500">Recording: {recordingTime}s</span>
-            <button type="button" onClick={stopRecording} className="p-1.5 md:p-2 rounded-full bg-red-500 text-white hover:bg-red-600">Stop</button>
-            <button type="button" onClick={cancelRecording} className="p-1.5 md:p-2 rounded-full bg-gray-300 text-gray-700 hover:bg-gray-400">Cancel</button>
-          </div>
-        )}
-        {audioBlob && !recording && (
-          <div className="flex items-center space-x-2">
-            <audio controls src={URL.createObjectURL(audioBlob)} className="h-8" />
-            <button type="button" onClick={sendAudio} className="p-1.5 md:p-2 rounded-full bg-green-500 text-white hover:bg-green-600">Send</button>
-            <button type="button" onClick={cancelRecording} className="p-1.5 md:p-2 rounded-full bg-gray-300 text-gray-700 hover:bg-gray-400">Cancel</button>
-          </div>
-        )}
-
-        <input
-          type="text"
-          value={message}
-          onChange={handleChange}
-          className="flex-1 px-3 md:px-4 py-2 md:py-2.5 rounded-lg bg-gray-100 dark:bg-[#2c3e50] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base"
-          placeholder={disabled ? 'You blocked this user.' : 'Type a message...'}
-          disabled={disabled}
-        />
-
-        <button
-          type="submit"
-          className="p-2 md:p-2.5 bg-green-500 text-white rounded-full hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0 transition-colors"
-          disabled={disabled || (!message.trim() && selectedFiles.length === 0)}
-        >
-          <FiSend className="w-4 h-4 md:w-5 md:h-5" />
-        </button>
-      </form>
+      </div>
 
       {showEmojiPicker && (
-        <div
-          className="absolute left-0 bottom-full mb-75 md:mb-100 z-30 w-full rounded-xl shadow-xl bg-white dark:bg-[#202c33]"
-        >
+        <div className="absolute left-0 bottom-full mb-2 z-50 w-full animate-in fade-in slide-in-from-bottom-2 duration-200">
           <EmojiPicker
             show={showEmojiPicker}
             onEmojiSelect={handleEmojiSelect}
@@ -333,10 +389,7 @@ export const ChatInput: React.FC<ChatInputProps & { disabled?: boolean }> = ({
       )}
 
       {showAttachmentMenu && (
-        <div
-          className="absolute bottom-full left-0 transform translate-x-0"
-          style={{ transform: 'translateX(-50%)' }}
-        >
+        <div className="absolute bottom-full left-4 mb-2 z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
           <AttachmentMenu
             styles={styles}
             showAttachmentMenu={showAttachmentMenu}

@@ -31,24 +31,30 @@ export const getStyles = (isDarkMode: boolean): Styles => ({
   accent: () => isDarkMode ? 'from-blue-600 to-purple-600' : 'from-blue-400 to-purple-500'
 });
 
-export const formatMessageTime = (date: string | Date): string => {
+export const formatMessageTime = (date: string | Date | undefined): string => {
+  if (!date) return '';
   const messageDate = new Date(date);
+  if (isNaN(messageDate.getTime())) return '';
+
   const now = new Date();
 
-  // Reset hours to compare just the dates
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const msgDate = new Date(messageDate.getFullYear(), messageDate.getMonth(), messageDate.getDate());
+  const isSameDay = (d1: Date, d2: Date) =>
+    d1.getFullYear() === d2.getFullYear() &&
+    d1.getMonth() === d2.getMonth() &&
+    d1.getDate() === d2.getDate();
 
-  const diffInTime = today.getTime() - msgDate.getTime();
-  const diffInDays = Math.floor(diffInTime / (1000 * 3600 * 24));
-
-  if (diffInDays === 0) {
+  if (isSameDay(messageDate, now)) {
     return 'Today';
   }
 
-  if (diffInDays === 1) {
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (isSameDay(messageDate, yesterday)) {
     return 'Yesterday';
   }
+
+  const diffInTime = now.getTime() - messageDate.getTime();
+  const diffInDays = Math.floor(diffInTime / (1000 * 3600 * 24));
 
   if (diffInDays < 7) {
     return messageDate.toLocaleDateString([], { weekday: 'long' });

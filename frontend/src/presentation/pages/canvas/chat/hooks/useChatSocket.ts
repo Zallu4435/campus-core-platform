@@ -1,15 +1,12 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { useSelector } from 'react-redux';
-import { RootState } from '../../../../../appStore/store';
-import { Message, User } from '../../../../../domain/types/canvas/chat';
+import { Message } from '../../../../../domain/types/canvas/chat';
 import { useQueryClient } from '@tanstack/react-query';
 
 export const useChatSocket = (selectedChatId: string | null) => {
     const [socketError, setSocketError] = useState<string | null>(null);
     const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
     const socketRef = useRef<Socket | null>(null);
-    const currentUser = useSelector((state: RootState) => state.auth.user);
     const queryClient = useQueryClient();
 
     useEffect(() => {
@@ -43,7 +40,18 @@ export const useChatSocket = (selectedChatId: string | null) => {
     }, []);
 
     useEffect(() => {
+        if (!socketRef.current || !selectedChatId) return;
+        socketRef.current.emit('joinChat', { chatId: selectedChatId });
+        return () => {
+            socketRef.current?.emit('leaveChat', { chatId: selectedChatId });
+        };
+    }, [selectedChatId]);
+
+    useEffect(() => {
         if (!socketRef.current) return;
+
+        const socket = socketRef.current;
+
         const handleUserStatus = (data: { userId: string; status: 'online' | 'offline' }) => {
             setOnlineUsers(prev => {
                 const newSet = new Set(prev);
@@ -60,50 +68,66 @@ export const useChatSocket = (selectedChatId: string | null) => {
             setOnlineUsers(new Set(userIds));
         };
 
-        socketRef.current.on('userStatus', handleUserStatus);
-        socketRef.current.on('onlineUsers', handleOnlineUsers);
+        socket.on('userStatus', handleUserStatus);
+        socket.on('onlineUsers', handleOnlineUsers);
 
         return () => {
-            socketRef.current?.off('userStatus', handleUserStatus);
-            socketRef.current?.off('onlineUsers', handleOnlineUsers);
+            socket.off('userStatus', handleUserStatus);
+            socket.off('onlineUsers', handleOnlineUsers);
         };
     }, []);
 
     useEffect(() => {
-        if (!socketRef.current || !selectedChatId) return;
-        socketRef.current.emit('joinChat', { chatId: selectedChatId });
-        return () => {
-            socketRef.current?.emit('leaveChat', { chatId: selectedChatId });
-        };
-    }, [selectedChatId]);
+        if (!socketRef.current) return;
 
-    // Message handling
-    useEffect(() => {
-        if (!socketRef.current || !currentUser?.id) return;
+        const socket = socketRef.current;
 
         const handleNewMessage = (message: Message) => {
-            // Logic to update local cache provided by consumer 
-            // OR we just invalidate queries.
-            // For now, let's just invalidate queries to be safe and simple
-            if (message.chatId === selectedChatId) {
-                // In a real optimized app we'd update the cache manually here
-                // but let's stick to invalidating for correctness first
+            queryClient.invalidateQueries({ queryKey: ['chats'] });
+
+            if (message.chatId) {
+                queryClient.invalidateQueries({ queryKey: ['messages', message.chatId] });
             }
-            queryClient.invalidateQueries({ queryKey: ['chats'] });
+
+            if (message.chatId === selectedChatId) {
+                queryClient.invalidateQueries({ queryKey: ['chat', selectedChatId] });
+            }
         };
 
-        const handleChatUpdate = () => {
+        const handleChatUpdate = (data: any) => {
             queryClient.invalidateQueries({ queryKey: ['chats'] });
+            const updatedChatId = data?.id || selectedChatId;
+            if (updatedChatId) {
+                queryClient.invalidateQueries({ queryKey: ['chat', updatedChatId] });
+            }
         };
 
-        socketRef.current.on('message', handleNewMessage);
-        socketRef.current.on('chat', handleChatUpdate);
+        const handleChatDeleted = () => {
+            queryClient.invalidateQueries({ queryKey: ['chats'] });
+            if (selectedChatId) {
+                queryClient.invalidateQueries({ queryKey: ['chat', selectedChatId] });
+            }
+        };
+
+        const handleMessagesCleared = (data: { chatId: string }) => {
+            queryClient.invalidateQueries({ queryKey: ['messages', data.chatId] });
+            if (data.chatId === selectedChatId) {
+                queryClient.invalidateQueries({ queryKey: ['chat', selectedChatId] });
+            }
+        };
+
+        socket.on('message', handleNewMessage);
+        socket.on('chat', handleChatUpdate);
+        socket.on('chatDeleted', handleChatDeleted);
+        socket.on('messagesCleared', handleMessagesCleared);
 
         return () => {
-            socketRef.current?.off('message', handleNewMessage);
-            socketRef.current?.off('chat', handleChatUpdate);
+            socket.off('message', handleNewMessage);
+            socket.off('chat', handleChatUpdate);
+            socket.off('chatDeleted', handleChatDeleted);
+            socket.off('messagesCleared', handleMessagesCleared);
         };
-    }, [selectedChatId, currentUser?.id, queryClient]);
+    }, [selectedChatId, queryClient]);
 
 
     const emitTyping = useCallback((isTyping: boolean) => {

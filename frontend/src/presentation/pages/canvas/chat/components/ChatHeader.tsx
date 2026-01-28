@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FiMoreVertical, FiPhone, FiVideo, FiSettings, FiUser, FiUsers, FiArrowLeft } from 'react-icons/fi';
+import { FiMoreVertical, FiSettings, FiUser, FiUsers, FiArrowLeft } from 'react-icons/fi';
 import { ChatHeaderProps } from '../../../../../domain/types/canvas/chat';
 
 export const ChatHeader: React.FC<ChatHeaderProps> = ({
@@ -17,11 +17,16 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const otherParticipant = chat.type === 'direct'
-    ? chat.participants.find(p => p.id !== currentUserId)
+    ? chat.participants.find(p => (typeof p === 'string' ? p : p.id) !== currentUserId)
     : null;
+
   const isOnline = chat.type === 'direct'
-    ? (otherParticipant ? onlineUsers.has(otherParticipant.id) : false)
-    : chat.participants.some(p => onlineUsers.has(p.id));
+    ? (otherParticipant ? onlineUsers.has(typeof otherParticipant === 'string' ? otherParticipant : otherParticipant.id) : false)
+    : chat.participants.some(p => onlineUsers.has(typeof p === 'string' ? p : p.id));
+
+  const displayName = (chat.type === 'direct' && otherParticipant && typeof otherParticipant !== 'string' && otherParticipant.firstName)
+    ? `${otherParticipant.firstName} ${otherParticipant.lastName}`
+    : chat.name;
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -51,12 +56,12 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             <FiArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-300" />
           </button>
         )}
-        
+
         <div className="relative w-10 h-10 md:w-12 md:h-12 flex-shrink-0">
           {chat.avatar ? (
             <img
               src={chat.avatar}
-              alt={chat.name || 'Chat'}
+              alt={displayName}
               className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover"
             />
           ) : chat.type === 'group' ? (
@@ -74,10 +79,10 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         </div>
         <div className="min-w-0 flex-1">
           <h2 className="text-sm md:text-base font-semibold text-gray-900 dark:text-white truncate">
-            {chat.name}
+            {displayName}
           </h2>
           <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-            {chat.type === 'group' 
+            {chat.type === 'group'
               ? `${chat.participants.length} members`
               : isOnline ? 'Online' : 'Offline'
             }
@@ -88,22 +93,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         </div>
       </div>
       <div className="flex items-center space-x-1 md:space-x-2 flex-shrink-0">
-        {chat.type === 'direct' && (
-          <>
-            <button
-              className="p-1.5 md:p-2 rounded-full hover:bg-gray-100 dark:hover:bg-[#2a3942] transition-colors duration-200"
-              title="Voice call"
-            >
-              <FiPhone className="w-4 h-4 md:w-5 md:h-5 text-gray-600 dark:text-gray-300" />
-            </button>
-            <button
-              className="p-1.5 md:p-2 rounded-full hover:bg-gray-100 dark:hover:bg-[#2a3942] transition-colors duration-200"
-              title="Video call"
-            >
-              <FiVideo className="w-4 h-4 md:w-5 md:h-5 text-gray-600 dark:text-gray-300" />
-            </button>
-          </>
-        )}
+
         {chat.type === 'group' && (
           <button
             onClick={onSettingsClick}
