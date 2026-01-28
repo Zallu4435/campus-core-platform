@@ -81,14 +81,17 @@ export interface MessageDTO {
     duration?: number;
   }[];
   replyTo?: {
-    messageId: string;
+    id: string;
     content: string;
     senderId: string;
+    senderName: string;
+    type: string;
+    createdAt: string;
   };
   forwardedFrom?: {
     messageId: string;
     chatId: string;
-    senderId: string;
+    chatName: string;
   };
   createdAt: Date;
   updatedAt: Date;

@@ -13,6 +13,14 @@ export interface MessageProps {
   createdAt: Date;
   updatedAt: Date;
   attachments?: MessageAttachment[];
+  replyTo?: {
+    id: string;
+    content: string;
+    senderId: string;
+    senderName: string;
+    type: MessageType;
+    createdAt: string;
+  };
 }
 
 export enum MessageType {
@@ -111,6 +119,10 @@ export class Message {
     return this.props.attachments;
   }
 
+  get replyTo(): MessageProps['replyTo'] {
+    return this.props.replyTo;
+  }
+
   updateStatus(status: MessageStatus): void {
     this.props.status = status;
     this.props.updatedAt = new Date();
@@ -153,5 +165,25 @@ export class Message {
   removeReaction(userId: string): void {
     this.props.reactions = this.props.reactions.filter(r => r.userId !== userId);
     this.props.updatedAt = new Date();
+  }
+
+  toJSON() {
+    return {
+      id: this.id,
+      chatId: this.chatId,
+      senderId: this.senderId,
+      content: this.content,
+      type: this.type,
+      status: this.status,
+      reactions: this.reactions,
+      isEdited: this.isEdited,
+      isDeleted: this.isDeleted,
+      deletedForEveryone: this.deletedForEveryone,
+      deletedFor: this.deletedFor,
+      createdAt: this.createdAt,
+      updatedAt: this.updatedAt,
+      attachments: this.attachments,
+      replyTo: this.replyTo
+    };
   }
 } 

@@ -175,28 +175,7 @@ export class GetChatMessagesUseCase implements IGetChatMessagesUseCase {
     const mapped = messages
       .slice()
       .reverse()
-      .map((message: Message) => ({
-        id: message.id,
-        chatId: message.chatId,
-        senderId: message.senderId,
-        content: message.content,
-        type: message.type,
-        status: message.status,
-        reactions: message.reactions || [],
-        attachments: (message.attachments || []).map((a) => ({
-          type: a.type,
-          url: a.url,
-          name: a.name ?? "",
-          size: a.size ?? 0,
-          thumbnail: a.thumbnail,
-          duration: a.duration,
-        })),
-        createdAt: message.createdAt,
-        updatedAt: message.updatedAt,
-        isDeleted: message.isDeleted || false,
-        deletedForEveryone: message.deletedForEveryone || false,
-        deletedFor: message.deletedFor || [],
-      }));
+      .map((message) => this.toMessageDTO(message));
 
     const skip = (page - 1) * limit;
     const hasMore = skip + messages.length < totalItems;
@@ -211,7 +190,41 @@ export class GetChatMessagesUseCase implements IGetChatMessagesUseCase {
       oldestMessageTimestamp,
     };
   }
+
+  private toMessageDTO(message: Message) {
+    return {
+      id: message.id,
+      chatId: message.chatId,
+      senderId: message.senderId,
+      content: message.content,
+      type: message.type,
+      status: message.status,
+      reactions: message.reactions || [],
+      attachments: (message.attachments || []).map((a) => ({
+        type: a.type,
+        url: a.url,
+        name: a.name ?? "",
+        size: a.size ?? 0,
+        thumbnail: a.thumbnail,
+        duration: a.duration,
+      })),
+      createdAt: message.createdAt,
+      updatedAt: message.updatedAt,
+      isDeleted: message.isDeleted || false,
+      deletedForEveryone: message.deletedForEveryone || false,
+      deletedFor: message.deletedFor || [],
+      replyTo: message.replyTo ? {
+        id: message.replyTo.id,
+        content: message.replyTo.content,
+        senderId: message.replyTo.senderId,
+        senderName: message.replyTo.senderName,
+        type: message.replyTo.type,
+        createdAt: message.replyTo.createdAt
+      } : undefined
+    };
+  }
 }
+
 
 import { IStorageService } from '../../../application/shared/services/IStorageService';
 import Logger from '../../../shared/utils/logger';
@@ -223,7 +236,7 @@ export class SendMessageUseCase implements ISendMessageUseCase {
   ) { }
 
   async execute(params: SendMessageRequestDTO): Promise<void> {
-    const { chatId, senderId, content, attachments } = params;
+    const { chatId, senderId, content, attachments, replyTo } = params;
     // Strictly parsing type
     const type = params.type as MessageType;
     const mappedAttachments = attachments?.map(a => ({
@@ -235,7 +248,7 @@ export class SendMessageUseCase implements ISendMessageUseCase {
       duration: a.duration
     }));
     try {
-      return await this._chatRepository.sendMessage({ chatId, senderId, content, type, attachments: mappedAttachments });
+      return await this._chatRepository.sendMessage({ chatId, senderId, content, type, attachments: mappedAttachments, replyTo });
     } catch (error) {
       // Cleanup: If DB Message creation fails, delete uploaded files
       if (mappedAttachments && mappedAttachments.length > 0) {
@@ -439,7 +452,7 @@ export class DeleteMessageUseCase implements IDeleteMessageUseCase {
 export class ReplyToMessageUseCase implements IReplyToMessageUseCase {
   constructor(private _chatRepository: IChatRepository) { }
 
-  async execute(params: ReplyToMessageRequestDTO): Promise<void> {
+  async execute(params: ReplyToMessageRequestDTO): Promise<Message> {
     return this._chatRepository.replyToMessage(params);
   }
 }

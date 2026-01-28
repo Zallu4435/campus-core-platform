@@ -13,13 +13,9 @@ export class UserAssignmentRepository implements IUserAssignmentRepository {
   async getAssignments(subject?: string, status?: string, page: number = 1, limit: number = 10, search?: string, studentId?: string, sortBy?: string): Promise<{ assignments: { assignment: Assignment; submission: Submission | null }[]; page: number; limit: number; total: number }> {
     let query: mongoose.FilterQuery<IAssignmentSource> = {};
 
-    // 1. Handle Status Filtering Logic
     if (status === 'all' || !status) {
-      // Show both published and draft (or whatever the user wants to see)
       query.status = { $in: ['published', 'draft'] };
     } else if (status === 'submitted' || status === 'graded' || status === 'needs_correction') {
-      // These are submission-based statuses. 
-      // First, get the assignment IDs that the student has submitted with this status.
       const submissionQuery: any = { studentId };
       if (status === 'graded') submissionQuery.status = 'reviewed';
       else if (status === 'submitted') submissionQuery.status = { $in: ['pending', 'reviewed', 'late'] };
@@ -30,11 +26,9 @@ export class UserAssignmentRepository implements IUserAssignmentRepository {
 
       query._id = { $in: assignmentIds };
     } else {
-      // Standard status filter (e.g., 'published', 'draft')
       query.status = status;
     }
 
-    // 2. Add Subject and Search filters
     if (subject && subject !== 'all') {
       query.subject = subject;
     }

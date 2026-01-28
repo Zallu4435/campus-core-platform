@@ -29,7 +29,7 @@ export interface IChatRepository {
   getChats(params: { userId: string; page: number; limit: number }): Promise<PaginatedResult<Chat>>;
   searchChats(params: { userId: string; query: string; page: number; limit: number }): Promise<PaginatedResult<Chat> & { matchingUserIds: string[] }>;
   getChatMessages(params: { chatId: string; userId: string; page: number; limit: number; before?: string }): Promise<PaginatedResult<Message>>;
-  sendMessage(params: { chatId: string; senderId: string; content: string; type: MessageType; attachments?: Array<{ type: MessageType; url: string; name: string; size: number; thumbnail?: string; duration?: number }> }): Promise<void>;
+  sendMessage(params: { chatId: string; senderId: string; content: string; type: MessageType; attachments?: Array<{ type: MessageType; url: string; name: string; size: number; thumbnail?: string; duration?: number }>; replyTo?: { messageId: string; content: string; senderId: string } }): Promise<void>;
   markMessagesAsRead(params: { chatId: string; userId: string }): Promise<void>;
   addReaction(params: { messageId: string; userId: string; emoji: string }): Promise<void>;
   removeReaction(params: { messageId: string; userId: string }): Promise<void>;
@@ -45,7 +45,7 @@ export interface IChatRepository {
   leaveGroup(params: { chatId: string; userId: string }): Promise<void>;
   editMessage(params: { chatId: string; messageId: string; content: string; userId: string }): Promise<void>;
   deleteMessage(params: { messageId: string; userId: string; deleteForEveryone?: boolean }): Promise<void>;
-  replyToMessage(params: { chatId: string; messageId: string; content: string; userId: string }): Promise<void>;
+  replyToMessage(params: { chatId: string; messageId: string; content: string; userId: string }): Promise<Message>;
   deleteChat(params: { chatId: string; userId: string }): Promise<void>;
   blockChat(params: { chatId: string; userId: string }): Promise<void>;
   updateMessageStatus(messageId: string, status: string): Promise<void>;

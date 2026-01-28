@@ -159,12 +159,36 @@ export class ChatController {
     if (!messageContent && attachments.length === 0) {
       return this._httpErrors.error_400("Message content or file is required");
     }
+    let replyToParsed = undefined;
+    if (req.body.replyTo) {
+      if (typeof req.body.replyTo === 'string') {
+        try {
+          replyToParsed = JSON.parse(req.body.replyTo);
+        } catch (e) {
+          // If parse fails, assume it's just an ID if strictly needed, but better to rely on replyToId if replyTo is invalid json
+        }
+      } else {
+        replyToParsed = req.body.replyTo;
+      }
+    } else if (req.body.replyToId) {
+      replyToParsed = {
+        messageId: req.body.replyToId,
+        content: '',
+        senderId: ''
+      };
+    }
+
     const params: SendMessageRequestDTO = {
       chatId,
       senderId: req.user.userId,
       content: messageContent,
       type: attachments?.length ? (attachments[0].type === MessageType.Image ? MessageType.Image : MessageType.File) : MessageType.Text,
       attachments,
+      replyTo: replyToParsed ? {
+        messageId: replyToParsed.messageId || replyToParsed.id,
+        content: replyToParsed.content,
+        senderId: replyToParsed.senderId
+      } : undefined
     };
     await this._sendMessageUseCase.execute(params);
     const messagesResult = await this._getChatMessagesUseCase.execute({
@@ -177,7 +201,10 @@ export class ChatController {
     if (savedMessage) {
       socketService.handleNewMessage(savedMessage);
     }
-    return this._httpSuccess.success_201({ message: "Message sent successfully" });
+
+    // Return the actual message object (or null if something went wrong, though it shouldn't)
+    // The frontend expects the Message object
+    return this._httpSuccess.success_201(savedMessage || { message: "Message sent but could not be retrieved" });
   }
 
   async markMessagesAsRead(req: IHttpRequest): Promise<IHttpResponse> {
@@ -222,7 +249,7 @@ export class ChatController {
     };
 
     await this._addReactionUseCase.execute(params);
-    const updatedMessage = await require('../../../infrastructure/database/mongoose/models/chat/MessageModel').MessageModel.findById(messageId).lean();
+    const updatedMessage = await require('../../../infrastructure/database/mongoose/chat/MessageModel').MessageModel.findById(messageId).lean();
     if (updatedMessage) {
       socketService.handleNewMessage(updatedMessage);
     }
@@ -245,7 +272,7 @@ export class ChatController {
     };
 
     await this._removeReactionUseCase.execute(params);
-    const updatedMessage = await require('../../../infrastructure/database/mongoose/models/chat/MessageModel').MessageModel.findById(messageId).lean();
+    const updatedMessage = await require('../../../infrastructure/database/mongoose/chat/MessageModel').MessageModel.findById(messageId).lean();
     if (updatedMessage) {
       socketService.handleNewMessage(updatedMessage);
     }
@@ -476,9 +503,11 @@ export class ChatController {
       userId
     });
 
-    const updatedMessage = await require('../../../infrastructure/database/mongoose/models/chat/MessageModel').MessageModel.findById(messageId).lean();
+    const { MessageModel } = require('../../../infrastructure/database/mongoose/chat/MessageModel');
+    const { ChatMapper } = require('../../../infrastructure/repositories/chat/ChatMapper');
+    const updatedMessage = await MessageModel.findById(messageId).lean();
     if (updatedMessage) {
-      socketService.handleNewMessage(updatedMessage);
+      socketService.handleNewMessage(ChatMapper.toMessageDomain(updatedMessage));
     }
 
     return this._httpSuccess.success_200({ message: 'Message edited successfully' });
@@ -493,9 +522,11 @@ export class ChatController {
       userId,
       deleteForEveryone
     });
-    const updatedMessage = await require('../../../infrastructure/database/mongoose/models/chat/MessageModel').MessageModel.findById(messageId).lean();
+    const { MessageModel } = require('../../../infrastructure/database/mongoose/chat/MessageModel');
+    const { ChatMapper } = require('../../../infrastructure/repositories/chat/ChatMapper');
+    const updatedMessage = await MessageModel.findById(messageId).lean();
     if (updatedMessage) {
-      socketService.handleNewMessage(updatedMessage);
+      socketService.handleNewMessage(ChatMapper.toMessageDomain(updatedMessage));
     }
     return this._httpSuccess.success_200({ message: 'Message deleted successfully' });
   }
@@ -522,9 +553,18 @@ export class ChatController {
       userId: req.user.userId
     };
 
-    await this._replyToMessageUseCase.execute(params);
+    const newMessage = await this._replyToMessageUseCase.execute(params);
 
-    return this._httpSuccess.success_200({ message: "Reply sent successfully" });
+    if (newMessage) {
+      socketService.handleNewMessage(newMessage);
+
+      const updatedChat = await this._getChatDetailsUseCase.execute(chatId, req.user.userId);
+      if (updatedChat) {
+        socketService.handleUpdatedChat(updatedChat);
+      }
+    }
+
+    return this._httpSuccess.success_200({ message: "Reply sent successfully", data: newMessage });
   }
 
   async deleteChat(req: IHttpRequest): Promise<IHttpResponse> {
@@ -534,10 +574,7 @@ export class ChatController {
       return this._httpErrors.error_400('Chat ID and user ID are required');
     }
     await this._deleteChatUseCase.execute({ chatId, userId });
-    const updatedChat = await this._getChatDetailsUseCase.execute(chatId, userId);
-    if (updatedChat) {
-      socketService.handleUpdatedChat(updatedChat);
-    }
+    socketService.handleDeletedChat(chatId);
     return { statusCode: 204, body: {} };
   }
 
@@ -562,6 +599,7 @@ export class ChatController {
       return this._httpErrors.error_400('Chat ID and user ID are required');
     }
     await this._clearChatUseCase.execute({ chatId, userId });
+    socketService.emitToUser(userId, 'messagesCleared', { chatId });
     return { statusCode: 204, body: {} };
   }
 }  

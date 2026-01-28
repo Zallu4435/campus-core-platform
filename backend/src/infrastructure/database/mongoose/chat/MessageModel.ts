@@ -8,6 +8,7 @@ export interface IMessage extends Document {
   type: MessageType;
   status: MessageStatus;
   isDeleted: boolean;
+  isEdited: boolean;
   deletedFor: string[]; // Array of user IDs for whom the message is deleted
   deletedForEveryone: boolean;
   reactions: {
@@ -27,6 +28,8 @@ export interface IMessage extends Document {
     messageId: string;
     content: string;
     senderId: string;
+    senderName?: string;
+    type?: MessageType;
   };
   forwardedFrom?: {
     messageId: string;
@@ -42,18 +45,19 @@ const messageSchema = new Schema<IMessage>(
     chatId: { type: String, required: true, index: true },
     senderId: { type: String, required: true, index: true },
     content: { type: String },
-    type: { 
-      type: String, 
+    type: {
+      type: String,
       required: true,
       enum: Object.values(MessageType)
     },
-    status: { 
-      type: String, 
+    status: {
+      type: String,
       required: true,
       enum: Object.values(MessageStatus),
       default: MessageStatus.Sent
     },
     isDeleted: { type: Boolean, default: false },
+    isEdited: { type: Boolean, default: false },
     deletedFor: [{ type: String }],
     deletedForEveryone: { type: Boolean, default: false },
     reactions: [{
@@ -62,7 +66,7 @@ const messageSchema = new Schema<IMessage>(
       createdAt: { type: Date, default: Date.now }
     }],
     attachments: [{
-      type: { 
+      type: {
         type: String,
         enum: Object.values(MessageType)
       },
@@ -75,7 +79,9 @@ const messageSchema = new Schema<IMessage>(
     replyTo: {
       messageId: { type: String },
       content: { type: String },
-      senderId: { type: String }
+      senderId: { type: String },
+      senderName: { type: String },
+      type: { type: String, enum: Object.values(MessageType) }
     },
     forwardedFrom: {
       messageId: { type: String },

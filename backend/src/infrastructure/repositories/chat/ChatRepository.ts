@@ -111,8 +111,8 @@ export class ChatRepository implements IChatRepository {
     };
   }
 
-  async sendMessage(params: { chatId: string; senderId: string; content: string; type: MessageType; attachments?: Array<{ type: MessageType; url: string; name: string; size: number; thumbnail?: string; duration?: number }> }): Promise<void> {
-    const { chatId, senderId, content, type, attachments } = params;
+  async sendMessage(params: { chatId: string; senderId: string; content: string; type: MessageType; attachments?: Array<{ type: MessageType; url: string; name: string; size: number; thumbnail?: string; duration?: number }>; replyTo?: { messageId: string; content: string; senderId: string } }): Promise<void> {
+    const { chatId, senderId, content, type, attachments, replyTo } = params;
     const chat = await ChatModel.findById(chatId);
     if (!chat) throw new Error('Chat not found');
 
@@ -123,6 +123,31 @@ export class ChatRepository implements IChatRepository {
       }
     }
 
+    let hydratedReplyTo = undefined;
+    if (replyTo) {
+      const original = await MessageModel.findById(replyTo.messageId);
+
+      if (original) {
+        const sender = await UserModel.findById(original.senderId).select('firstName lastName').lean();
+        const senderName = sender ? `${sender.firstName} ${sender.lastName}` : 'Unknown User';
+
+        // ... rest of logic
+
+        let replyContent = original.content;
+        if (!replyContent && original.type !== MessageType.Text) {
+          replyContent = `[${original.type.charAt(0).toUpperCase() + original.type.slice(1)}]`;
+        }
+
+        hydratedReplyTo = {
+          messageId: original._id.toString(),
+          content: replyContent || '',
+          senderId: original.senderId,
+          senderName,
+          type: original.type
+        };
+      }
+    }
+
     const message = await MessageModel.create({
       chatId,
       senderId,
@@ -130,6 +155,7 @@ export class ChatRepository implements IChatRepository {
       type,
       status: MessageStatus.Sent,
       attachments,
+      replyTo: hydratedReplyTo
     });
 
     await ChatModel.findByIdAndUpdate(chatId, {
@@ -139,6 +165,7 @@ export class ChatRepository implements IChatRepository {
         type: message.type,
         senderId: message.senderId,
         status: message.status,
+        isEdited: message.isEdited || false,
         attachments: message.attachments,
         createdAt: message.createdAt,
       },
@@ -163,19 +190,39 @@ export class ChatRepository implements IChatRepository {
 
   async addReaction(params: { messageId: string; userId: string; emoji: string }): Promise<void> {
     const { messageId, userId, emoji } = params;
+
+    // 1. Get current message to see existing reactions
+    const message = await MessageModel.findById(messageId).lean();
+    if (!message) return;
+
+    const existingReaction = message.reactions?.find((r: any) => r.userId.toString() === userId);
+
+    // 2. Clear all reactions for this user on this message
     await MessageModel.findByIdAndUpdate(
       messageId,
       {
-        $push: {
-          reactions: {
-            userId,
-            emoji,
-            createdAt: new Date(),
-          },
+        $pull: {
+          reactions: { userId },
         },
-        updatedAt: new Date(),
       }
     );
+
+    // 3. If it was a different emoji (or no reaction yet), add the new one
+    if (!existingReaction || existingReaction.emoji !== emoji) {
+      await MessageModel.findByIdAndUpdate(
+        messageId,
+        {
+          $push: {
+            reactions: {
+              userId,
+              emoji,
+              createdAt: new Date(),
+            },
+          },
+          updatedAt: new Date(),
+        }
+      );
+    }
   }
 
   async removeReaction(params: { messageId: string; userId: string }): Promise<void> {
@@ -436,6 +483,7 @@ export class ChatRepository implements IChatRepository {
     if (message.senderId.toString() !== userId) throw new Error('Not authorized');
 
     message.content = content;
+    message.isEdited = true;
     await message.save();
 
     const chat = await ChatModel.findById(chatId);
@@ -462,10 +510,18 @@ export class ChatRepository implements IChatRepository {
     await message.save();
   }
 
-  async replyToMessage(params: { chatId: string; messageId: string; content: string; userId: string }): Promise<void> {
+  async replyToMessage(params: { chatId: string; messageId: string; content: string; userId: string }): Promise<Message> {
     const { chatId, messageId, content, userId } = params;
     const original = await MessageModel.findById(messageId);
     if (!original) throw new Error('Original message not found');
+
+    const sender = await UserModel.findById(original.senderId).select('firstName lastName').lean();
+    const senderName = sender ? `${sender.firstName} ${sender.lastName}` : 'Unknown User';
+
+    let replyContent = original.content;
+    if (!replyContent && original.type !== MessageType.Text) {
+      replyContent = `[${original.type.charAt(0).toUpperCase() + original.type.slice(1)}]`;
+    }
 
     const message = await MessageModel.create({
       chatId,
@@ -475,8 +531,10 @@ export class ChatRepository implements IChatRepository {
       status: MessageStatus.Sent,
       replyTo: {
         messageId: original._id.toString(),
-        content: original.content,
-        senderId: original.senderId
+        content: replyContent || '',
+        senderId: original.senderId,
+        senderName: senderName,
+        type: original.type
       }
     });
 
@@ -487,10 +545,13 @@ export class ChatRepository implements IChatRepository {
         type: message.type,
         senderId: message.senderId,
         status: message.status,
+        isEdited: message.isEdited || false,
         createdAt: message.createdAt
       },
       updatedAt: new Date()
     });
+
+    return ChatMapper.toMessageDomain(message.toObject());
   }
 
   async deleteChat(params: { chatId: string; userId: string }): Promise<void> {

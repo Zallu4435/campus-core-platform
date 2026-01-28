@@ -15,14 +15,14 @@ export class ChatMapper {
             creatorId: raw.createdBy.toString(),
             settings: raw.settings,
             lastMessage: raw.lastMessage ? new Message({
-                id: raw.lastMessage.id,
+                id: raw.lastMessage.id || raw.lastMessage._id?.toString() || '',
                 chatId: raw._id.toString(),
                 senderId: raw.lastMessage.senderId,
                 content: raw.lastMessage.content,
                 type: raw.lastMessage.type as MessageType,
                 status: raw.lastMessage.status as MessageStatus,
                 reactions: [],
-                isEdited: false,
+                isEdited: raw.lastMessage.isEdited || false,
                 isDeleted: false,
                 deletedForEveryone: false,
                 deletedFor: [],
@@ -36,7 +36,7 @@ export class ChatMapper {
     }
 
     static toMessageDomain(raw: IMessageSource): Message {
-        return new Message({
+        const message = new Message({
             id: raw._id.toString(),
             chatId: raw.chatId.toString(),
             senderId: raw.senderId.toString(),
@@ -48,12 +48,20 @@ export class ChatMapper {
                 emoji: r.emoji,
                 createdAt: r.createdAt
             })) || [],
-            isEdited: false,
+            isEdited: raw.isEdited || false,
             isDeleted: raw.isDeleted || false,
             deletedForEveryone: raw.deletedForEveryone || false,
             deletedFor: raw.deletedFor?.map(d => d.toString()) || [],
             createdAt: raw.createdAt,
             updatedAt: raw.updatedAt,
+            replyTo: raw.replyTo ? {
+                id: raw.replyTo.id || raw.replyTo.messageId || raw.replyTo._id?.toString() || '',
+                content: raw.replyTo.content,
+                senderId: raw.replyTo.senderId,
+                senderName: raw.replyTo.senderName || '',
+                type: raw.replyTo.type as MessageType,
+                createdAt: '' // We don't necessarily have it here in replyTo schema but it's fine
+            } : undefined,
             attachments: raw.attachments?.map(a => ({
                 type: a.type as MessageType,
                 url: a.url,
@@ -63,5 +71,7 @@ export class ChatMapper {
                 duration: a.duration
             }))
         });
+
+        return message;
     }
 }

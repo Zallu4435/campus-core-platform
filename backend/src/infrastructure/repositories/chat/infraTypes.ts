@@ -11,11 +11,13 @@ export interface IChatSource {
     avatar?: string;
     description?: string;
     lastMessage?: {
-        id: string;
+        _id?: Types.ObjectId | string;
+        id?: string;
         content: string;
         type: string;
         senderId: string;
         status: string;
+        isEdited?: boolean;
         createdAt: Date;
     };
     settings: {
@@ -41,6 +43,7 @@ export interface IMessageSource {
     type: string;
     status: string;
     isDeleted: boolean;
+    isEdited?: boolean;
     deletedFor: string[];
     deletedForEveryone: boolean;
     reactions: {
@@ -57,9 +60,13 @@ export interface IMessageSource {
         duration?: number;
     }[];
     replyTo?: {
-        messageId: string;
+        _id?: Types.ObjectId | string;
+        id?: string;
+        messageId?: string;
         content: string;
         senderId: string;
+        senderName?: string;
+        type: string;
     };
     forwardedFrom?: {
         messageId: string;

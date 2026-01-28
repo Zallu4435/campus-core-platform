@@ -37,7 +37,7 @@ export class SocketService {
   private io: SocketIOServer;
   private chatNamespace: Namespace;
   private chatRepository: ChatRepository;
-  private userSockets: Map<string, string> = new Map();
+  private userSockets: Map<string, Set<string>> = new Map();
 
   constructor(io: SocketIOServer) {
     this.io = io;
@@ -111,13 +111,18 @@ export class SocketService {
 
   private handleConnection(socket) {
     const userId = socket.data.user.userId;
-    this.userSockets.set(userId, socket.id);
 
+    // Add socket to user's set
+    if (!this.userSockets.has(userId)) {
+      this.userSockets.set(userId, new Set());
+      this.broadcastUserStatus(userId, "online");
+    }
+    this.userSockets.get(userId)?.add(socket.id);
+
+    // Send initial list of online users
     socket.emit("onlineUsers", Array.from(this.userSockets.keys()));
 
-    this.joinUserChats(userId);
-
-    this.broadcastUserStatus(userId, "online");
+    this.joinUserChats(userId, socket);
 
     this.setupEventListeners(socket, userId);
   }
@@ -175,10 +180,15 @@ export class SocketService {
   }
 
   private handleDisconnect(socket, reason: string) {
-    const userId = this.getUserIdBySocketId(socket.id);
-    if (userId) {
-      this.userSockets.delete(userId);
-      this.broadcastUserStatus(userId, "offline");
+    const userId = socket.data.user?.userId;
+    if (userId && this.userSockets.has(userId)) {
+      const sockets = this.userSockets.get(userId);
+      sockets?.delete(socket.id);
+
+      if (sockets?.size === 0) {
+        this.userSockets.delete(userId);
+        this.broadcastUserStatus(userId, "offline");
+      }
     }
   }
 
@@ -186,23 +196,19 @@ export class SocketService {
     this.chatNamespace.emit("userStatus", { userId, status });
   }
 
-  private async joinUserChats(userId: string) {
+  private async joinUserChats(userId: string, socket) {
     try {
       const response = await this.chatRepository.getChats({ userId, page: 1, limit: 100 });
-      const socketId = this.userSockets.get(userId);
-
-      if (socketId) {
-        response.data.forEach((chat) => {
-          this.chatNamespace.sockets.get(socketId)?.join(chat.id);
-        });
-      }
+      response.data.forEach((chat) => {
+        socket.join(chat.id);
+      });
     } catch (error) {
     }
   }
 
   private getUserIdBySocketId(socketId: string): string | undefined {
-    for (const [userId, sid] of this.userSockets.entries()) {
-      if (sid === socketId) return userId;
+    for (const [userId, sockets] of this.userSockets.entries()) {
+      if (sockets.has(socketId)) return userId;
     }
     return undefined;
   }
@@ -217,11 +223,13 @@ export class SocketService {
       if (participants.length > 0) {
         participants.forEach((participant) => {
           if (participant.id !== message.senderId) {
-            const socketId = this.userSockets.get(participant.id);
-            if (socketId) {
-              this.chatNamespace.to(socketId).emit("messageStatus", {
-                messageId: message.id,
-                status: "delivered"
+            const socketIds = this.userSockets.get(participant.id);
+            if (socketIds) {
+              socketIds.forEach(socketId => {
+                this.chatNamespace.to(socketId).emit("messageStatus", {
+                  messageId: message.id,
+                  status: "delivered"
+                });
               });
             }
           }
@@ -231,8 +239,21 @@ export class SocketService {
     }
   }
 
-  public async handleUpdatedChat(chat) {
+  public async handleUpdatedChat(chat: any) {
     if (!chat || !chat.id) return;
     this.chatNamespace.to(chat.id).emit('chat', chat);
+  }
+
+  public async handleDeletedChat(chatId: string) {
+    this.chatNamespace.to(chatId).emit('chatDeleted', { chatId });
+  }
+
+  public emitToUser(userId: string, event: string, data: any) {
+    const socketIds = this.userSockets.get(userId);
+    if (socketIds) {
+      socketIds.forEach(socketId => {
+        this.chatNamespace.to(socketId).emit(event, data);
+      });
+    }
   }
 } 

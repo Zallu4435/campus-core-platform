@@ -1,3 +1,4 @@
+import { Message } from "../../../domain/chat/entities/Message";
 import {
   GetChatsRequestDTO,
   SearchChatsRequestDTO,
@@ -107,7 +108,7 @@ export interface IDeleteMessageUseCase {
 }
 
 export interface IReplyToMessageUseCase {
-  execute(params: ReplyToMessageRequestDTO): Promise<void>;
+  execute(params: ReplyToMessageRequestDTO): Promise<Message>;
 }
 
 export interface IDeleteChatUseCase {
