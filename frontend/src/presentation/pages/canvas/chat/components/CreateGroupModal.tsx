@@ -286,7 +286,7 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
           <h2 className="text-lg font-medium">New group</h2>
         </div>
 
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col overflow-hidden">
           {error && step === 'info' && (
             <div className="px-6 py-3 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-sm border-b border-red-200 dark:border-red-800 flex items-center">
               <FiX className="mr-2 flex-shrink-0" />
@@ -294,192 +294,184 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
             </div>
           )}
 
-          <div className="px-6 py-8 border-b border-gray-200 dark:border-[#2a3942]">
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <div className="w-16 h-16 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center overflow-hidden">
-                  {groupAvatarPreview ? (
-                    <img src={groupAvatarPreview} alt="Group avatar preview" className="w-full h-full object-cover rounded-full" />
-                  ) : (
-                    <FiCamera size={24} className="text-gray-500 dark:text-gray-400" />
-                  )}
+          <div className="flex-1 overflow-y-auto">
+            <div className="px-6 py-8 border-b border-gray-200 dark:border-[#2a3942]">
+              <div className="flex items-center space-x-4">
+                <div className="relative">
+                  <div className="w-16 h-16 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center overflow-hidden">
+                    {groupAvatarPreview ? (
+                      <img src={groupAvatarPreview} alt="Group avatar preview" className="w-full h-full object-cover rounded-full" />
+                    ) : (
+                      <FiCamera size={24} className="text-gray-500 dark:text-gray-400" />
+                    )}
+                  </div>
+                  <label
+                    htmlFor="group-avatar-upload"
+                    className="absolute bottom-0 right-0 w-6 h-6 bg-[#00a884] rounded-full flex items-center justify-center cursor-pointer"
+                    title="Upload group avatar"
+                  >
+                    <FiCamera size={12} className="text-white" />
+                    <input
+                      id="group-avatar-upload"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleAvatarChange}
+                    />
+                  </label>
                 </div>
-                <label
-                  htmlFor="group-avatar-upload"
-                  className="absolute bottom-0 right-0 w-6 h-6 bg-[#00a884] rounded-full flex items-center justify-center cursor-pointer"
-                  title="Upload group avatar"
-                >
-                  <FiCamera size={12} className="text-white" />
+                <div className="flex-1">
                   <input
-                    id="group-avatar-upload"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleAvatarChange}
+                    type="text"
+                    value={groupName}
+                    onChange={(e) => {
+                      setGroupName(e.target.value);
+                      if (fieldErrors.name) setFieldErrors(prev => ({ ...prev, name: undefined }));
+                      setError(null);
+                    }}
+                    placeholder="Group subject"
+                    className={`w-full py-2 px-0 text-lg bg-transparent border-0 border-b ${fieldErrors.name ? 'border-red-500' : 'border-gray-300'} dark:border-[#2a3942] focus:outline-none ${fieldErrors.name ? 'focus:border-red-500' : 'focus:border-[#00a884]'} text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400`}
+                    required
+                    maxLength={25}
                   />
-                </label>
+                  {fieldErrors.name && (
+                    <div className="text-xs text-red-500 mt-1">
+                      {fieldErrors.name}
+                    </div>
+                  )}
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    {25 - groupName.length} characters remaining
+                  </div>
+                </div>
               </div>
-              <div className="flex-1">
-                <input
-                  type="text"
-                  value={groupName}
+            </div>
+
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-[#2a3942]">
+              <div className="relative">
+                <textarea
+                  value={description}
                   onChange={(e) => {
-                    setGroupName(e.target.value);
-                    if (fieldErrors.name) setFieldErrors(prev => ({ ...prev, name: undefined }));
+                    setDescription(e.target.value);
+                    if (fieldErrors.description) setFieldErrors(prev => ({ ...prev, description: undefined }));
                     setError(null);
                   }}
-                  placeholder="Group subject"
-                  className={`w-full py-2 px-0 text-lg bg-transparent border-0 border-b ${fieldErrors.name ? 'border-red-500' : 'border-gray-300'
-                    } dark:border-[#2a3942] focus:outline-none ${fieldErrors.name ? 'focus:border-red-500' : 'focus:border-[#00a884]'
-                    } text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400`}
-                  required
-                  maxLength={25}
+                  placeholder="Group description (required)"
+                  className={`w-full py-2 px-0 bg-transparent border-0 border-b ${fieldErrors.description ? 'border-red-500' : 'border-gray-300'} dark:border-[#2a3942] focus:outline-none ${fieldErrors.description ? 'focus:border-red-500' : 'focus:border-[#00a884]'} text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 resize-none`}
+                  rows={1}
+                  maxLength={512}
                 />
-                {fieldErrors.name && (
+                {fieldErrors.description && (
                   <div className="text-xs text-red-500 mt-1">
-                    {fieldErrors.name}
+                    {fieldErrors.description}
                   </div>
                 )}
                 <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  {25 - groupName.length} characters remaining
+                  {512 - description.length} characters remaining
                 </div>
               </div>
             </div>
-          </div>
 
-          <div className="px-6 py-4 border-b border-gray-200 dark:border-[#2a3942]">
-            <div className="relative">
-              <textarea
-                value={description}
-                onChange={(e) => {
-                  setDescription(e.target.value);
-                  if (fieldErrors.description) setFieldErrors(prev => ({ ...prev, description: undefined }));
-                  setError(null);
-                }}
-                placeholder="Group description (required)"
-                className={`w-full py-2 px-0 bg-transparent border-0 border-b ${fieldErrors.description ? 'border-red-500' : 'border-gray-300'
-                  } dark:border-[#2a3942] focus:outline-none ${fieldErrors.description ? 'focus:border-red-500' : 'focus:border-[#00a884]'
-                  } text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 resize-none`}
-                rows={1}
-                maxLength={512}
-              />
-              {fieldErrors.description && (
-                <div className="text-xs text-red-500 mt-1">
-                  {fieldErrors.description}
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-[#2a3942]">
+              <div className="text-[#00a884] text-sm font-medium mb-3">
+                Participants: {selectedUsers.length}
+              </div>
+              <div className="space-y-2 max-h-32 overflow-y-auto">
+                {selectedUsers.map((user) => (
+                  <div key={user.id} className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center overflow-hidden">
+                        {user.avatar ? (
+                          <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <FiUser size={14} className="text-gray-500 dark:text-gray-400" />
+                        )}
+                      </div>
+                      <div className="text-sm text-gray-900 dark:text-white">{user.name}</div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleUserRemove(user.id)}
+                      className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                    >
+                      <FiX size={16} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="px-6 py-4">
+              <button
+                type="button"
+                onClick={() => setShowSettings(!showSettings)}
+                className="flex items-center justify-between w-full text-left"
+              >
+                <span className="text-[#00a884] text-sm font-medium">Group settings</span>
+                <svg
+                  className={`w-4 h-4 text-[#00a884] transition-transform ${showSettings ? 'rotate-180' : ''}`}
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
+
+              {showSettings && (
+                <div className="mt-4 space-y-3">
+                  <label className="flex items-center justify-between py-2">
+                    <div className="flex items-center space-x-3">
+                      <FiMessageSquare size={16} className="text-gray-500 dark:text-gray-400" />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">Send messages</span>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={!settings.onlyAdminsCanPost}
+                      onChange={(e) => setSettings(prev => ({ ...prev, onlyAdminsCanPost: !e.target.checked }))}
+                      className="w-4 h-4 text-[#00a884] border-gray-300 rounded focus:ring-[#00a884]"
+                    />
+                  </label>
+
+                  <label className="flex items-center justify-between py-2">
+                    <div className="flex items-center space-x-3">
+                      <FiUsers size={16} className="text-gray-500 dark:text-gray-400" />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">Add other members</span>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={!settings.onlyAdminsCanAddMembers}
+                      onChange={(e) => setSettings(prev => ({ ...prev, onlyAdminsCanAddMembers: !e.target.checked }))}
+                      className="w-4 h-4 text-[#00a884] border-gray-300 rounded focus:ring-[#00a884]"
+                    />
+                  </label>
+
+                  <label className="flex items-center justify-between py-2">
+                    <div className="flex items-center space-x-3">
+                      <FiImage size={16} className="text-gray-500 dark:text-gray-400" />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">Send media</span>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={!settings.onlyAdminsCanSendMedia}
+                      onChange={(e) => setSettings(prev => ({ ...prev, onlyAdminsCanSendMedia: !e.target.checked }))}
+                      className="w-4 h-4 text-[#00a884] border-gray-300 rounded focus:ring-[#00a884]"
+                    />
+                  </label>
+
+                  <label className="flex items-center justify-between py-2">
+                    <div className="flex items-center space-x-3">
+                      <FiLock size={16} className="text-gray-500 dark:text-gray-400" />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">Edit group info</span>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={!settings.onlyAdminsCanChangeInfo}
+                      onChange={(e) => setSettings(prev => ({ ...prev, onlyAdminsCanChangeInfo: !e.target.checked }))}
+                      className="w-4 h-4 text-[#00a884] border-gray-300 rounded focus:ring-[#00a884]"
+                    />
+                  </label>
                 </div>
               )}
-              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                {512 - description.length} characters remaining
-              </div>
             </div>
-          </div>
-
-          <div className="px-6 py-4 border-b border-gray-200 dark:border-[#2a3942]">
-            <div className="text-[#00a884] text-sm font-medium mb-3">
-              Participants: {selectedUsers.length}
-            </div>
-            <div className="space-y-2 max-h-32 overflow-y-auto">
-              {selectedUsers.map((user) => (
-                <div key={user.id} className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center overflow-hidden">
-                      {user.avatar ? (
-                        <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
-                      ) : (
-                        <FiUser size={14} className="text-gray-500 dark:text-gray-400" />
-                      )}
-                    </div>
-                    <div className="text-sm text-gray-900 dark:text-white">{user.name}</div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleUserRemove(user.id)}
-                    className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-                  >
-                    <FiX size={16} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="px-6 py-4 text-center">
-            {error && step === 'info' && (
-              <p className="text-red-500 text-sm mb-2">{error}</p>
-            )}
-          </div>
-
-          <div className="px-6 py-4">
-            <button
-              type="button"
-              onClick={() => setShowSettings(!showSettings)}
-              className="flex items-center justify-between w-full text-left"
-            >
-              <span className="text-[#00a884] text-sm font-medium">Group settings</span>
-              <svg
-                className={`w-4 h-4 text-[#00a884] transition-transform ${showSettings ? 'rotate-180' : ''}`}
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-              </svg>
-            </button>
-
-            {showSettings && (
-              <div className="mt-4 space-y-3">
-                <label className="flex items-center justify-between py-2">
-                  <div className="flex items-center space-x-3">
-                    <FiMessageSquare size={16} className="text-gray-500 dark:text-gray-400" />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">Send messages</span>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={!settings.onlyAdminsCanPost}
-                    onChange={(e) => setSettings(prev => ({ ...prev, onlyAdminsCanPost: !e.target.checked }))}
-                    className="w-4 h-4 text-[#00a884] border-gray-300 rounded focus:ring-[#00a884]"
-                  />
-                </label>
-
-                <label className="flex items-center justify-between py-2">
-                  <div className="flex items-center space-x-3">
-                    <FiUsers size={16} className="text-gray-500 dark:text-gray-400" />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">Add other members</span>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={!settings.onlyAdminsCanAddMembers}
-                    onChange={(e) => setSettings(prev => ({ ...prev, onlyAdminsCanAddMembers: !e.target.checked }))}
-                    className="w-4 h-4 text-[#00a884] border-gray-300 rounded focus:ring-[#00a884]"
-                  />
-                </label>
-
-                <label className="flex items-center justify-between py-2">
-                  <div className="flex items-center space-x-3">
-                    <FiImage size={16} className="text-gray-500 dark:text-gray-400" />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">Send media</span>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={!settings.onlyAdminsCanSendMedia}
-                    onChange={(e) => setSettings(prev => ({ ...prev, onlyAdminsCanSendMedia: !e.target.checked }))}
-                    className="w-4 h-4 text-[#00a884] border-gray-300 rounded focus:ring-[#00a884]"
-                  />
-                </label>
-
-                <label className="flex items-center justify-between py-2">
-                  <div className="flex items-center space-x-3">
-                    <FiLock size={16} className="text-gray-500 dark:text-gray-400" />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">Edit group info</span>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={!settings.onlyAdminsCanChangeInfo}
-                    onChange={(e) => setSettings(prev => ({ ...prev, onlyAdminsCanChangeInfo: !e.target.checked }))}
-                    className="w-4 h-4 text-[#00a884] border-gray-300 rounded focus:ring-[#00a884]"
-                  />
-                </label>
-              </div>
-            )}
           </div>
 
           <div className="p-4 mt-auto">
@@ -501,17 +493,17 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
     );
   };
 
-  // Create portal to render modal at the top of DOM
-  const modalContent = (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-white dark:bg-[#111b21] w-full max-w-md h-[600px] sm:h-[600px] h-[90vh] max-h-[600px] flex flex-col shadow-xl rounded-lg overflow-hidden">
-        {step === 'participants' ? renderParticipantsStep() : renderInfoStep()}
-      </div>
+// Create portal to render modal at the top of DOM
+const modalContent = (
+  <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div className="bg-white dark:bg-[#111b21] w-full max-w-md h-[90vh] max-h-[600px] flex flex-col shadow-xl rounded-lg overflow-hidden">
+      {step === 'participants' ? renderParticipantsStep() : renderInfoStep()}
     </div>
-  );
+  </div>
+);
 
-  // Use portal to render at the top of DOM tree
-  return createPortal(modalContent, document.body);
+// Use portal to render at the top of DOM tree
+return createPortal(modalContent, document.body);
 };
 
 export default CreateGroupModal;
