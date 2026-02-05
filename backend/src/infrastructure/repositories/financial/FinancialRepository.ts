@@ -229,6 +229,11 @@ export class FinancialRepository implements IFinancialRepository {
     }
 
     async makePayment(studentId: string, chargeId: string, amount: number, term: string, method: string, razorpayPaymentId: string, razorpayOrderId: string, razorpaySignature: string) {
+        // Validate amount first
+        if (!amount || amount <= 0) {
+            throw new Error('Amount must be greater than 0');
+        }
+
         if (!chargeId) {
             throw new Error('Charge ID is required for payment');
         }
@@ -409,7 +414,12 @@ export class FinancialRepository implements IFinancialRepository {
         } catch (error) {
             console.error('[FinancialRepository] Error during payment processing:', error);
             await StudentFinancialInfoModel.findByIdAndDelete(transactionLock._id);
-            throw error;
+
+            // Re-throw the error with a clear message
+            if (error instanceof Error) {
+                throw error;
+            }
+            throw new Error('Payment processing failed. Please try again.');
         }
     }
 

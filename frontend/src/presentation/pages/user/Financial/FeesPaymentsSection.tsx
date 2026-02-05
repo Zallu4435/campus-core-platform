@@ -98,8 +98,10 @@ export default function FeesPaymentsSection({ studentInfo, paymentHistory, onPay
       setAmountError('Please select a charge to pay.');
       return;
     }
-    if (paymentAmount <= 0) {
-      setAmountError('No amount found for the selected charge.');
+
+    const amount = selectedCharge.amount || 0;
+    if (amount <= 0) {
+      setAmountError('The selected charge has an invalid amount. Please contact support.');
       return;
     }
     setAmountError(null);

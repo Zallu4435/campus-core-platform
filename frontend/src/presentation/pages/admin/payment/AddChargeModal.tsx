@@ -1,14 +1,16 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { chargeSchema, ChargeFormDataRaw } from '../../../../domain/validation/management/chargeSchema';
-import { FiX as X, FiDollarSign, FiCalendar, FiFileText } from 'react-icons/fi';
+import { FiX as X, FiDollarSign, FiCalendar, FiFileText, FiAlertCircle } from 'react-icons/fi';
 import { AddChargeModalProps, ChargeFormData } from '../../../../domain/types/management/financialmanagement';
 import { usePreventBodyScroll } from '../../../../shared/hooks/usePreventBodyScroll';
 import { ghostParticles } from '../../../../shared/constants/paymentManagementConstants';
 
 
 const AddChargeModal: React.FC<AddChargeModalProps> = ({ isOpen, onClose, onSubmit, initialValues }) => {
+  const [apiError, setApiError] = useState<string>('');
+
   const getInitialValue = (val: string | Record<string, unknown> | undefined) => {
     if (typeof val === 'object' && val !== null) {
       return (val.type as string) || (val.slug as string) || '';
@@ -58,6 +60,7 @@ const AddChargeModal: React.FC<AddChargeModalProps> = ({ isOpen, onClose, onSubm
         dueDate: formatDateForInput(initialValues.dueDate || ''),
         applicableFor: getInitialValue(initialValues.applicableFor),
       });
+      setApiError('');
     } else if (isOpen) {
       reset({
         title: '',
@@ -67,17 +70,24 @@ const AddChargeModal: React.FC<AddChargeModalProps> = ({ isOpen, onClose, onSubm
         dueDate: '',
         applicableFor: '',
       });
+      setApiError('');
     }
   }, [initialValues, isOpen, reset]);
 
-  const handleFormSubmit = (data: ChargeFormDataRaw) => {
-    const transformed: ChargeFormData = {
-      ...data,
-      amount: typeof data.amount === 'string' ? Number(data.amount) : data.amount,
-    };
-    onSubmit(transformed);
-    reset();
-    onClose();
+  const handleFormSubmit = async (data: ChargeFormDataRaw) => {
+    try {
+      setApiError('');
+      const transformed: ChargeFormData = {
+        ...data,
+        amount: typeof data.amount === 'string' ? Number(data.amount) : data.amount,
+      };
+      await onSubmit(transformed);
+      reset();
+      onClose();
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create charge. Please try again.';
+      setApiError(errorMessage);
+    }
   };
 
   usePreventBodyScroll(isOpen);
@@ -128,6 +138,22 @@ const AddChargeModal: React.FC<AddChargeModalProps> = ({ isOpen, onClose, onSubm
         </div>
 
         <form onSubmit={handleSubmit(handleFormSubmit)} className="overflow-y-auto max-h-[calc(90vh-200px)] p-6 space-y-6 custom-scrollbar">
+          {apiError && (
+            <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-4 flex items-start gap-3">
+              <FiAlertCircle className="text-red-400 flex-shrink-0 mt-0.5" size={20} />
+              <div className="flex-1">
+                <h4 className="text-red-400 font-semibold mb-1">Error Creating Charge</h4>
+                <p className="text-red-300 text-sm">{apiError}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setApiError('')}
+                className="text-red-400 hover:text-red-300 transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+          )}
           <div className="bg-gray-800/80 border border-purple-500/30 rounded-lg p-6 shadow-sm">
             <h3 className="text-lg font-semibold text-purple-100 mb-4 flex items-center gap-2">
               <span className="w-2 h-2 bg-purple-500 rounded-full"></span>

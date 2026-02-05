@@ -90,13 +90,8 @@ const PaymentManagement: React.FC = () => {
     dueDate: string;
     applicableFor: string;
   }) => {
-    try {
-      await financialService.createCharge(charge);
-      setShowAddChargeModal(false);
-      fetchData();
-    } catch (err) {
-      console.error('Failed to create charge:', err);
-    }
+    await financialService.createCharge(charge);
+    fetchData();
   };
 
   const handleViewCharges = async () => {
