@@ -2,7 +2,15 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { eventService } from '../services/event.service';
-import { Event, Filters, EventDTO, EventRequestDTO } from '../../domain/types/management/eventmanagement';
+import {
+  Event,
+  Filters,
+  EventDTO,
+  EventRequestDTO,
+  EventServiceResponse,
+  EventRequestsServiceResponse,
+  EventRequest
+} from '../../domain/types/management/eventmanagement';
 
 export const useEventManagement = () => {
   const queryClient = useQueryClient();
@@ -54,7 +62,7 @@ export const useEventManagement = () => {
     return dateRangeString;
   };
 
-  const { data: eventsData, isLoading: isLoadingEvents, error: eventsError } = useQuery({
+  const { data: eventsData, isLoading: isLoadingEvents, error: eventsError } = useQuery<EventServiceResponse>({
     queryKey: ['events', page, filters, searchTerm, limit],
     queryFn: async () => {
       const dateRange = getDateRangeFilter(filters.dateRange);
@@ -80,7 +88,7 @@ export const useEventManagement = () => {
     enabled: activeTab === 'events',
   });
 
-  const { data: eventRequestsData, isLoading: isLoadingRequests, error: requestsError } = useQuery({
+  const { data: eventRequestsData, isLoading: isLoadingRequests, error: requestsError } = useQuery<EventRequestsServiceResponse>({
     queryKey: ['eventRequests', page, filters, searchTerm, limit],
     queryFn: async () => {
       const dateRange = getDateRangeFilter(filters.dateRange);
@@ -230,10 +238,10 @@ export const useEventManagement = () => {
     setActiveTab(tab);
     setPage(1);
   };
-  console.log(getEventRequestDetails, 'getEventRequestDetails');
+
   return {
-    events: eventsData?.events || [],
-    eventRequests: eventRequestsData?.data || [],
+    events: (eventsData?.events || []) as Event[],
+    eventRequests: (eventRequestsData?.data || []) as EventRequest[],
     totalPages: activeTab === 'events' ? eventsData?.totalPages || 0 : eventRequestsData?.totalPages || 0,
     page,
     setPage,

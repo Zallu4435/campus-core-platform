@@ -29,7 +29,7 @@ export const createClubSchema = Joi.object({
     body: Joi.object({
         name: Joi.string().min(3).max(100).required(),
         type: Joi.string().min(3).max(50).required(),
-        createdBy: Joi.string().pattern(/^[a-fA-F0-9]{24}$/).required(),
+        createdBy: Joi.string().required(),
         description: Joi.string().max(1000).optional(),
         members: Joi.array().items(Joi.string()).optional(),
         color: Joi.string().pattern(/^#[0-9A-F]{6}$/i).optional(),
@@ -37,7 +37,7 @@ export const createClubSchema = Joi.object({
         nextMeeting: Joi.string().optional(),
         about: Joi.string().optional(),
         enteredMembers: Joi.number().integer().min(0).optional(),
-        role: Joi.string().optional(),
+        role: Joi.string().required(),
         upcomingEvents: Joi.array().items(Joi.object({
             date: Joi.string().required(),
             description: Joi.string().required()
@@ -46,6 +46,7 @@ export const createClubSchema = Joi.object({
     })
 });
 
+
 export const updateClubSchema = Joi.object({
     params: Joi.object({
         id: Joi.string().pattern(/^[a-fA-F0-9]{24}$/).required()
@@ -53,7 +54,7 @@ export const updateClubSchema = Joi.object({
     body: Joi.object({
         name: Joi.string().min(3).max(100).optional(),
         type: Joi.string().min(3).max(50).optional(),
-        createdBy: Joi.string().pattern(/^[a-fA-F0-9]{24}$/).optional(),
+        createdBy: Joi.string().optional(),
         description: Joi.string().max(1000).optional(),
         members: Joi.array().items(Joi.string()).optional(),
         color: Joi.string().pattern(/^#[0-9A-F]{6}$/i).optional(),

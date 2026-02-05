@@ -48,7 +48,7 @@ export interface EventRequest {
   whyJoin?: string;
   additionalInfo?: string;
 
-  event?: Event;
+  event?: Partial<Event>;
   user?: {
     id: string;
     name: string;

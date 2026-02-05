@@ -5,9 +5,9 @@ import {
   FaLock,
   FaPlay,
 } from 'react-icons/fa';
-import { Session, SessionStats, Styles } from '../../../../../domain/types/canvas/session';
+import { Session, SessionStats } from '../../../../../domain/types/canvas/session';
 
-export const getStatusBadge = (status: string, styles: Styles, isLive?: boolean): React.JSX.Element => {
+export const getStatusBadge = (status: string, isLive?: boolean): React.JSX.Element => {
   const getDisplayStatus = (backendStatus: string, isLive?: boolean): { text: string; color: string; bg: string } => {
     if (isLive === true) {
       return { text: 'LIVE', color: 'text-rose-500', bg: 'bg-rose-500/10' };
@@ -39,7 +39,7 @@ export const getStatusBadge = (status: string, styles: Styles, isLive?: boolean)
   );
 };
 
-export const getDifficultyBadge = (difficulty: Session['difficulty'], styles: Styles): React.JSX.Element => {
+export const getDifficultyBadge = (difficulty: Session['difficulty']): React.JSX.Element => {
   const config = {
     'Beginner': { color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
     'Intermediate': { color: 'text-amber-500', bg: 'bg-amber-500/10' },
@@ -55,7 +55,7 @@ export const getDifficultyBadge = (difficulty: Session['difficulty'], styles: St
   );
 };
 
-export const getConnectionQualityIcon = (quality: Session['connectionQuality'], styles: Styles): React.JSX.Element | null => {
+export const getConnectionQualityIcon = (quality: Session['connectionQuality']): React.JSX.Element | null => {
   switch (quality) {
     case 'excellent':
       return <FaWifi className={`w-4 h-4 text-emerald-500`} />;
@@ -71,7 +71,6 @@ export const getConnectionQualityIcon = (quality: Session['connectionQuality'], 
 export const getActionButton = (
   session: Session,
   userAccess: { isEnrolled: boolean },
-  styles: Styles,
   actions?: { onJoin?: () => void; onWatch?: () => void }
 ): React.JSX.Element => {
   if (!userAccess.isEnrolled) {

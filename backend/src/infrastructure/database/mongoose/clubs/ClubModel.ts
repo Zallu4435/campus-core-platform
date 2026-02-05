@@ -14,6 +14,8 @@ const clubSchema = new Schema<IClubDocument>({
   name: { type: String, required: true, trim: true },
   type: { type: String, required: true, trim: true },
   members: { type: [String], default: [] },
+  description: { type: String, default: "" },
+
   icon: { type: String, trim: true, default: "🎓" },
   color: { type: String, trim: true, default: "#8B5CF6" },
   status: {

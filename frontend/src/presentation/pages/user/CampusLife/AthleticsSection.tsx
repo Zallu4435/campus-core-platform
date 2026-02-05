@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FaSearch, FaTrophy, FaUsers, FaArrowRight, FaFilter } from 'react-icons/fa';
+import { FaSearch, FaTrophy, FaArrowRight, FaFilter } from 'react-icons/fa';
 import { useCampusLife } from '../../../../application/hooks/useCampusLife';
 import JoinRequestForm from './JoinRequestForm';
 import { usePreferences } from '../../../../application/context/PreferencesContext';
@@ -10,7 +10,7 @@ import { formatDate } from '../../../../shared/utils/dateUtils';
 
 
 export default function AthleticsSection({ statusFilter, searchTerm, onFilterChange }: { statusFilter: string; searchTerm: string; onFilterChange: (filters: { search: string; status: string }) => void }) {
-  const { sports, requestToJoinSport, isJoiningSport, joinSportError } = useCampusLife({
+  const { sports, requestToJoinSportAsync, isJoiningSport, joinSportError } = useCampusLife({
     activeTab: 'Athletics',
     sportsSearchTerm: searchTerm,
     sportsStatusFilter: statusFilter
@@ -61,7 +61,7 @@ export default function AthleticsSection({ statusFilter, searchTerm, onFilterCha
   const handleJoinRequest = async (request: any) => {
     if (!selectedSport) return;
     try {
-      await requestToJoinSport({ sportId: selectedSport.id, request });
+      await requestToJoinSportAsync({ sportId: selectedSport.id, request });
 
       toast.success('Successfully submitted tryout request for sports team!');
 

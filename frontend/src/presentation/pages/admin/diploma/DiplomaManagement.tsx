@@ -81,13 +81,13 @@ const DiplomaManagement: React.FC = () => {
         setShowDiplomaModal(true);
     };
 
-    const handleSaveDiploma = (data: unknown) => {
+    const handleSaveDiploma = async (data: unknown) => {
         const formData = data as Partial<Diploma>;
         try {
             if (editingDiploma) {
-                updateDiploma({ id: editingDiploma.id, data: formData });
+                await updateDiploma({ id: editingDiploma.id, data: formData });
             } else {
-                createDiploma({
+                await createDiploma({
                     ...formData,
                     videoIds: [],
                 } as Omit<Diploma, '_id' | 'createdAt' | 'updatedAt'>);

@@ -7,7 +7,7 @@ import {
   IoBusinessOutline as Building,
 } from 'react-icons/io5';
 import { debounce } from 'lodash';
-import toast from 'react-hot-toast';  
+import toast from 'react-hot-toast';
 import Header from '../../../../components/admin/management/Header';
 import ApplicationsTable from '../../../../components/admin/management/ApplicationsTable';
 import Pagination from '../../../../components/admin/management/Pagination';
@@ -146,31 +146,26 @@ const AdminClubManagement: React.FC = () => {
     })();
   };
 
-  const handleSaveClub = (data: ClubFormData) => {
-    (async () => {
-      try {
-        if (selectedClub && isClub(selectedClub)) {
-          const id = selectedClub.id || selectedClub._id;
-          if (!id) {
-            toast.error('Club ID not found');
-            return;
-          }
-          await updateClub({ id, data });
-          toast.success('Club updated successfully');
-        } else {
-          await createClub({ ...data, createdAt: new Date().toISOString() });
-          toast.success('Club created successfully');
+  const handleSaveClub = async (data: ClubFormData) => {
+    try {
+      if (selectedClub && isClub(selectedClub)) {
+        const id = selectedClub.id || selectedClub._id;
+        if (!id) {
+          toast.error('Club ID not found');
+          return;
         }
-        setShowAddClubModal(false);
-        setSelectedClub(null);
-      } catch (error) {
-        if (isAxiosErrorWithApiError(error)) {
-          toast.error(error.response?.data?.message || error.message || 'Failed to save club');
-        } else {
-          toast.error('Failed to save club');
-        }
+        await updateClub({ id, data });
+        toast.success('Club updated successfully');
+      } else {
+        await createClub({ ...data, members: data.members || [], createdAt: new Date().toISOString() });
+        toast.success('Club created successfully');
       }
-    })();
+      setShowAddClubModal(false);
+      setSelectedClub(null);
+    } catch (error) {
+      // Error toast is now handled by the form component
+      throw error;
+    }
   };
 
   const handleDeleteClub = (id: string) => {

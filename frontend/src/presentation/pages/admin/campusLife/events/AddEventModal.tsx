@@ -3,6 +3,7 @@ import { IoCloseOutline as X } from 'react-icons/io5';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+
 import {
   AddEventModalProps,
 } from '../../../../../domain/types/management/eventmanagement';
@@ -86,28 +87,36 @@ const AddEventModal: React.FC<AddEventModalProps> = ({
     }
   }, [isOpen, initialData, isEditing, reset]);
 
-  const onFormSubmit = (data: EventFormData) => {
-    const eventData = {
-      title: data.title,
-      timeframe: data.timeframe,
-      location: data.location,
-      organizer: data.organizer,
-      organizerType: data.organizerType,
-      eventType: data.eventType,
-      date: data.date,
-      time: data.time,
-      icon: data.icon,
-      color: data.color,
-      description: data.description,
-      fullTime: data.fullTime,
-      additionalInfo: data.additionalInfo,
-      requirements: data.requirements,
-      maxParticipants: data.maxParticipants,
-      registrationRequired: data.registrationRequired,
-      participants: 0,
-      status: 'upcoming',
-    };
-    onSubmit(eventData);
+  const onFormSubmit = async (data: EventFormData) => {
+    try {
+      const eventData = {
+        title: data.title,
+        timeframe: data.timeframe,
+        location: data.location,
+        organizer: data.organizer,
+        organizerType: data.organizerType,
+        eventType: data.eventType,
+        date: data.date,
+        time: data.time,
+        icon: data.icon,
+        color: data.color,
+        description: data.description,
+        fullTime: data.fullTime,
+        additionalInfo: data.additionalInfo,
+        requirements: data.requirements,
+        maxParticipants: data.maxParticipants,
+        registrationRequired: data.registrationRequired,
+        participants: 0,
+        status: 'upcoming',
+      };
+      await onSubmit(eventData);
+    } catch (error: unknown) {
+      console.error('Event submission error:', error);
+      // Backend error is handled by the hook's onError, 
+      // but we throw it here to ensure it propagates if needed.
+      throw error;
+    }
+
   };
 
   if (!isOpen) return null;
@@ -372,8 +381,8 @@ const AddEventModal: React.FC<AddEventModalProps> = ({
                               type="button"
                               onClick={() => field.onChange(option.value)}
                               className={`p-3 rounded-lg border transition-all duration-200 text-center ${field.value === option.value
-                                  ? 'bg-purple-600/30 border-purple-500/50 text-purple-100'
-                                  : 'bg-gray-900/60 border-purple-500/30 text-purple-300 hover:bg-purple-900/20'
+                                ? 'bg-purple-600/30 border-purple-500/50 text-purple-100'
+                                : 'bg-gray-900/60 border-purple-500/30 text-purple-300 hover:bg-purple-900/20'
                                 }`}
                             >
                               <div className="text-lg">{option.emoji}</div>
@@ -516,8 +525,8 @@ const AddEventModal: React.FC<AddEventModalProps> = ({
                         type="button"
                         onClick={() => setValue('icon', icon)}
                         className={`w-10 h-10 text-xl rounded-lg transition-all duration-200 hover:scale-110 ${watchedIcon === icon
-                            ? 'bg-purple-600/30 border-purple-500/50 shadow-lg'
-                            : 'bg-gray-900/60 border-purple-500/30 hover:bg-purple-900/20'
+                          ? 'bg-purple-600/30 border-purple-500/50 shadow-lg'
+                          : 'bg-gray-900/60 border-purple-500/30 hover:bg-purple-900/20'
                           }`}
                       >
                         {icon}
@@ -537,8 +546,8 @@ const AddEventModal: React.FC<AddEventModalProps> = ({
                         type="button"
                         onClick={() => setValue('color', color)}
                         className={`w-12 h-12 rounded-lg transition-all duration-200 hover:scale-110 ${watchedColor === color
-                            ? 'ring-2 ring-purple-500 ring-offset-2 ring-offset-gray-900'
-                            : ''
+                          ? 'ring-2 ring-purple-500 ring-offset-2 ring-offset-gray-900'
+                          : ''
                           }`}
                         style={{ backgroundColor: color }}
                       />

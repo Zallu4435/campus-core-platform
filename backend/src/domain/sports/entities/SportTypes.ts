@@ -16,14 +16,15 @@ export interface SportProps {
   category: string;
   organizer: string;
   organizerType: string;
-  icon: string;
-  color: string;
-  division: string;
-  headCoach: string;
-  homeGames: number;
-  record: string;
-  upcomingGames: { date: string; description: string }[];
-  participants: number;
+  icon?: string;
+  color?: string;
+  division?: string;
+  headCoach?: string;
+  homeGames?: number;
+  record?: string;
+  upcomingGames?: { date: string; description: string }[];
+  participants?: number;
+
   status?: SportStatus;
   createdAt?: Date;
   updatedAt?: Date;

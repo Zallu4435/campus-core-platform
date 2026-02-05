@@ -100,8 +100,8 @@ export const MessageReactionsModal: React.FC<MessageReactionsModalProps> = ({
               <button
                 onClick={() => setActiveTab('all')}
                 className={`flex-shrink-0 px-4 py-3 text-sm font-medium transition-colors ${activeTab === 'all'
-                    ? 'text-green-600 border-b-2 border-green-600 bg-green-50 dark:bg-green-900/20'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  ? 'text-green-600 border-b-2 border-green-600 bg-green-50 dark:bg-green-900/20'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                   }`}
               >
                 All {totalReactions}
@@ -111,8 +111,8 @@ export const MessageReactionsModal: React.FC<MessageReactionsModalProps> = ({
                   key={emoji}
                   onClick={() => setActiveTab(emoji)}
                   className={`flex-shrink-0 flex items-center gap-1 px-4 py-3 text-sm font-medium transition-colors ${activeTab === emoji
-                      ? 'text-green-600 border-b-2 border-green-600 bg-green-50 dark:bg-green-900/20'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                    ? 'text-green-600 border-b-2 border-green-600 bg-green-50 dark:bg-green-900/20'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                     }`}
                 >
                   <span className="text-base">{emoji}</span>
@@ -138,13 +138,13 @@ export const MessageReactionsModal: React.FC<MessageReactionsModalProps> = ({
                   >
                     <div className="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
                       <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {reaction.userName.charAt(0).toUpperCase()}
+                        {(reaction.userName || 'U').charAt(0).toUpperCase()}
                       </span>
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-gray-900 dark:text-white">
-                          {reaction.userId === currentUserId ? 'You' : reaction.userName}
+                          {reaction.userId === currentUserId ? 'You' : (reaction.userName || 'Unknown User')}
                         </span>
                         <span className="text-lg">{reaction.emoji}</span>
                       </div>
@@ -193,8 +193,8 @@ export const MessageReactionsModal: React.FC<MessageReactionsModalProps> = ({
               <button
                 onClick={() => setActiveTab('all')}
                 className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${activeTab === 'all'
-                    ? 'text-green-600 border-b-2 border-green-600 bg-green-50 dark:bg-green-900/20'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  ? 'text-green-600 border-b-2 border-green-600 bg-green-50 dark:bg-green-900/20'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                   }`}
               >
                 All {totalReactions}
@@ -204,8 +204,8 @@ export const MessageReactionsModal: React.FC<MessageReactionsModalProps> = ({
                   key={emoji}
                   onClick={() => setActiveTab(emoji)}
                   className={`flex items-center gap-1 px-4 py-3 text-sm font-medium transition-colors ${activeTab === emoji
-                      ? 'text-green-600 border-b-2 border-green-600 bg-green-50 dark:bg-green-900/20'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                    ? 'text-green-600 border-b-2 border-green-600 bg-green-50 dark:bg-green-900/20'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                     }`}
                 >
                   <span className="text-base">{emoji}</span>
@@ -231,13 +231,13 @@ export const MessageReactionsModal: React.FC<MessageReactionsModalProps> = ({
                   >
                     <div className="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
                       <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {reaction.userName.charAt(0).toUpperCase()}
+                        {(reaction.userName || 'U').charAt(0).toUpperCase()}
                       </span>
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-gray-900 dark:text-white">
-                          {reaction.userId === currentUserId ? 'You' : reaction.userName}
+                          {reaction.userId === currentUserId ? 'You' : (reaction.userName || 'Unknown User')}
                         </span>
                         <span className="text-lg">{reaction.emoji}</span>
                       </div>

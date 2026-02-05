@@ -29,14 +29,15 @@ export class Sport {
     this.categoryValue = props.category;
     this.organizerValue = props.organizer;
     this.organizerTypeValue = props.organizerType;
-    this.iconValue = props.icon;
-    this.colorValue = props.color;
-    this.divisionValue = props.division;
-    this.headCoachValue = props.headCoach;
-    this.homeGamesValue = props.homeGames;
-    this.recordValue = props.record;
-    this.upcomingGamesValue = props.upcomingGames;
-    this.participantsValue = props.participants;
+    this.iconValue = props.icon || "⚽";
+    this.colorValue = props.color || "#8B5CF6";
+    this.divisionValue = props.division || "";
+    this.headCoachValue = props.headCoach || "";
+    this.homeGamesValue = props.homeGames || 0;
+    this.recordValue = props.record || "0-0-0";
+    this.upcomingGamesValue = props.upcomingGames || [];
+    this.participantsValue = props.participants || 0;
+
     this.statusValue = props.status || SportStatus.Active;
     this.createdAtValue = props.createdAt;
     this.updatedAtValue = props.updatedAt;

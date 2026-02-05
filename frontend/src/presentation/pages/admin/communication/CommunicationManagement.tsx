@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   IoMailOutline as Mail,
   IoMailOpenOutline as Inbox,
@@ -17,9 +17,11 @@ import Pagination from '../../../components/admin/management/Pagination';
 import WarningModal from '../../../components/common/WarningModal';
 import ComposeMessageModal from './ComposeMessageModal';
 import MessageDetailsModal from './MessageDetailsModal';
-import debounce from 'lodash/debounce';
-import { Message, TransformedMessage } from '../../../../domain/types/management/communicationmanagement';
+
+import { TransformedMessage } from '../../../../domain/types/management/communicationmanagement';
 import { STATUSES, USER_GROUPS, inboxColumns, sentColumns } from '../../../../shared/constants/communicationManagementConstants';
+
+import { Message } from '../../../../domain/types/user/communication';
 
 const CommunicationManagement: React.FC = () => {
   const {
@@ -34,10 +36,13 @@ const CommunicationManagement: React.FC = () => {
     filters,
     setFilters,
     handleSendMessage,
+
     handleDeleteMessage,
     handleArchiveMessage,
     handleViewMessage,
     fetchSentMessages,
+    debouncedSearch,
+    debouncedFilterChange,
     fetchUsers,
   } = useCommunicationManagement({ isAdmin: true });
 
@@ -50,20 +55,12 @@ const CommunicationManagement: React.FC = () => {
   const [messageToDelete, setMessageToDelete] = useState<Message | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  function normalizeMessage(message: Message): any {
-    const sender = message.sender
-      ? { ...message.sender, _id: (message.sender as any)._id ?? message.sender.id }
-      : { id: '', _id: '', name: '', email: '', role: '' };
 
-    const recipients = message.recipients;
-
-    return { ...message, sender, recipients };
-  }
 
   const handleViewMessageWithModal = (message: Message) => {
     setSelectedMessage(message);
     setShowMessageDetails(true);
-    handleViewMessage(normalizeMessage(message));
+    handleViewMessage(message.id);
   };
 
   const handleReplyMessageWithModal = (message: Message) => {
@@ -85,7 +82,7 @@ const CommunicationManagement: React.FC = () => {
   };
 
   const handleArchiveMessageWithSender = (message: Message) => {
-    handleArchiveMessage(normalizeMessage(message));
+    handleArchiveMessage(message);
   };
 
   const inboxActions = [
@@ -171,21 +168,7 @@ const CommunicationManagement: React.FC = () => {
     }
   };
 
-  const debouncedSearchChange = useCallback(
-    debounce((query: string) => {
-      setFilters((prev) => ({ ...prev, search: query }));
-      setPage(1);
-    }, 500),
-    []
-  );
 
-  const debouncedFilterChange = useCallback(
-    debounce((field: string, value: string) => {
-      setFilters((prev) => ({ ...prev, [field]: value }));
-      setPage(1);
-    }, 500),
-    []
-  );
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 relative">
@@ -242,7 +225,7 @@ const CommunicationManagement: React.FC = () => {
           searchQuery={searchQuery}
           setSearchQuery={(val) => {
             setSearchQuery(val);
-            debouncedSearchChange(val);
+            debouncedSearch(val);
           }}
           searchPlaceholder="Search messages..."
           filters={filters}
@@ -278,7 +261,7 @@ const CommunicationManagement: React.FC = () => {
                           sender: msg.sender ? { ...msg.sender, id: msg.sender.id } : undefined,
                           recipients: typeof msg.recipients === 'string'
                             ? msg.recipients
-                            : msg.recipients.map((recipient: { id: string; name: string; email: string; role: string; status: string }) => ({ ...recipient, id: recipient.id }))
+                            : msg.recipients.map((r: any) => r.name || 'Unknown').join(', ')
                         };
                       }).filter(Boolean) as TransformedMessage[]} columns={inboxColumns} actions={inboxActions} />
                       <Pagination
@@ -300,7 +283,9 @@ const CommunicationManagement: React.FC = () => {
                           ...msg,
                           id: msg.id,
                           sender: msg.sender ? { ...msg.sender, id: msg.sender.id } : undefined,
-                          recipients: msg.recipients
+                          recipients: typeof msg.recipients === 'string'
+                            ? msg.recipients
+                            : msg.recipients.map((r: any) => r.name || 'Unknown').join(', ')
                         };
                       }).filter(Boolean) as TransformedMessage[]} columns={sentColumns} actions={sentActions} />
                       <Pagination
@@ -358,27 +343,29 @@ const CommunicationManagement: React.FC = () => {
         fetchUsers={fetchUsers}
       />
 
-      <MessageDetailsModal
-        isOpen={showMessageDetails}
-        message={selectedMessage ? normalizeMessage(selectedMessage) : undefined}
-        onReply={() => {
-          handleReplyMessageWithModal(selectedMessage ? normalizeMessage(selectedMessage) : selectedMessage);
-          setShowMessageDetails(false);
-        }}
-        onArchive={() => {
-          handleArchiveMessageWithSender(selectedMessage ? normalizeMessage(selectedMessage) : selectedMessage);
-          setShowMessageDetails(false);
-        }}
-        onDelete={() => {
-          handleDeleteMessage(selectedMessage!.id);
-          setShowMessageDetails(false);
-        }}
-        onClose={() => {
-          setShowMessageDetails(false);
-          setSelectedMessage(null);
-        }}
-        messageType={activeTab as 'inbox' | 'sent'}
-      />
+      {selectedMessage && (
+        <MessageDetailsModal
+          isOpen={showMessageDetails}
+          message={selectedMessage}
+          onReply={() => {
+            handleReplyMessageWithModal(selectedMessage);
+            setShowMessageDetails(false);
+          }}
+          onArchive={() => {
+            handleArchiveMessageWithSender(selectedMessage);
+            setShowMessageDetails(false);
+          }}
+          onDelete={() => {
+            handleDeleteMessage(selectedMessage.id);
+            setShowMessageDetails(false);
+          }}
+          onClose={() => {
+            setShowMessageDetails(false);
+            setSelectedMessage(null);
+          }}
+          messageType={activeTab as 'inbox' | 'sent'}
+        />
+      )}
 
       <WarningModal
         isOpen={showDeleteWarning}

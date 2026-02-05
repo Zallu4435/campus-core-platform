@@ -1,7 +1,9 @@
 import React from 'react';
+import { useFormContext } from 'react-hook-form';
 
 interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   id: string;
+  name?: string; // Add name for react-hook-form integration
   label?: string;
   placeholder?: string;
   required?: boolean;
@@ -15,6 +17,7 @@ interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement
 
 export const Textarea: React.FC<TextareaProps> = ({
   id,
+  name,
   label,
   placeholder,
   required = false,
@@ -26,6 +29,15 @@ export const Textarea: React.FC<TextareaProps> = ({
   error,
   ...props
 }) => {
+  const formContext = useFormContext();
+
+  // If we have form context and a name, watch the value
+  const watchedValue = (formContext && name) ? formContext.watch(name) : undefined;
+
+  // Use watchedValue if available, otherwise fallback to props.value or empty string
+  const displayValue = watchedValue ?? props.value ?? (props.defaultValue ?? "");
+  const currentLength = typeof displayValue === 'string' ? displayValue.length : 0;
+
   return (
     <div className="mb-4">
       {label && (
@@ -35,6 +47,7 @@ export const Textarea: React.FC<TextareaProps> = ({
       )}
       <textarea
         id={id}
+        name={name}
         placeholder={placeholder}
         disabled={disabled}
         required={required}
@@ -47,7 +60,7 @@ export const Textarea: React.FC<TextareaProps> = ({
         {error && <p className="text-sm text-red-700">{error}</p>}
         {maxLength && (
           <span className="text-sm text-gray-500">
-            {(props.value as string)?.length ?? 0} / {maxLength}
+            {currentLength} / {maxLength}
           </span>
         )}
       </div>

@@ -40,7 +40,7 @@ const LoginPage = () => {
     mutation.mutate(data, {
       onSuccess: (response) => {
         dispatch(setAuth({
-          user: response.user,
+          user: { ...response.user, role: response.user.role || response.collection },
           collection: response.collection
         }));
 

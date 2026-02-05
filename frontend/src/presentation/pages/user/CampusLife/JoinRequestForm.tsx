@@ -116,10 +116,19 @@ export default function JoinRequestForm({ onSubmit, onCancel, isLoading, title }
             <button
               type="submit"
               disabled={isLoading}
-              className={`group/btn px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r ${styles.accent} hover:${styles.button.primary} text-white rounded-full font-medium transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center space-x-2 text-sm sm:text-base`}
+              className={`group/btn px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r ${styles.accent} hover:${styles.button.primary} text-white rounded-full font-medium transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center space-x-2 text-sm sm:text-base min-w-[160px]`}
             >
-              <span>{isLoading ? 'Submitting...' : 'Submit Request'}</span>
-              <FaPaperPlane size={12} className="group-hover/btn:translate-x-1 transition-transform duration-300" />
+              {isLoading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <span>Submitting...</span>
+                </>
+              ) : (
+                <>
+                  <span>Submit Request</span>
+                  <FaPaperPlane size={12} className="group-hover/btn:translate-x-1 transition-transform duration-300" />
+                </>
+              )}
             </button>
           </div>
         </form>

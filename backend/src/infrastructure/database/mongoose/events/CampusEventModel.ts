@@ -32,9 +32,10 @@ const campusEventSchema = new Schema<IEventDocument>(
     location: { type: String, required: true, minlength: 3 },
     timeframe: {
       type: String,
-      required: true,
+      required: false,
       enum: Object.values(Timeframe),
     },
+
     icon: { type: String, default: "📅" },
     color: { type: String, default: "#8B5CF6" },
     description: { type: String, default: "" },

@@ -1,5 +1,6 @@
 export interface Faculty {
-  _id: string;
+  id: string;
+  _id?: string;
   fullName: string;
   email: string;
   phone: string;

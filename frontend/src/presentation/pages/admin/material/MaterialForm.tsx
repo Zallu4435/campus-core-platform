@@ -84,25 +84,27 @@ const MaterialForm: React.FC<MaterialFormProps> = ({ isOpen, onClose, onSubmit, 
     };
   }, [isOpen]);
 
-  const handleFormSubmit = (data: MaterialFormData) => {
+  const handleFormSubmit = async (data: MaterialFormData) => {
     const { file, thumbnail, ...restData } = data;
     const formData: Partial<Material> & { file?: File; thumbnail?: File } = {
       ...restData,
       file: file as File | undefined,
       thumbnail: thumbnail as File | undefined,
     };
-    
+
     if (!file || !(file instanceof File)) {
       formData.fileUrl = initialData?.fileUrl;
     }
-    
+
     if (!thumbnail || !(thumbnail instanceof File)) {
       formData.thumbnailUrl = initialData?.thumbnailUrl;
     }
-    
-    onSubmit(formData);
-    reset();
-    onClose();
+
+    try {
+      await onSubmit(formData);
+    } catch (error) {
+      console.error('Material submission error:', error);
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -165,9 +167,8 @@ const MaterialForm: React.FC<MaterialFormProps> = ({ isOpen, onClose, onSubmit, 
                       <input
                         {...field}
                         type="text"
-                        className={`w-full px-4 py-3 bg-gray-900/60 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 ${
-                          errors.title ? 'border-red-500' : 'border-purple-500/30'
-                        }`}
+                        className={`w-full px-4 py-3 bg-gray-900/60 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 ${errors.title ? 'border-red-500' : 'border-purple-500/30'
+                          }`}
                         placeholder="Enter material title"
                       />
                     )}
@@ -182,9 +183,8 @@ const MaterialForm: React.FC<MaterialFormProps> = ({ isOpen, onClose, onSubmit, 
                     render={({ field }) => (
                       <select
                         {...field}
-                        className={`w-full px-4 py-3 bg-gray-900/60 border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 ${
-                          errors.subject ? 'border-red-500' : 'border-purple-500/30'
-                        }`}
+                        className={`w-full px-4 py-3 bg-gray-900/60 border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 ${errors.subject ? 'border-red-500' : 'border-purple-500/30'
+                          }`}
                       >
                         <option value="">Select a subject</option>
                         {SUBJECTS.map((subject) => (
@@ -203,9 +203,8 @@ const MaterialForm: React.FC<MaterialFormProps> = ({ isOpen, onClose, onSubmit, 
                     render={({ field }) => (
                       <select
                         {...field}
-                        className={`w-full px-4 py-3 bg-gray-900/60 border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 ${
-                          errors.course ? 'border-red-500' : 'border-purple-500/30'
-                        }`}
+                        className={`w-full px-4 py-3 bg-gray-900/60 border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 ${errors.course ? 'border-red-500' : 'border-purple-500/30'
+                          }`}
                       >
                         <option value="">Select a course</option>
                         {COURSES.map((course) => (
@@ -225,9 +224,8 @@ const MaterialForm: React.FC<MaterialFormProps> = ({ isOpen, onClose, onSubmit, 
                       <input
                         {...field}
                         type="text"
-                        className={`w-full px-4 py-3 bg-gray-900/60 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 ${
-                          errors.semester ? 'border-red-500' : 'border-purple-500/30'
-                        }`}
+                        className={`w-full px-4 py-3 bg-gray-900/60 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 ${errors.semester ? 'border-red-500' : 'border-purple-500/30'
+                          }`}
                         placeholder="1"
                       />
                     )}
@@ -242,12 +240,10 @@ const MaterialForm: React.FC<MaterialFormProps> = ({ isOpen, onClose, onSubmit, 
                     render={({ field }) => (
                       <select
                         {...field}
-                        className={`w-full px-4 py-3 bg-gray-900/60 border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 ${
-                          errors.type ? 'border-red-500' : 'border-purple-500/30'
-                        }`}
+                        className={`w-full px-4 py-3 bg-gray-900/60 border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 ${errors.type ? 'border-red-500' : 'border-purple-500/30'
+                          }`}
                       >
                         <option value="pdf">PDF</option>
-                        <option value="video">Video</option>
                       </select>
                     )}
                   />
@@ -257,11 +253,10 @@ const MaterialForm: React.FC<MaterialFormProps> = ({ isOpen, onClose, onSubmit, 
                   <label className="block text-sm font-medium text-purple-300 mb-2">File Upload {isEditing ? '' : '*'}</label>
                   <input
                     type="file"
-                    accept=".pdf,.mp4"
+                    accept=".pdf"
                     onChange={handleFileChange}
-                    className={`w-full px-4 py-3 bg-gray-900/60 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 ${
-                      errors.file ? 'border-red-500' : 'border-purple-500/30'
-                    }`}
+                    className={`w-full px-4 py-3 bg-gray-900/60 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 ${errors.file ? 'border-red-500' : 'border-purple-500/30'
+                      }`}
                   />
                   {fileName && <p className="mt-1 text-sm text-gray-400">Selected: {fileName}</p>}
                   {errors.file && <p className="mt-1 text-sm text-red-400">{errors.file.message as string}</p>}
@@ -272,9 +267,8 @@ const MaterialForm: React.FC<MaterialFormProps> = ({ isOpen, onClose, onSubmit, 
                     type="file"
                     accept="image/*"
                     onChange={handleThumbnailChange}
-                    className={`w-full px-4 py-3 bg-gray-900/60 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 ${
-                      errors.thumbnail ? 'border-red-500' : 'border-purple-500/30'
-                    }`}
+                    className={`w-full px-4 py-3 bg-gray-900/60 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 ${errors.thumbnail ? 'border-red-500' : 'border-purple-500/30'
+                      }`}
                   />
                   {thumbnailName && <p className="mt-1 text-sm text-gray-400">Selected: {thumbnailName}</p>}
                   {errors.thumbnail && <p className="mt-1 text-sm text-red-400">{errors.thumbnail.message as string}</p>}
@@ -298,9 +292,8 @@ const MaterialForm: React.FC<MaterialFormProps> = ({ isOpen, onClose, onSubmit, 
                         type="text"
                         value={field.value.join(', ')}
                         onChange={(e) => field.onChange(e.target.value.split(',').map((tag) => tag.trim()))}
-                        className={`w-full px-4 py-3 bg-gray-900/60 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 ${
-                          errors.tags ? 'border-red-500' : 'border-purple-500/30'
-                        }`}
+                        className={`w-full px-4 py-3 bg-gray-900/60 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 ${errors.tags ? 'border-red-500' : 'border-purple-500/30'
+                          }`}
                         placeholder="Enter tags, separated by commas"
                       />
                     )}
@@ -315,9 +308,8 @@ const MaterialForm: React.FC<MaterialFormProps> = ({ isOpen, onClose, onSubmit, 
                     render={({ field }) => (
                       <select
                         {...field}
-                        className={`w-full px-4 py-3 bg-gray-900/60 border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 ${
-                          errors.difficulty ? 'border-red-500' : 'border-purple-500/30'
-                        }`}
+                        className={`w-full px-4 py-3 bg-gray-900/60 border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 ${errors.difficulty ? 'border-red-500' : 'border-purple-500/30'
+                          }`}
                       >
                         {DIFFICULTIES.map((difficulty) => (
                           <option key={difficulty} value={difficulty}>{difficulty}</option>
@@ -336,9 +328,8 @@ const MaterialForm: React.FC<MaterialFormProps> = ({ isOpen, onClose, onSubmit, 
                       <input
                         {...field}
                         type="text"
-                        className={`w-full px-4 py-3 bg-gray-900/60 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 ${
-                          errors.estimatedTime ? 'border-red-500' : 'border-purple-500/30'
-                        }`}
+                        className={`w-full px-4 py-3 bg-gray-900/60 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 ${errors.estimatedTime ? 'border-red-500' : 'border-purple-500/30'
+                          }`}
                         placeholder="e.g., 2 hours"
                       />
                     )}
@@ -386,9 +377,8 @@ const MaterialForm: React.FC<MaterialFormProps> = ({ isOpen, onClose, onSubmit, 
                       <textarea
                         {...field}
                         rows={4}
-                        className={`w-full px-4 py-3 bg-gray-900/60 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 ${
-                          errors.description ? 'border-red-500' : 'border-purple-500/30'
-                        }`}
+                        className={`w-full px-4 py-3 bg-gray-900/60 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 ${errors.description ? 'border-red-500' : 'border-purple-500/30'
+                          }`}
                         placeholder="Enter material description"
                       />
                     )}

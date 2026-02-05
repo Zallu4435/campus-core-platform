@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Toaster, toast } from 'react-hot-toast';
+import { Toaster } from 'react-hot-toast';
 import AssignmentList from './AssignmentList';
 import Submissions from './Submissions';
 import Analytics from './Analytics';

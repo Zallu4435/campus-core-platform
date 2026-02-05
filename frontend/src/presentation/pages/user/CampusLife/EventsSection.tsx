@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import {
-  FaCalendarAlt, FaMapPin, FaClock, FaCheckCircle,
-  FaArrowRight, FaFilter, FaSearch, FaTrophy, FaUsers, FaBuilding
+  FaCalendarAlt, FaMapPin, FaClock,
+  FaArrowRight, FaFilter, FaSearch, FaUsers
 } from 'react-icons/fa';
 import { useCampusLife } from '../../../../application/hooks/useCampusLife';
 import JoinRequestForm from './JoinRequestForm';
@@ -12,7 +12,7 @@ import { toast } from 'react-hot-toast';
 import { formatDate, formatTimeString } from '../../../../shared/utils/dateUtils';
 
 export default function EventsSection({ searchTerm, statusFilter, onFilterChange }: { searchTerm: string; statusFilter: string; onFilterChange: (filters: { search: string; status: string }) => void }) {
-  const { events, requestToJoinEvent, isJoiningEvent, joinEventError } = useCampusLife({
+  const { events, requestToJoinEventAsync, isJoiningEvent, joinEventError } = useCampusLife({
     activeTab: 'Events',
     statusFilter,
     eventSearchTerm: searchTerm
@@ -81,7 +81,7 @@ export default function EventsSection({ searchTerm, statusFilter, onFilterChange
   const handleJoinRequest = async (data: { reason: string; additionalInfo?: string }) => {
     if (!selectedEvent) return;
     try {
-      await requestToJoinEvent({
+      await requestToJoinEventAsync({
         eventId: selectedEvent.id,
         request: {
           reason: data.reason,
@@ -246,9 +246,8 @@ export default function EventsSection({ searchTerm, statusFilter, onFilterChange
               {!isSearching && events.map((event: EventType) => (
                 <div
                   key={event.id}
-                  className={`p-3 sm:p-4 cursor-pointer group/item hover:bg-amber-50/50 transition-all duration-300 border-l-4 ${
-                    selectedEvent?.id === event.id ? 'bg-orange-50/70 border-orange-400' : 'border-transparent hover:border-amber-200'
-                  }`}
+                  className={`p-3 sm:p-4 cursor-pointer group/item hover:bg-amber-50/50 transition-all duration-300 border-l-4 ${selectedEvent?.id === event.id ? 'bg-orange-50/70 border-orange-400' : 'border-transparent hover:border-amber-200'
+                    }`}
                   onClick={() => handleEventClick(event)}
                 >
                   <div className="flex items-center space-x-2 sm:space-x-3">
@@ -349,9 +348,8 @@ export default function EventsSection({ searchTerm, statusFilter, onFilterChange
                       <button
                         onClick={() => setShowJoinForm(true)}
                         disabled={selectedEvent?.userRequestStatus === 'pending' || selectedEvent?.userRequestStatus === 'approved'}
-                        className={`group/btn mt-4 w-full bg-gradient-to-r ${styles.accent} hover:${styles.button.primary} text-white py-2 px-4 rounded-full font-medium transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-105 flex items-center justify-center space-x-2 text-sm ${
-                          selectedEvent?.userRequestStatus === 'pending' || selectedEvent?.userRequestStatus === 'approved' ? 'opacity-60 cursor-not-allowed' : ''
-                        }`}
+                        className={`group/btn mt-4 w-full bg-gradient-to-r ${styles.accent} hover:${styles.button.primary} text-white py-2 px-4 rounded-full font-medium transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-105 flex items-center justify-center space-x-2 text-sm ${selectedEvent?.userRequestStatus === 'pending' || selectedEvent?.userRequestStatus === 'approved' ? 'opacity-60 cursor-not-allowed' : ''
+                          }`}
                       >
                         <span>
                           {selectedEvent?.userRequestStatus === 'pending'
@@ -463,9 +461,8 @@ export default function EventsSection({ searchTerm, statusFilter, onFilterChange
                       <button
                         onClick={() => setShowJoinForm(true)}
                         disabled={selectedEvent.userRequestStatus === 'pending' || selectedEvent.userRequestStatus === 'approved'}
-                        className={`group/btn mt-3 sm:mt-4 w-full bg-gradient-to-r ${styles.accent} hover:${styles.button.primary} text-white py-2 sm:py-3 px-4 rounded-full font-medium transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-105 flex items-center justify-center space-x-2 text-xs sm:text-sm md:text-base ${
-                          selectedEvent.userRequestStatus === 'pending' || selectedEvent.userRequestStatus === 'approved' ? 'opacity-60 cursor-not-allowed' : ''
-                        }`}
+                        className={`group/btn mt-3 sm:mt-4 w-full bg-gradient-to-r ${styles.accent} hover:${styles.button.primary} text-white py-2 sm:py-3 px-4 rounded-full font-medium transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-105 flex items-center justify-center space-x-2 text-xs sm:text-sm md:text-base ${selectedEvent.userRequestStatus === 'pending' || selectedEvent.userRequestStatus === 'approved' ? 'opacity-60 cursor-not-allowed' : ''
+                          }`}
                       >
                         <span>
                           {selectedEvent.userRequestStatus === 'pending'

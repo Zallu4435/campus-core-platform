@@ -36,7 +36,8 @@ export const createEventSchema = Joi.object({
         date: Joi.string().required(),
         time: Joi.string().required(),
         location: Joi.string().min(3).max(200).required(),
-        timeframe: Joi.string().valid(...Object.values(Timeframe)).required(),
+        timeframe: Joi.string().valid(...Object.values(Timeframe)).optional(),
+
         status: Joi.string().valid(...Object.values(EventStatus)).optional(),
         icon: Joi.string().optional(),
         color: Joi.string().pattern(/^#[0-9A-F]{6}$/i).optional(),

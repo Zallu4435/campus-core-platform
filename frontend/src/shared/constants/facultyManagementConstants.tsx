@@ -37,7 +37,7 @@ export const facultyColumns: ColumnConfig<Faculty>[] = [
         </div>
         <div className="ml-3">
           <p className="font-medium text-gray-200">{faculty.fullName || 'N/A'}</p>
-          <p className="text-xs text-gray-400">ID: {faculty._id ? faculty._id.substring(0, 8) : 'N/A'}</p>
+          <p className="text-xs text-gray-400">ID: {faculty.id ? faculty.id.substring(0, 8) : 'N/A'}</p>
         </div>
       </div>
     ),

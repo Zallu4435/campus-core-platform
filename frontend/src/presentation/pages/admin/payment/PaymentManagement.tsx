@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FiDollarSign, FiEye, FiFileText, FiAward, FiPlus, FiList } from 'react-icons/fi';
+import { FiDollarSign, FiEye, FiFileText, FiPlus, FiList } from 'react-icons/fi';
 import { debounce } from 'lodash';
 import { usePaymentsManagement } from '../../../../application/hooks/useFinancial';
 import { financialService } from '../../../../application/services/financialService';
@@ -19,7 +19,7 @@ import EmptyState from '../../../../shared/components/EmptyState';
 
 
 const PaymentManagement: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'payments'>('payments');
+  const [activeTab] = useState<'payments'>('payments');
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<Filters>({ status: 'All Statuses', term: 'All Terms', startDate: '', endDate: '', dateRange: 'all' });
   const [page, setPage] = useState(1);

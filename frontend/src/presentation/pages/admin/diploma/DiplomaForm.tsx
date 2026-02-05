@@ -20,7 +20,7 @@ const DiplomaForm: React.FC<DiplomaFormProps> = ({
     handleSubmit,
     setValue,
     watch,
-    formState: { errors },
+    formState: { errors, isSubmitting },
     reset,
   } = useForm({
     resolver: zodResolver(diplomaSchema),
@@ -50,17 +50,34 @@ const DiplomaForm: React.FC<DiplomaFormProps> = ({
 
   const handleAddPrerequisite = () => {
     if (newPrerequisite.trim() && !prerequisites.includes(newPrerequisite.trim())) {
-      setValue('prerequisites', [...prerequisites, newPrerequisite.trim()]);
+      setValue('prerequisites', [...prerequisites, newPrerequisite.trim()], {
+        shouldValidate: true,
+        shouldDirty: true
+      });
       setNewPrerequisite('');
     }
   };
 
-  const handleRemovePrerequisite = (prerequisite: string) => {
-    setValue('prerequisites', prerequisites.filter((p: string) => p !== prerequisite));
+  const handlePrerequisiteKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddPrerequisite();
+    }
   };
 
-  const onFormSubmit = (data: DiplomaFormData) => {
-    onSubmit(data);
+  const handleRemovePrerequisite = (prerequisite: string) => {
+    setValue('prerequisites', prerequisites.filter((p: string) => p !== prerequisite), {
+      shouldValidate: true,
+      shouldDirty: true
+    });
+  };
+
+  const onFormSubmit = async (data: DiplomaFormData) => {
+    try {
+      await onSubmit(data);
+    } catch (error) {
+      console.error('Diploma submission error:', error);
+    }
   };
 
   if (!isOpen) return null;
@@ -193,10 +210,12 @@ const DiplomaForm: React.FC<DiplomaFormProps> = ({
                     type="text"
                     value={newPrerequisite}
                     onChange={(e) => setNewPrerequisite(e.target.value)}
+                    onKeyPress={handlePrerequisiteKeyPress}
                     placeholder="Enter prerequisite course"
                     className="flex-1 px-3 py-2 bg-gray-900/60 border border-purple-600/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50"
                   />
                   <button
+                    type="button"
                     onClick={handleAddPrerequisite}
                     className="px-3 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-500 hover:to-blue-500 transition-colors"
                   >
@@ -211,6 +230,7 @@ const DiplomaForm: React.FC<DiplomaFormProps> = ({
                     >
                       <span>{prerequisite}</span>
                       <button
+                        type="button"
                         onClick={() => handleRemovePrerequisite(prerequisite)}
                         className="text-purple-300 hover:text-white"
                       >
@@ -245,10 +265,17 @@ const DiplomaForm: React.FC<DiplomaFormProps> = ({
               </button>
               <button
                 type="submit"
-                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white py-3 px-6 rounded-lg font-semibold transition-colors border border-purple-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={Object.keys(errors).length > 0}
+                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white py-3 px-6 rounded-lg font-semibold transition-colors border border-purple-500/50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[150px]"
+                disabled={isSubmitting || Object.keys(errors).length > 0}
               >
-                {isEditing ? 'Update Diploma' : 'Add Diploma'}
+                {isSubmitting ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></div>
+                    {isEditing ? 'Updating...' : 'Adding...'}
+                  </>
+                ) : (
+                  isEditing ? 'Update Diploma' : 'Add Diploma'
+                )}
               </button>
             </div>
           </div>

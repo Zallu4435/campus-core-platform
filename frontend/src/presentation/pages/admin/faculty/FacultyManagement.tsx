@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useFacultyManagement } from '../../../../application/hooks/useFacultyManagement';
 import { FiFileText, FiUsers, FiClipboard, FiBarChart2, FiEye, FiCheckCircle, FiXCircle, FiLock } from 'react-icons/fi';
 import { debounce } from 'lodash';
@@ -44,9 +44,19 @@ const FacultyManagement: React.FC = () => {
     blockFaculty,
   } = useFacultyManagement();
 
+  // Keep selectedFaculty sync with updated data after mutations
+  useEffect(() => {
+    if (selectedFaculty && faculty) {
+      const updated = faculty.find((f: Faculty) => f.id === selectedFaculty.id);
+      if (updated && (updated.blocked !== selectedFaculty.blocked || updated.status !== selectedFaculty.status)) {
+        setSelectedFaculty(updated);
+      }
+    }
+  }, [faculty, selectedFaculty]);
+
   const handleFilterChange = (field: string, value: string) => {
     const cleanField = field.replace(/^page\[|\]$/g, '');
-    
+
     const fieldMap: { [key: string]: keyof FacultyFilters } = {
       'status': 'status',
       'department': 'department',
@@ -54,7 +64,7 @@ const FacultyManagement: React.FC = () => {
     };
 
     const mappedField = fieldMap[cleanField] || cleanField;
-    
+
     setFilters((prev) => ({
       ...prev,
       [mappedField]: value
@@ -79,16 +89,16 @@ const FacultyManagement: React.FC = () => {
   const handleCustomDateChange = (field: 'startDate' | 'endDate', value: string) => {
     setCustomDateRange((prev) => ({ ...prev, [field]: value }));
     // Also update the filters state so the dates get sent to the backend
-    setFilters((prev) => ({ 
-      ...prev, 
+    setFilters((prev) => ({
+      ...prev,
       [field]: value,
-      dateRange: 'custom' 
+      dateRange: 'custom'
     }));
   };
 
   const handleViewDetails = async (faculty: Faculty) => {
     try {
-      const details = await getFacultyDetails(faculty._id);
+      const details = await getFacultyDetails(faculty.id);
       setSelectedFaculty(details);
       setIsDetailsModalOpen(true);
     } catch (error) {
@@ -111,7 +121,7 @@ const FacultyManagement: React.FC = () => {
     };
 
     approveFaculty.mutate({
-      id: selectedFaculty._id,
+      id: selectedFaculty.id,
       approvalData,
     });
     setShowApproveWarning(false);
@@ -122,7 +132,7 @@ const FacultyManagement: React.FC = () => {
     if (!selectedFaculty) return;
     try {
       rejectFaculty.mutate({
-        id: selectedFaculty._id,
+        id: selectedFaculty.id,
         reason,
       });
       setShowApprovalModal(false);
@@ -147,12 +157,12 @@ const FacultyManagement: React.FC = () => {
       status: 'all',
       department: 'all_departments',
       dateRange: 'all',
-      search: '', 
-      startDate: '', 
-      endDate: '', 
+      search: '',
+      startDate: '',
+      endDate: '',
     });
     setCustomDateRange({ startDate: '', endDate: '' });
-    setPage(1); 
+    setPage(1);
   };
 
   const facultyActions = [
@@ -193,7 +203,7 @@ const FacultyManagement: React.FC = () => {
 
 
   const handleBlock = (faculty: Faculty) => {
-    blockFaculty.mutate(faculty._id);
+    blockFaculty.mutate(faculty.id);
     setShowBlockWarning(false);
     setFacultyToBlock(null);
   };
@@ -345,7 +355,7 @@ const FacultyManagement: React.FC = () => {
             setShowDeleteWarning(false);
             setFacultyToDelete(null);
           }}
-          onConfirm={() => handleDelete(facultyToDelete._id)}
+          onConfirm={() => handleDelete(facultyToDelete.id)}
           title="Delete Application"
           message={`Are you sure you want to delete ${facultyToDelete.fullName}'s application? This action cannot be undone.`}
           confirmText="Delete"
@@ -380,7 +390,7 @@ const FacultyManagement: React.FC = () => {
           faculty={selectedFaculty}
           onBlockToggle={(facultyId: string) => {
             // Find the faculty and call handleBlock
-            const facultyToBlock = faculty?.find((f: Faculty) => f._id === facultyId);
+            const facultyToBlock = faculty?.find((f: Faculty) => f.id === facultyId);
             if (facultyToBlock) {
               handleBlock(facultyToBlock);
             }

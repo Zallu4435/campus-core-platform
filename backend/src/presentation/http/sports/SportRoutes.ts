@@ -3,7 +3,7 @@ import { expressAdapter } from "../../adapters/ExpressAdapter";
 import { getSportsComposer } from "../../../infrastructure/services/sports/SportComposers";
 import { getSportRequestsComposer } from "../../../infrastructure/services/sports/SportRequestComposers";
 import { authMiddleware } from "../../../shared/middlewares/authMiddleware";
-import { validate } from "../../../shared/middlewares/validationMiddleware";
+import { validateRequest } from "../../../shared/middlewares/validationMiddleware";
 import {
   getSportsSchema,
   sportIdParamSchema,
@@ -20,7 +20,7 @@ const sportController = getSportsComposer();
 sportRouter.get(
   "/",
   authMiddleware,
-  validate(getSportsSchema),
+  validateRequest(getSportsSchema),
   (req, res, next) =>
     expressAdapter(req, res, next, sportController.getSports.bind(sportController))
 );
@@ -28,7 +28,7 @@ sportRouter.get(
 sportRouter.get(
   "/:id",
   authMiddleware,
-  validate(sportIdParamSchema),
+  validateRequest(sportIdParamSchema),
   (req, res, next) =>
     expressAdapter(req, res, next, sportController.getSportById.bind(sportController))
 );
@@ -36,7 +36,7 @@ sportRouter.get(
 sportRouter.post(
   "/",
   authMiddleware,
-  validate(createSportSchema),
+  validateRequest(createSportSchema),
   (req, res, next) =>
     expressAdapter(req, res, next, sportController.createSport.bind(sportController))
 );
@@ -44,7 +44,7 @@ sportRouter.post(
 sportRouter.put(
   "/:id",
   authMiddleware,
-  validate(updateSportSchema),
+  validateRequest(updateSportSchema),
   (req, res, next) =>
     expressAdapter(req, res, next, sportController.updateSport.bind(sportController))
 );
@@ -52,7 +52,7 @@ sportRouter.put(
 sportRouter.delete(
   "/:id",
   authMiddleware,
-  validate(sportIdParamSchema),
+  validateRequest(sportIdParamSchema),
   (req, res, next) =>
     expressAdapter(req, res, next, sportController.deleteSport.bind(sportController))
 );
@@ -64,7 +64,7 @@ const sportRequestController = getSportRequestsComposer();
 sportRequestRouter.get(
   "/",
   authMiddleware,
-  validate(getSportRequestsSchema),
+  validateRequest(getSportRequestsSchema),
   (req, res, next) =>
     expressAdapter(req, res, next, sportRequestController.getSportRequests.bind(sportRequestController))
 );
@@ -72,7 +72,7 @@ sportRequestRouter.get(
 sportRequestRouter.get(
   "/:id",
   authMiddleware,
-  validate(sportRequestIdParamSchema),
+  validateRequest(sportRequestIdParamSchema),
   (req, res, next) =>
     expressAdapter(req, res, next, sportRequestController.getSportRequestDetails.bind(sportRequestController))
 );
@@ -80,7 +80,7 @@ sportRequestRouter.get(
 sportRequestRouter.post(
   "/:id/approve",
   authMiddleware,
-  validate(sportRequestIdParamSchema),
+  validateRequest(sportRequestIdParamSchema),
   (req, res, next) =>
     expressAdapter(req, res, next, sportRequestController.approveSportRequest.bind(sportRequestController))
 );
@@ -88,7 +88,7 @@ sportRequestRouter.post(
 sportRequestRouter.post(
   "/:id/reject",
   authMiddleware,
-  validate(sportRequestIdParamSchema),
+  validateRequest(sportRequestIdParamSchema),
   (req, res, next) =>
     expressAdapter(req, res, next, sportRequestController.rejectSportRequest.bind(sportRequestController))
 );
@@ -97,7 +97,7 @@ sportRequestRouter.post(
 sportRequestRouter.post(
   "/join/:id", // Standardized to use :id for sportId in params
   authMiddleware,
-  validate(sportIdParamSchema),
+  validateRequest(sportIdParamSchema),
   (req, res, next) =>
     expressAdapter(req, res, next, sportRequestController.joinSport.bind(sportRequestController))
 );

@@ -276,6 +276,10 @@ export class ConfirmFacultyOfferUseCase implements IConfirmFacultyOfferUseCase {
             throw new FacultyAlreadyProcessedError();
         }
 
+        if (faculty.confirmationToken !== params.token) {
+            throw new InvalidTokenError();
+        }
+
         let newStatus: FacultyStatus = FacultyStatus.OFFERED;
         let rejectedBy: FacultyRejectedBy | undefined = undefined;
 
@@ -283,7 +287,7 @@ export class ConfirmFacultyOfferUseCase implements IConfirmFacultyOfferUseCase {
             newStatus = FacultyStatus.APPROVED;
 
             const temporaryPassword = generatePassword();
-            const fullNameParts = faculty.fullName.split(" ");
+            const fullNameParts = faculty.fullName.trim().split(/\s+/);
             const firstName = fullNameParts[0];
             const lastName = fullNameParts.slice(1).join(" ") || "";
 
@@ -352,9 +356,9 @@ export class DownloadCertificateUseCase implements IDownloadCertificateUseCase {
             throw new UnauthorizedAccessError();
         }
 
-        const publicId = this._storageService.getPublicIdFromUrl(params.certificateUrl);
+        const { publicId, resourceType } = this._storageService.getPublicIdFromUrl(params.certificateUrl);
         const downloadUrl = this._storageService.generateSignedUrl(publicId, {
-            resource_type: "image",
+            resource_type: resourceType,
             type: "upload",
         });
 
@@ -393,28 +397,55 @@ export class ServeDocumentUseCase implements IServeDocumentUseCase {
         const { facultyId, documentUrl, type } = params;
 
         if (!facultyId || !type || !documentUrl) {
-            throw new MissingRequiredFieldsError();
+            return { data: { error: 'Missing required fields' }, success: false };
         }
 
         const faculty = await this._facultyRepository.getFacultyById(facultyId);
         if (!faculty) {
-            throw new FacultyNotFoundError();
+            return { data: { error: 'Faculty not found' }, success: false };
         }
 
-        const publicId = this._storageService.getPublicIdFromUrl(documentUrl as string);
+        const { publicId, resourceType } = this._storageService.getPublicIdFromUrl(documentUrl as string);
+        if (!publicId) {
+            // Fallback to fetch direct URL if we can't parse it as Cloudinary
+            try {
+                console.log(`📡 [FacultyUseCases] Using direct URL fallback for: ${documentUrl}`);
+                const buffer = await this._storageService.fetchFileAsBuffer(documentUrl);
+                const pdfData = buffer.toString('base64');
+                const ext = documentUrl.split('?')[0].split('.').pop()?.toLowerCase();
+                let contentType = 'application/pdf';
+                const fileName = `${type}_${facultyId}.${ext}`;
+                return { data: { pdfData, fileName, contentType }, success: true };
+            } catch (fallbackError) {
+                return { data: { error: 'Invalid document URL' }, success: false };
+            }
+        }
+
         const signedUrl = this._storageService.generateSignedUrl(publicId, {
-            resource_type: 'raw',
+            resource_type: resourceType,
             type: 'upload',
         });
 
         try {
             const buffer = await this._storageService.fetchFileAsBuffer(signedUrl);
+            console.log(`✅ [FacultyUseCases] Successfully fetched buffer of size: ${buffer.length}`);
             const pdfData = buffer.toString('base64');
-            const fileName = `${type}_${facultyId}.pdf`;
-            const contentType = 'application/pdf';
+
+            // Determine content type
+            const urlWithoutQuery = documentUrl.split('?')[0];
+            const ext = urlWithoutQuery.split('.').pop()?.toLowerCase();
+            let contentType = 'application/pdf';
+            if (['jpg', 'jpeg'].includes(ext!)) contentType = 'image/jpeg';
+            else if (ext === 'png') contentType = 'image/png';
+            else if (ext === 'doc') contentType = 'application/msword';
+            else if (ext === 'docx') contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+            console.log(`📄 [FacultyUseCases] Serving document: fileName=${type}_${facultyId}.${ext}, contentType=${contentType}`);
+            const fileName = `${type}_${facultyId}.${ext}`;
             return { data: { pdfData, fileName, contentType }, success: true };
-        } catch (error) {
-            throw new CertificateNotFoundError();
+        } catch (error: any) {
+            console.error(`❌ [FacultyUseCases] Error serving document:`, error);
+            return { data: { error: 'Failed to retrieve document' }, success: false };
         }
     }
 }

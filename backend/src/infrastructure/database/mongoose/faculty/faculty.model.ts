@@ -17,7 +17,7 @@ export interface FacultyUserDocument extends mongoose.Document {
 const FacultyUserSchema = new Schema<FacultyUserDocument>(
     {
         firstName: { type: String, required: true, trim: true },
-        lastName: { type: String, required: true, trim: true },
+        lastName: { type: String, required: false, trim: true },
         email: {
             type: String,
             required: true,

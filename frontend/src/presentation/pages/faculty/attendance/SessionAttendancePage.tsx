@@ -4,6 +4,7 @@ import { useSessionManagement } from '../../../../application/hooks/useSessionMa
 import { useQueryClient } from '@tanstack/react-query';
 import SessionAttendanceViewModal from './SessionAttendanceViewModal'
 import { Session, AttendanceInterval, AttendanceUser } from '../../../../domain/types/faculty/attendence';
+import { VideoSession } from '../../../../application/services/session.service';
 import LoadingSpinner from '../../../../shared/components/LoadingSpinner';
 import ErrorMessage from '../../../../shared/components/ErrorMessage';
 
@@ -18,6 +19,8 @@ const SessionAttendancePage = () => {
     updateAttendanceStatus
   } = useSessionManagement();
 
+  const sessionList = useMemo(() => Array.isArray(sessions) ? (sessions as VideoSession[]) : [], [sessions]);
+
   const [selectedSessionId, setSelectedSessionId] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
   const [attendanceFilter, setAttendanceFilter] = useState('all');
@@ -31,17 +34,16 @@ const SessionAttendancePage = () => {
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   React.useEffect(() => {
-    if (!selectedSessionId && Array.isArray(sessions) && sessions.length > 0) {
-      const list = sessions;
-      const withAttendees = list.find((s) => (s?.attendees ?? 0) > 0);
-      const ongoing = list.find((s) => s?.status === 'Ongoing');
-      const ended = list.find((s) => s?.status === 'Ended');
-      const fallback = list[0];
+    if (!selectedSessionId && sessionList.length > 0) {
+      const withAttendees = sessionList.find((s) => (s?.attendees ?? 0) > 0);
+      const ongoing = sessionList.find((s) => s?.status === 'Ongoing');
+      const ended = sessionList.find((s) => s?.status === 'Ended');
+      const fallback = sessionList[0];
       const chosen = withAttendees || ongoing || ended || fallback;
       const chosenId = chosen?._id ?? chosen?.id;
       if (chosenId) setSelectedSessionId(chosenId);
     }
-  }, [sessions, selectedSessionId]);
+  }, [sessionList, selectedSessionId]);
 
 
   const filters = React.useMemo(() => ({
@@ -54,7 +56,7 @@ const SessionAttendancePage = () => {
 
   const { data: currentAttendanceData = [], isLoading: isLoadingAttendance, refetch: refetchAttendance } = useSessionAttendance(selectedSessionId, filters);
 
-  
+
   React.useEffect(() => {
     return () => {
       if (debounceTimeoutRef.current) {
@@ -63,7 +65,7 @@ const SessionAttendancePage = () => {
     };
   }, []);
 
-  const sessionList = Array.isArray(sessions) ? sessions : [];
+
 
   const currentSession = sessionList.find((s) => (s?._id ?? s?.id) === selectedSessionId) as Session | undefined;
 
@@ -160,7 +162,7 @@ const SessionAttendancePage = () => {
       if (endDate && sessionDate > endDate) return false;
       return true;
     });
-  }, [dateRange, sessions]);
+  }, [dateRange, sessionList]);
 
   const debouncedSearch = useCallback((searchValue: string) => {
     if (debounceTimeoutRef.current) {
@@ -466,7 +468,7 @@ const SessionAttendancePage = () => {
 
           <div className="relative">
             {(isLoadingSessions || isLoadingAttendance) && (
-                <LoadingSpinner />
+              <LoadingSpinner />
             )}
             <div className={(isLoadingSessions || isLoadingAttendance) ? 'pointer-events-none opacity-50' : ''}>
               {processedAttendance.length > 0 ? (

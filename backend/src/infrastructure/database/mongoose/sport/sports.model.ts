@@ -17,19 +17,21 @@ const teamSchema = new Schema<ISportDocument>(
     category: { type: String, required: true },
     organizer: { type: String, required: true },
     organizerType: { type: String, required: true },
-    icon: { type: String, required: true },
-    color: { type: String, required: true },
-    division: { type: String, required: true },
-    headCoach: { type: String, required: true },
-    homeGames: { type: Number, required: true },
-    record: { type: String, required: true },
+    icon: { type: String, default: '⚽' },
+    color: { type: String, default: '#8B5CF6' },
+    division: { type: String, required: false, default: '' },
+    headCoach: { type: String, required: false, default: '' },
+    homeGames: { type: Number, required: false, default: 0 },
+    record: { type: String, required: false, default: '0-0-0' },
     upcomingGames: [
       {
-        date: { type: String, required: true },
-        description: { type: String, required: true },
+        date: { type: String, required: false },
+        description: { type: String, required: false },
       },
     ],
-    participants: { type: Number, required: true },
+
+    participants: { type: Number, required: false, default: 0 },
+
     status: {
       type: String,
       enum: Object.values(SportStatus),

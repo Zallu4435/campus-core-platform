@@ -9,7 +9,7 @@ import { ghostParticles } from '../../../../shared/constants/siteManagementConst
 
 const createSchema = (fields: SectionField[]) => {
   const schemaObject: Record<string, unknown> = {};
-  
+
   fields.forEach(field => {
     if (field.type === 'image') {
       schemaObject[field.name] = z.union([z.string(), z.instanceof(File)]).optional();
@@ -19,14 +19,14 @@ const createSchema = (fields: SectionField[]) => {
       schemaObject[field.name] = z.string().optional();
     }
   });
-  
+
   return z.object(schemaObject as z.ZodRawShape);
 };
 
 const SiteSectionForm: React.FC<SiteSectionFormProps> = ({ fields, initialData, onClose, onSuccess }) => {
   const schema = createSchema(fields);
   type FormData = z.infer<typeof schema>;
-  
+
   const {
     register,
     handleSubmit,
@@ -105,17 +105,16 @@ const SiteSectionForm: React.FC<SiteSectionFormProps> = ({ fields, initialData, 
         <form onSubmit={handleSubmit(onSubmit)} className="overflow-y-auto max-h-[calc(90vh-200px)] p-6 space-y-6 custom-scrollbar">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {fields.map((field: SectionField) => (
-              <div 
-                key={field.name} 
-                className={`bg-gray-800/80 border border-purple-600/30 rounded-lg p-4 shadow-sm ${
-                  field.type === 'textarea' ? 'md:col-span-2' : ''
-                }`}
+              <div
+                key={field.name}
+                className={`bg-gray-800/80 border border-purple-600/30 rounded-lg p-4 shadow-sm ${field.type === 'textarea' ? 'md:col-span-2' : ''
+                  }`}
               >
                 <label className="block text-sm font-medium text-purple-300 mb-2">
                   {field.label}
                   {field.required && <span className="text-red-400 ml-1">*</span>}
                 </label>
-                
+
                 {field.type === 'textarea' ? (
                   <div>
                     <textarea
@@ -195,9 +194,16 @@ const SiteSectionForm: React.FC<SiteSectionFormProps> = ({ fields, initialData, 
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white py-3 px-6 rounded-lg font-semibold transition-colors border border-purple-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white py-3 px-6 rounded-lg font-semibold transition-colors border border-purple-500/50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[120px]"
               >
-                {isSubmitting ? 'Saving...' : (initialData ? 'Update' : 'Add')}
+                {isSubmitting ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></div>
+                    Saving...
+                  </>
+                ) : (
+                  initialData ? 'Update' : 'Add'
+                )}
               </button>
             </div>
           </div>

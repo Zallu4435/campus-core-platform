@@ -74,7 +74,7 @@ export interface ClubColumn {
 export interface ClubFormData {
   name: string;
   type: string;
-  members: string;
+  members?: string | string[];
   icon: string;
   color: string;
   status: 'active' | 'inactive';

@@ -120,7 +120,7 @@ export const useClubManagement = () => {
   };
 
   const { mutateAsync: createClub } = useMutation({
-    mutationFn: (data: Omit<Club, 'id' | 'members'>) => clubService.createClub(data),
+    mutationFn: (data: Omit<Club, 'id'>) => clubService.createClub(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clubs'] });
     },

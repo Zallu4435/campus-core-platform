@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const clubSchema = z.object({
   name: z.string().min(2, 'Club name must be at least 2 characters'),
   type: z.string().min(1, 'Club type is required'),
-  members: z.string().optional(),
+  members: z.union([z.string(), z.array(z.string())]).optional(),
   icon: z.string().optional(),
   color: z.string().optional(),
   status: z.enum(['active', 'inactive']).optional(),

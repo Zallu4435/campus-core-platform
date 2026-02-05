@@ -16,7 +16,7 @@ import { useChatQueries } from './hooks/useChatQueries';
 import { useChatMutations } from './hooks/useChatMutations';
 import { chatService } from './services/chatService';
 import { useChatSocket } from './hooks/useChatSocket';
-import { debounce } from 'lodash';
+
 
 export const ChatComponent: React.FC = () => {
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);

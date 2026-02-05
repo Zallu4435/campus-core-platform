@@ -125,7 +125,7 @@ const MaterialManagement: React.FC = () => {
 
       // Check if there are any file changes (new files uploaded)
       const hasFileChange = formData.file && formData.file instanceof File;
-      const hasThumbnailChange = (formData as any).thumbnail && (formData as any).thumbnail instanceof File;
+      const hasThumbnailChange = (formData as Partial<Material> & { thumbnail?: File }).thumbnail && (formData as Partial<Material> & { thumbnail?: File }).thumbnail instanceof File;
 
       console.log('[MaterialManagement] File changes detected:', { hasFileChange, hasThumbnailChange });
 
@@ -157,10 +157,13 @@ const MaterialManagement: React.FC = () => {
       } else {
         await createMaterial(dataToSend as Omit<Material, "_id" | "uploadedAt" | "views" | "downloads" | "rating">);
       }
+
+      // Only close modal after successful save
       setShowMaterialModal(false);
       setEditingMaterial(null);
     } catch (error) {
       console.error('Error saving material:', error);
+      // Form stays open on error, allowing user to see the error and retry
     }
   };
 

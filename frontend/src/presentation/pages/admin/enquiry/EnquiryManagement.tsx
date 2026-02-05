@@ -9,7 +9,7 @@ import EnquiryDetailsModal from './EnquiryDetailsModal';
 import { useEnquiryManagement } from '../../../../application/hooks/useEnquiryManagement';
 import { Enquiry, EnquiryStatus } from '../../../../domain/types/management/enquirymanagement';
 import ReplyModal from './ReplyModal';
-import { toast } from 'react-hot-toast';
+
 import {
   ENQUIRY_STATUSES,
   ENQUIRY_COLUMNS,

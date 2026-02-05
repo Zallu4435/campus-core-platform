@@ -3,6 +3,7 @@ import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { IoCloseOutline as X, IoAdd, IoTrash, IoSparklesOutline as Sparkles } from 'react-icons/io5';
+
 import { AddTeamModalProps } from '../../../../../domain/types/management/sportmanagement';
 import {
   ORGANIZER_TYPE_OPTIONS,
@@ -52,15 +53,21 @@ const AddTeamModal: React.FC<AddTeamModalProps> = ({
   const watchedIcon = watch('icon');
   const watchedColor = watch('color');
 
-  const handleFormSubmit = (data: TeamFormData) => {
-    const teamData = {
-      ...data,
-      organizerType: data.organizerType as "department" | "club" | "student" | "administration" | "external",
-      status: data.status as "Active" | "Inactive",
-    };
-    onSubmit(teamData);
-    reset();
-    onClose();
+  const handleFormSubmit = async (data: TeamFormData) => {
+    try {
+      const teamData = {
+        ...data,
+        organizerType: data.organizerType as "department" | "club" | "student" | "administration" | "external",
+        status: data.status as "Active" | "Inactive",
+      };
+      await onSubmit(teamData);
+      reset();
+      onClose();
+    } catch (error: unknown) {
+      console.error('Team submission error:', error);
+      throw error;
+    }
+
   };
 
   React.useEffect(() => {
@@ -444,8 +451,8 @@ const AddTeamModal: React.FC<AddTeamModalProps> = ({
                           type="button"
                           onClick={() => setValue('icon', icon)}
                           className={`w-10 h-10 text-xl rounded-lg transition-colors ${watchedIcon === icon
-                              ? 'bg-purple-600/30 border-purple-600/50'
-                              : 'bg-gray-900/60 border-gray-700/50 hover:bg-gray-800/60'
+                            ? 'bg-purple-600/30 border-purple-600/50'
+                            : 'bg-gray-900/60 border-gray-700/50 hover:bg-gray-800/60'
                             }`}
                         >
                           {icon}
@@ -464,8 +471,8 @@ const AddTeamModal: React.FC<AddTeamModalProps> = ({
                           type="button"
                           onClick={() => setValue('color', color)}
                           className={`w-10 h-10 rounded-lg transition-all ${watchedColor === color
-                              ? 'ring-2 ring-purple-500 ring-offset-2 ring-offset-gray-900'
-                              : 'hover:ring-1 hover:ring-purple-500/50'
+                            ? 'ring-2 ring-purple-500 ring-offset-2 ring-offset-gray-900'
+                            : 'hover:ring-1 hover:ring-purple-500/50'
                             }`}
                           style={{ backgroundColor: color }}
                         />

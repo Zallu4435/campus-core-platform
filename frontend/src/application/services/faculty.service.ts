@@ -58,7 +58,12 @@ class FacultyService {
         },
       });
 
-      return response.data.data;
+      // Handle both { data: { ... } } and { data: { data: { ... } } } structures for safety
+      const responseData = response.data;
+      if (responseData.data && responseData.data.pdfData) {
+        return responseData.data;
+      }
+      return responseData.data?.data || responseData.data;
     } catch (error: unknown) {
       if (isAxiosErrorWithApiError(error)) {
         console.error('Error fetching faculty document:', error);
@@ -166,7 +171,7 @@ class DocumentUploadService {
       formData.append('file', file);
       formData.append('applicationId', applicationId);
       formData.append('documentType', documentType);
-      
+
       const response = await httpClient.post(`${this.baseUrl}/documents/upload`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -189,11 +194,11 @@ class DocumentUploadService {
   async uploadMultipleDocuments(applicationId: string, files: File[], documentTypes: string[]): Promise<MultipleDocumentUploadResult> {
     try {
       const formData = new FormData();
-      
+
       files.forEach((file) => {
         formData.append('files', file);
       });
-      
+
       formData.append('applicationId', applicationId);
       documentTypes.forEach((documentType) => {
         formData.append('documentTypes', documentType);

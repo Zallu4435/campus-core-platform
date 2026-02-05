@@ -36,7 +36,7 @@ export class AdmissionRepository implements IAdmissionRepository {
 
     async getAdmissionByToken(admissionId: string, token: string): Promise<FullAdmissionDetails | null> {
         const admission = await AdmissionModel.findById(admissionId)
-            .select("personalInfo choiceOfStudy status confirmationToken tokenExpiry")
+            .select("personalInfo choiceOfStudy status confirmationToken tokenExpiry registerId")
             .lean() as unknown as IAdmissionSource;
 
         if (!admission) return null;
@@ -61,6 +61,9 @@ export class AdmissionRepository implements IAdmissionRepository {
     }
 
     async findRegisterUserById(registerId: string): Promise<{ password: string } | null> {
+        if (!registerId || typeof registerId !== 'string' || registerId.length !== 24) {
+            return null;
+        }
         const user = await RegisterModel.findById(registerId).select('password').lean();
         if (!user) return null;
         return { password: user.password };

@@ -81,6 +81,7 @@ export const useCampusLife = (options: UseCampusLifeOptions = {}) => {
   });
 
   const {
+    mutateAsync: requestToJoinClubAsync,
     mutate: requestToJoinClub,
     isPending: isJoiningClub,
     error: joinClubError
@@ -96,6 +97,7 @@ export const useCampusLife = (options: UseCampusLifeOptions = {}) => {
   });
 
   const {
+    mutateAsync: requestToJoinSportAsync,
     mutate: requestToJoinSport,
     isPending: isJoiningSport,
     error: joinSportError
@@ -111,6 +113,7 @@ export const useCampusLife = (options: UseCampusLifeOptions = {}) => {
   });
 
   const {
+    mutateAsync: requestToJoinEventAsync,
     mutate: requestToJoinEvent,
     isPending: isJoiningEvent,
     error: joinEventError
@@ -141,6 +144,9 @@ export const useCampusLife = (options: UseCampusLifeOptions = {}) => {
     requestToJoinClub,
     requestToJoinSport,
     requestToJoinEvent,
+    requestToJoinClubAsync,
+    requestToJoinSportAsync,
+    requestToJoinEventAsync,
 
     isJoiningClub,
     isJoiningSport,

@@ -85,6 +85,10 @@ export class FacultyController implements IFacultyController {
     if (!response.success) {
       return this._httpErrors.error_400();
     }
+    const data = response.data as any;
+    if (data.faculty?.id !== id) {
+      return this._httpErrors.error_400("Invalid faculty ID for this token");
+    }
     return this._httpSuccess.success_200(response.data);
   }
 
@@ -217,11 +221,9 @@ export class FacultyController implements IFacultyController {
           }
         }
       };
-    } catch (error) {
-      // Ideally error is handled by usecase and returned as !success, but serveDocument in original controller had try/catch
-      // and specific return structure. 
-      // We should return standard error response.
-      return this._httpErrors.error_500();
+    } catch (error: any) {
+      console.error('❌ [FacultyController] serveDocument error:', error);
+      return this._httpErrors.error_500(error.message || "Internal Server Error");
     }
   }
 }

@@ -8,7 +8,7 @@ export interface Message {
     email: string;
     role: string;
   };
-  recipients: string;
+  recipients: string | any[];
   attachments: Array<{
     id: string;
     name: string;
@@ -82,7 +82,7 @@ export interface ComposeMessageModalProps {
   fetchUsers: (type: RecipientType, search?: string) => Promise<User[]>;
 }
 
-export type UserArrayWithUsers = User[] & { users?: User[] }; 
+export type UserArrayWithUsers = User[] & { users?: User[] };
 
 export type TransformedMessage = {
   id: string;

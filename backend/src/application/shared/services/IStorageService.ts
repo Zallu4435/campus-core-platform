@@ -18,9 +18,9 @@ export interface IStorageService {
     fetchFileAsStream(url: string): Promise<Readable>;
 
     /**
-     * Extracts public ID from a storage URL
+     * Extracts public ID and resource type from a storage URL
      */
-    getPublicIdFromUrl(url: string): string;
+    getPublicIdFromUrl(url: string): { publicId: string; resourceType: string };
 
     /**
      * Deletes a file from storage

@@ -46,7 +46,8 @@ export class Event {
     this.dateValue = props.date;
     this.timeValue = props.time;
     this.locationValue = props.location;
-    this.timeframeValue = props.timeframe;
+    this.timeframeValue = props.timeframe || Timeframe.Morning;
+
     this.statusValue = props.status || EventStatus.Upcoming;
     this.iconValue = props.icon || "📅";
     this.colorValue = props.color || "#8B5CF6";

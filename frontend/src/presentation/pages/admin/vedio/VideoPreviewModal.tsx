@@ -10,8 +10,8 @@ const VideoPreviewModal: React.FC<VideoPreviewModalProps> = ({ isOpen, onClose, 
   const [fetchedVideo, setFetchedVideo] = useState<Video | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
-  const { fetchVideoById } = useVideoManagement(1, 10, { status: 'all', category: '', dateRange: 'all' }, 'all', 'all');
+
+  const { fetchVideoById } = useVideoManagement(1, 10, { status: 'all', category: '', dateRange: 'all' }, 'all');
 
   usePreventBodyScroll(isOpen);
 
@@ -136,11 +136,10 @@ const VideoPreviewModal: React.FC<VideoPreviewModalProps> = ({ isOpen, onClose, 
             <div className="flex items-center justify-between">
               <span className="font-medium text-white">Status:</span>
               <span
-                className={`px-2 py-0.5 rounded-full text-xs inline-flex items-center ${
-                  displayVideo.status === 'Published'
+                className={`px-2 py-0.5 rounded-full text-xs inline-flex items-center ${displayVideo.status === 'Published'
                     ? 'bg-green-900/30 text-green-400 border border-green-500/30'
                     : 'bg-yellow-900/30 text-yellow-400 border border-yellow-500/30'
-                }`}
+                  }`}
               >
                 <span
                   className="h-1 w-1 rounded-full mr-1"
@@ -166,7 +165,7 @@ const VideoPreviewModal: React.FC<VideoPreviewModalProps> = ({ isOpen, onClose, 
               </div>
             )}
           </div>
-          
+
           {displayVideo.description && (
             <div>
               <span className="font-medium text-white text-xs">Description:</span>

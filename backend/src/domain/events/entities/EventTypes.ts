@@ -48,7 +48,8 @@ export interface EventProps {
   date: string;
   time: string;
   location: string;
-  timeframe: Timeframe;
+  timeframe?: Timeframe;
+
   status?: EventStatus;
   icon?: string;
   color?: string;

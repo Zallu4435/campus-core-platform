@@ -36,11 +36,14 @@ export const useSessionManagement = (options?: { loadSessions?: boolean }) => {
   const backendStatus = getBackendStatus(filterStatus);
   const { data: sessions = [], isLoading: isLoadingSessions, error: sessionsError } = useQuery<VideoSession[]>({
     queryKey: ['sessions', debouncedSearchTerm, backendStatus, filterCourse],
-    queryFn: () => sessionService.getSessions({
-      search: debouncedSearchTerm,
-      status: backendStatus,
-      course: filterCourse,
-    }),
+    queryFn: async () => {
+      const data = await sessionService.getSessions({
+        search: debouncedSearchTerm,
+        status: backendStatus,
+        course: filterCourse,
+      });
+      return data as VideoSession[];
+    },
     enabled: loadSessions,
   });
 

@@ -96,7 +96,7 @@ const MaterialDetails: React.FC<MaterialDetailsProps> = ({ isOpen, onClose, mate
                 </div>
                 <div className="flex items-center text-gray-300">
                   <FiStar size={16} className="text-purple-400 mr-2" />
-                  <span className="text-sm">Rating: {material.rating.toFixed(1)}</span>
+                  <span className="text-sm">Rating: {material.rating?.toFixed(1) || 'N/A'}</span>
                 </div>
               </div>
             </div>

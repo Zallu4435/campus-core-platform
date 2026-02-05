@@ -22,8 +22,8 @@ export const courseSchema = z.object({
     .min(1, 'Faculty is required'),
   schedule: z
     .string()
-    .max(100, 'Schedule must be less than 100 characters')
-    .optional(),
+    .min(1, 'Schedule is required')
+    .max(100, 'Schedule must be less than 100 characters'),
   maxEnrollment: z
     .number()
     .min(1, 'Max enrollment must be at least 1')

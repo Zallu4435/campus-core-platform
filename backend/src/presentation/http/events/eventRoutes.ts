@@ -3,7 +3,7 @@ import { expressAdapter } from "../../adapters/ExpressAdapter";
 import { getEventsComposer } from "../../../infrastructure/services/events/EventComposers";
 import { getEventRequestsComposer } from "../../../infrastructure/services/events/EventRequestComposers";
 import { authMiddleware } from "../../../shared/middlewares/authMiddleware";
-import { validate } from "../../../shared/middlewares/validationMiddleware";
+import { validateRequest } from "../../../shared/middlewares/validationMiddleware";
 import {
   getEventsSchema,
   eventIdParamSchema,
@@ -20,7 +20,7 @@ const eventController = getEventsComposer();
 eventRouter.get(
   "/",
   authMiddleware,
-  validate(getEventsSchema),
+  validateRequest(getEventsSchema),
   (req, res, next) =>
     expressAdapter(req, res, next, eventController.getEvents.bind(eventController))
 );
@@ -28,7 +28,7 @@ eventRouter.get(
 eventRouter.get(
   "/:id",
   authMiddleware,
-  validate(eventIdParamSchema),
+  validateRequest(eventIdParamSchema),
   (req, res, next) =>
     expressAdapter(req, res, next, eventController.getEventById.bind(eventController))
 );
@@ -36,7 +36,7 @@ eventRouter.get(
 eventRouter.post(
   "/",
   authMiddleware,
-  validate(createEventSchema),
+  validateRequest(createEventSchema),
   (req, res, next) =>
     expressAdapter(req, res, next, eventController.createEvent.bind(eventController))
 );
@@ -44,7 +44,7 @@ eventRouter.post(
 eventRouter.put(
   "/:id",
   authMiddleware,
-  validate(updateEventSchema),
+  validateRequest(updateEventSchema),
   (req, res, next) =>
     expressAdapter(req, res, next, eventController.updateEvent.bind(eventController))
 );
@@ -52,7 +52,7 @@ eventRouter.put(
 eventRouter.delete(
   "/:id",
   authMiddleware,
-  validate(eventIdParamSchema),
+  validateRequest(eventIdParamSchema),
   (req, res, next) =>
     expressAdapter(req, res, next, eventController.deleteEvent.bind(eventController))
 );
@@ -64,7 +64,7 @@ const eventRequestController = getEventRequestsComposer();
 eventRequestRouter.get(
   "/",
   authMiddleware,
-  validate(getEventRequestsSchema),
+  validateRequest(getEventRequestsSchema),
   (req, res, next) =>
     expressAdapter(req, res, next, eventRequestController.getEventRequests.bind(eventRequestController))
 );
@@ -72,7 +72,7 @@ eventRequestRouter.get(
 eventRequestRouter.get(
   "/:id",
   authMiddleware,
-  validate(eventRequestIdParamSchema),
+  validateRequest(eventRequestIdParamSchema),
   (req, res, next) =>
     expressAdapter(req, res, next, eventRequestController.getEventRequestDetails.bind(eventRequestController))
 );
@@ -80,7 +80,7 @@ eventRequestRouter.get(
 eventRequestRouter.post(
   "/:id/approve",
   authMiddleware,
-  validate(eventRequestIdParamSchema),
+  validateRequest(eventRequestIdParamSchema),
   (req, res, next) =>
     expressAdapter(req, res, next, eventRequestController.approveEventRequest.bind(eventRequestController))
 );
@@ -88,7 +88,7 @@ eventRequestRouter.post(
 eventRequestRouter.post(
   "/:id/reject",
   authMiddleware,
-  validate(eventRequestIdParamSchema),
+  validateRequest(eventRequestIdParamSchema),
   (req, res, next) =>
     expressAdapter(req, res, next, eventRequestController.rejectEventRequest.bind(eventRequestController))
 );

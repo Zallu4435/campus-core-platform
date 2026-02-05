@@ -1,12 +1,12 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { 
-  FaClock, 
-  FaUsers, 
-  FaEye, 
-  FaFileAlt, 
-  FaCalendarAlt, 
-  FaStopwatch, 
-  FaSearch, 
+import {
+  FaClock,
+  FaUsers,
+  FaEye,
+  FaFileAlt,
+  FaCalendarAlt,
+  FaStopwatch,
+  FaSearch,
   FaCheckCircle,
   FaPercentage,
   FaUserGraduate,
@@ -27,6 +27,8 @@ const AttendanceSummaryPage = () => {
     useSessionAttendance
   } = useSessionManagement();
 
+  const sessionList = useMemo(() => Array.isArray(sessions) ? (sessions as VideoSession[]) : [], [sessions]);
+
   const [selectedSessionId, setSelectedSessionId] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
@@ -46,24 +48,24 @@ const AttendanceSummaryPage = () => {
   }, [searchTerm]);
 
   React.useEffect(() => {
-    if (!selectedSessionId && sessions && sessions.length > 0) {
-      const first = sessions[0];
+    if (!selectedSessionId && sessionList.length > 0) {
+      const first = sessionList[0];
       const firstId = first?._id ?? first?.id;
       if (firstId) setSelectedSessionId(firstId);
     }
-  }, [sessions, selectedSessionId]);
+  }, [sessionList, selectedSessionId]);
 
   const { data: currentAttendanceData = [] } = useSessionAttendance(selectedSessionId, { search: debouncedSearchTerm });
 
-  const currentSession = sessions.find((s: VideoSession) => (s?._id ?? s?.id) === selectedSessionId) as Session | undefined;
+  const currentSession = sessionList.find((s) => (s?._id ?? s?.id) === selectedSessionId) as Session | undefined;
 
-  const sessionAttendanceQueries: { sessionId: string, query: ReturnType<typeof useSessionAttendance> }[] = sessions.map((session: VideoSession) => {
+  const sessionAttendanceQueries: { sessionId: string, query: ReturnType<typeof useSessionAttendance> }[] = Array.isArray(sessions) ? sessions.map((session: VideoSession) => {
     const sid = session?._id ?? session?.id;
     return {
       sessionId: sid,
       query: useSessionAttendance(sid, { search: debouncedSearchTerm })
     };
-  });
+  }) : [];
 
   const isLoadingAttendanceAllSessions = sessionAttendanceQueries.some((q) => q.query.isLoading);
 
@@ -73,14 +75,14 @@ const AttendanceSummaryPage = () => {
   ): number => {
     return intervals.reduce((total: number, interval: AttendanceInterval) => {
       if (!interval.joinedAt) return total;
-  
+
       const joinTime = new Date(interval.joinedAt);
       const leaveTime = interval.leftAt
         ? new Date(interval.leftAt)
         : sessionEndTime
           ? new Date(sessionEndTime)
           : new Date();
-  
+
       if (
         !isNaN(joinTime.getTime()) &&
         !isNaN(leaveTime.getTime()) &&
@@ -88,7 +90,7 @@ const AttendanceSummaryPage = () => {
       ) {
         total += leaveTime.getTime() - joinTime.getTime();
       }
-  
+
       return total;
     }, 0);
   };
@@ -97,7 +99,7 @@ const AttendanceSummaryPage = () => {
     const hours = Math.floor(milliseconds / (1000 * 60 * 60));
     const minutes = Math.floor((milliseconds % (1000 * 60 * 60)) / (1000 * 60));
     const seconds = Math.floor((milliseconds % (1000 * 60)) / 1000);
-  
+
     if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
     if (minutes > 0) return `${minutes}m ${seconds}s`;
     return `${seconds}s`;
@@ -117,7 +119,7 @@ const AttendanceSummaryPage = () => {
   const processedAttendance = useMemo(() => {
     if (!currentSession) return [];
     let data = (currentAttendanceData || [])
-      .filter((user: AttendanceUser) => 
+      .filter((user: AttendanceUser) =>
         user.status === 'approved' || user.status === 'approve'
       )
       .map((user: AttendanceUser) => {
@@ -182,16 +184,16 @@ const AttendanceSummaryPage = () => {
     return 'text-yellow-600 bg-yellow-100';
   };
 
- 
+
   const studentsAttendanceData = useMemo(() => {
     const studentMap = new Map<string, StudentAttendanceData>();
 
     sessionAttendanceQueries.forEach(({ sessionId, query }) => {
-      const session = sessions.find((s: VideoSession) => s._id === sessionId);
+      const session = sessionList.find((s) => s._id === sessionId);
       if (!session || !query.data) return;
 
       const attendanceData = query.data as AttendanceUser[];
-      
+
       attendanceData.forEach((user: AttendanceUser) => {
         const studentId = user.id.toString();
         const totalTime = calculateTotalTime(user.intervals, session?.endTime);
@@ -215,7 +217,7 @@ const AttendanceSummaryPage = () => {
         const studentData = studentMap.get(studentId)!;
         studentData.totalSessions++;
         studentData.totalTimeSpent += totalTime;
-        
+
         if (user.status === 'approved' || user.status === 'approve') {
           studentData.approvedSessions++;
         } else if (user.status === 'declined' || user.status === 'decline') {
@@ -226,8 +228,8 @@ const AttendanceSummaryPage = () => {
 
         studentData.sessionDetails.push({
           sessionId,
-          sessionTitle: session.title || (session as { name?: string }).name || 'Untitled Session',
-          sessionDate: new Date(session.startTime).toLocaleDateString(),
+          sessionTitle: (session as any).title || (session as any).name || 'Untitled Session',
+          sessionDate: (session as any).startTime ? new Date((session as any).startTime).toLocaleDateString() : 'N/A',
           timeSpent: totalTime,
           attendancePercentage,
           status: user.status || 'pending',

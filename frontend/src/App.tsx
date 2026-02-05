@@ -5,7 +5,7 @@ import store from './appStore/store';
 import './index.css';
 import { ProtectedRoute } from './frameworks/router/ProtectedRoute';
 import { useEffect } from 'react';
-import { useDispatch } from 'react-redux';
+
 
 // Layouts - Keep these loaded initially
 import PublicLayout from './presentation/Layout/PublicLayout';
@@ -79,7 +79,6 @@ const AttendanceSummaryPage = lazy(() => import('./presentation/pages/faculty/at
 
 
 const App: React.FC = () => {
-  const dispatch = useDispatch();
 
   useEffect(() => {
     import('./frameworks/api/httpClient').then(({ getCurrentUser }) => {

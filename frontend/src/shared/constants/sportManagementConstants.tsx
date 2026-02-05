@@ -269,7 +269,7 @@ export const getPlayerRequestColumns = (
       render: (request: PlayerRequest) => (
         <div className="flex items-center text-gray-300">
           <Users size={14} className="text-purple-400 mr-2" />
-          <span className="text-sm">{formatDate(request.requestedAt)}</span>
+          <span className="text-sm">{formatDate(request.requestedAt || '')}</span>
         </div>
       ),
     },

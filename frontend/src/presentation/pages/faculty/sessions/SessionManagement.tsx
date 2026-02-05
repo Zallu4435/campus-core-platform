@@ -212,7 +212,7 @@ export default function SessionManagement() {
               </tr>
             </thead>
             <tbody className="divide-y divide-pink-50">
-              {sessions.map((session: VideoSession, index: number) => {
+              {Array.isArray(sessions) && sessions.map((session: VideoSession, index: number) => {
                 const statusConfig = getStatusConfig(session.status as 'live' | 'upcoming' | 'completed');
                 return (
                   <tr key={session._id || session.id} className={`hover:bg-gradient-to-r hover:from-purple-50/50 hover:to-pink-50/50 transition-all ${index % 2 === 0 ? 'bg-white' : 'bg-pink-50'} animate-fadeInUp`} style={{ animationDelay: `${index * 0.05}s` }}>
@@ -288,7 +288,7 @@ export default function SessionManagement() {
           </table>
         </div>
 
-        {sessions.length === 0 && (
+        {Array.isArray(sessions) && sessions.length === 0 && (
           <div className="text-center py-16 animate-fadeIn">
             <div className="inline-flex items-center justify-center w-20 h-20 bg-pink-50 rounded-full mb-4">
               <FaSearch size={32} className="text-pink-400" />

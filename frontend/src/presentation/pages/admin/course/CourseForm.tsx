@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { courseSchema, CourseFormData } from '../../../../domain/validation/management/courseSchema';
 import { ghostParticles } from '../../../../shared/constants/courseManagementConstants';
+import toast from 'react-hot-toast';
 
 const CourseForm: React.FC<CourseFormProps> = ({
   isOpen,
@@ -22,7 +23,7 @@ const CourseForm: React.FC<CourseFormProps> = ({
     handleSubmit,
     setValue,
     watch,
-    formState: { errors },
+    formState: { errors, isSubmitting },
     reset,
   } = useForm({
     resolver: zodResolver(courseSchema),
@@ -53,17 +54,39 @@ const CourseForm: React.FC<CourseFormProps> = ({
 
   const handleAddPrerequisite = () => {
     if (newPrerequisite.trim() && !prerequisites.includes(newPrerequisite.trim())) {
-      setValue('prerequisites', [...prerequisites, newPrerequisite.trim()]);
+      setValue('prerequisites', [...prerequisites, newPrerequisite.trim()], {
+        shouldValidate: true,
+        shouldDirty: true
+      });
       setNewPrerequisite('');
     }
   };
 
-  const handleRemovePrerequisite = (prerequisite: string) => {
-    setValue('prerequisites', prerequisites.filter((p: string) => p !== prerequisite));
+  const handlePrerequisiteKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddPrerequisite();
+    }
   };
 
-  const onFormSubmit = (data: CourseFormData) => {
-    onSubmit(data);
+  const handleRemovePrerequisite = (prerequisite: string) => {
+    setValue('prerequisites', prerequisites.filter((p: string) => p !== prerequisite), {
+      shouldValidate: true,
+      shouldDirty: true
+    });
+  };
+
+  const onFormSubmit = async (data: CourseFormData) => {
+    try {
+      await onSubmit(data);
+    } catch (error: unknown) {
+      console.error('Course submission error:', error);
+      // Display backend error to user
+      const errorMessage = (error as { response?: { data?: { message?: string } }; message?: string })?.response?.data?.message
+        || (error as Error)?.message
+        || 'Failed to save course. Please try again.';
+      toast.error(errorMessage);
+    }
   };
 
   if (!isOpen) return null;
@@ -117,180 +140,190 @@ const CourseForm: React.FC<CourseFormProps> = ({
 
         <div className="overflow-y-auto max-h-[calc(90vh-200px)] p-6 space-y-6 custom-scrollbar">
           <form onSubmit={handleSubmit(onFormSubmit)}>
-          <div className="space-y-4">
-            <div className="bg-gray-800/80 border border-purple-600/30 rounded-lg p-4 shadow-sm">
-              <label className="block text-sm font-medium text-purple-300 mb-2">Course Title</label>
-              <input
-                type="text"
-                {...register('title')}
-                placeholder="e.g., Introduction to Computer Science"
-                className="w-full px-3 py-2 bg-gray-900/60 border border-purple-600/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50"
-                required
-              />
-                {errors.title && <p className="text-red-400 text-xs mt-1">{errors.title.message}</p>}
-            </div>
-
-            <div className="bg-gray-800/80 border border-purple-600/30 rounded-lg p-4 shadow-sm">
-              <label className="block text-sm font-medium text-purple-300 mb-2">Description</label>
-              <textarea
-                  {...register('description')}
-                placeholder="e.g., A comprehensive introduction to programming fundamentals, algorithms, and data structures..."
-                rows={3}
-                className="w-full px-3 py-2 bg-gray-900/60 border border-purple-600/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50"
-              />
-                {errors.description && <p className="text-red-400 text-xs mt-1">{errors.description.message}</p>}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-4">
               <div className="bg-gray-800/80 border border-purple-600/30 rounded-lg p-4 shadow-sm">
-                <label className="block text-sm font-medium text-purple-300 mb-2">Specialization</label>
-                <select
+                <label className="block text-sm font-medium text-purple-300 mb-2">Course Title</label>
+                <input
+                  type="text"
+                  {...register('title')}
+                  placeholder="e.g., Introduction to Computer Science"
+                  className="w-full px-3 py-2 bg-gray-900/60 border border-purple-600/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                  required
+                />
+                {errors.title && <p className="text-red-400 text-xs mt-1">{errors.title.message}</p>}
+              </div>
+
+              <div className="bg-gray-800/80 border border-purple-600/30 rounded-lg p-4 shadow-sm">
+                <label className="block text-sm font-medium text-purple-300 mb-2">Description</label>
+                <textarea
+                  {...register('description')}
+                  placeholder="e.g., A comprehensive introduction to programming fundamentals, algorithms, and data structures..."
+                  rows={3}
+                  className="w-full px-3 py-2 bg-gray-900/60 border border-purple-600/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                />
+                {errors.description && <p className="text-red-400 text-xs mt-1">{errors.description.message}</p>}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-gray-800/80 border border-purple-600/30 rounded-lg p-4 shadow-sm">
+                  <label className="block text-sm font-medium text-purple-300 mb-2">Specialization</label>
+                  <select
                     {...register('specialization')}
+                    className="w-full px-3 py-2 bg-gray-900/60 border border-purple-600/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                    required
+                  >
+                    <option value="">Select Specialization</option>
+                    {specializations
+                      .filter((spec: string) => spec !== 'All Specializations')
+                      .map((spec: string) => (
+                        <option key={spec} value={spec}>
+                          {spec}
+                        </option>
+                      ))}
+                  </select>
+                  {errors.specialization && <p className="text-red-400 text-xs mt-1">{errors.specialization.message}</p>}
+                </div>
+
+                <div className="bg-gray-800/80 border border-purple-600/30 rounded-lg p-4 shadow-sm">
+                  <label className="block text-sm font-medium text-purple-300 mb-2">Credits</label>
+                  <input
+                    type="number"
+                    {...register('credits', { valueAsNumber: true })}
+                    className="w-full px-3 py-2 bg-gray-900/60 border border-purple-600/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                    min="0"
+                  />
+                  {errors.credits && <p className="text-red-400 text-xs mt-1">{errors.credits.message}</p>}
+                </div>
+              </div>
+
+              <div className="bg-gray-800/80 border border-purple-600/30 rounded-lg p-4 shadow-sm">
+                <label className="block text-sm font-medium text-purple-300 mb-2">Faculty</label>
+                <select
+                  {...register('faculty')}
                   className="w-full px-3 py-2 bg-gray-900/60 border border-purple-600/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50"
                   required
                 >
-                  <option value="">Select Specialization</option>
-                  {specializations
-                    .filter((spec: string) => spec !== 'All Specializations')
-                    .map((spec: string) => (
-                      <option key={spec} value={spec}>
-                        {spec}
+                  <option value="">Select Faculty</option>
+                  {faculties
+                    .filter((faculty: string) => faculty !== 'All Faculties')
+                    .map((faculty: string) => (
+                      <option key={faculty} value={faculty}>
+                        {faculty}
                       </option>
                     ))}
                 </select>
-                  {errors.specialization && <p className="text-red-400 text-xs mt-1">{errors.specialization.message}</p>}
-              </div>
-
-              <div className="bg-gray-800/80 border border-purple-600/30 rounded-lg p-4 shadow-sm">
-                <label className="block text-sm font-medium text-purple-300 mb-2">Credits</label>
-                <input
-                  type="number"
-                    {...register('credits', { valueAsNumber: true })}
-                  className="w-full px-3 py-2 bg-gray-900/60 border border-purple-600/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50"
-                  min="0"
-                />
-                  {errors.credits && <p className="text-red-400 text-xs mt-1">{errors.credits.message}</p>}
-                </div>
-            </div>
-
-            <div className="bg-gray-800/80 border border-purple-600/30 rounded-lg p-4 shadow-sm">
-              <label className="block text-sm font-medium text-purple-300 mb-2">Faculty</label>
-              <select
-                  {...register('faculty')}
-                className="w-full px-3 py-2 bg-gray-900/60 border border-purple-600/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50"
-                required
-              >
-                <option value="">Select Faculty</option>
-                {faculties
-                  .filter((faculty: string) => faculty !== 'All Faculties')
-                  .map((faculty: string) => (
-                    <option key={faculty} value={faculty}>
-                      {faculty}
-                    </option>
-                  ))}
-              </select>
                 {errors.faculty && <p className="text-red-400 text-xs mt-1">{errors.faculty.message}</p>}
-            </div>
-
-            <div className="bg-gray-800/80 border border-purple-600/30 rounded-lg p-4 shadow-sm">
-              <label className="block text-sm font-medium text-purple-300 mb-2">Term</label>
-              <select
-                  {...register('term')}
-                className="w-full px-3 py-2 bg-gray-900/60 border border-purple-600/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50"
-                required
-              >
-                <option value="">Select Term</option>
-                {terms
-                  .filter((term: string) => term !== 'All Terms')
-                  .map((term: string) => (
-                    <option key={term} value={term}>
-                      {term}
-                    </option>
-                  ))}
-              </select>
-                {errors.term && <p className="text-red-400 text-xs mt-1">{errors.term.message}</p>}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-gray-800/80 border border-purple-600/30 rounded-lg p-4 shadow-sm">
-                <label className="block text-sm font-medium text-purple-300 mb-2">Schedule</label>
-                <input
-                  type="text"
-                  {...register('schedule')}
-                  placeholder="e.g., MWF 10:00-11:45"
-                  className="w-full px-3 py-2 bg-gray-900/60 border border-purple-600/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50"
-                />
-                  {errors.schedule && <p className="text-red-400 text-xs mt-1">{errors.schedule.message}</p>}
               </div>
 
               <div className="bg-gray-800/80 border border-purple-600/30 rounded-lg p-4 shadow-sm">
-                <label className="block text-sm font-medium text-purple-300 mb-2">Max Enrollment</label>
-                <input
-                  type="number"
-                    {...register('maxEnrollment', { valueAsNumber: true })}
+                <label className="block text-sm font-medium text-purple-300 mb-2">Term</label>
+                <select
+                  {...register('term')}
                   className="w-full px-3 py-2 bg-gray-900/60 border border-purple-600/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50"
-                  min="0"
-                />
-                  {errors.maxEnrollment && <p className="text-red-400 text-xs mt-1">{errors.maxEnrollment.message}</p>}
-                </div>
-            </div>
+                  required
+                >
+                  <option value="">Select Term</option>
+                  {terms
+                    .filter((term: string) => term !== 'All Terms')
+                    .map((term: string) => (
+                      <option key={term} value={term}>
+                        {term}
+                      </option>
+                    ))}
+                </select>
+                {errors.term && <p className="text-red-400 text-xs mt-1">{errors.term.message}</p>}
+              </div>
 
-            <div className="bg-gray-800/80 border border-purple-600/30 rounded-lg p-4 shadow-sm">
-              <label className="block text-sm font-medium text-purple-300 mb-2">Prerequisites</label>
-              <div className="space-y-2">
-                <div className="flex gap-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-gray-800/80 border border-purple-600/30 rounded-lg p-4 shadow-sm">
+                  <label className="block text-sm font-medium text-purple-300 mb-2">Schedule</label>
                   <input
                     type="text"
-                    value={newPrerequisite}
-                    onChange={(e) => setNewPrerequisite(e.target.value)}
-                    placeholder="Enter prerequisite course"
-                    className="flex-1 px-3 py-2 bg-gray-900/60 border border-purple-600/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                    {...register('schedule')}
+                    placeholder="e.g., MWF 10:00-11:45"
+                    className="w-full px-3 py-2 bg-gray-900/60 border border-purple-600/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50"
                   />
-                  <button
-                    onClick={handleAddPrerequisite}
-                    className="px-3 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-500 hover:to-blue-500 transition-colors"
-                  >
-                    <FiPlus size={20} />
-                  </button>
+                  {errors.schedule && <p className="text-red-400 text-xs mt-1">{errors.schedule.message}</p>}
                 </div>
-                <div className="flex flex-wrap gap-2">
-                    {prerequisites.map((prerequisite: string, index: number) => (
-                    <div
-                      key={index}
-                      className="flex items-center gap-1 px-3 py-1 bg-gray-900/60 border border-purple-600/30 rounded-lg text-purple-300"
+
+                <div className="bg-gray-800/80 border border-purple-600/30 rounded-lg p-4 shadow-sm">
+                  <label className="block text-sm font-medium text-purple-300 mb-2">Max Enrollment</label>
+                  <input
+                    type="number"
+                    {...register('maxEnrollment', { valueAsNumber: true })}
+                    className="w-full px-3 py-2 bg-gray-900/60 border border-purple-600/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                    min="0"
+                  />
+                  {errors.maxEnrollment && <p className="text-red-400 text-xs mt-1">{errors.maxEnrollment.message}</p>}
+                </div>
+              </div>
+
+              <div className="bg-gray-800/80 border border-purple-600/30 rounded-lg p-4 shadow-sm">
+                <label className="block text-sm font-medium text-purple-300 mb-2">Prerequisites</label>
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newPrerequisite}
+                      onChange={(e) => setNewPrerequisite(e.target.value)}
+                      onKeyPress={handlePrerequisiteKeyPress}
+                      placeholder="Enter prerequisite course"
+                      className="flex-1 px-3 py-2 bg-gray-900/60 border border-purple-600/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddPrerequisite}
+                      className="px-3 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-500 hover:to-blue-500 transition-colors"
                     >
-                      <span>{prerequisite}</span>
-                      <button
-                        onClick={() => handleRemovePrerequisite(prerequisite)}
-                        className="text-purple-300 hover:text-white"
+                      <FiPlus size={20} />
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {prerequisites.map((prerequisite: string, index: number) => (
+                      <div
+                        key={index}
+                        className="flex items-center gap-1 px-3 py-1 bg-gray-900/60 border border-purple-600/30 rounded-lg text-purple-300"
                       >
-                        <FiX size={16} />
-                      </button>
-                    </div>
-                  ))}
+                        <span>{prerequisite}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemovePrerequisite(prerequisite)}
+                          className="text-purple-300 hover:text-white"
+                        >
+                          <FiX size={16} />
+                        </button>
+                      </div>
+                    ))}
                   </div>
                   {errors.prerequisites && <p className="text-red-400 text-xs mt-1">{errors.prerequisites.message as string}</p>}
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="border-t border-purple-600/30 bg-gray-900/80 p-6">
-            <div className="flex justify-end space-x-4">
-              <button
-                onClick={onClose}
-                className="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-500 hover:to-gray-600 text-white py-3 px-6 rounded-lg font-semibold transition-colors border border-gray-500/50"
-              >
-                Cancel
-              </button>
-              <button
+            <div className="border-t border-purple-600/30 bg-gray-900/80 p-6">
+              <div className="flex justify-end space-x-4">
+                <button
+                  onClick={onClose}
+                  className="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-500 hover:to-gray-600 text-white py-3 px-6 rounded-lg font-semibold transition-colors border border-gray-500/50"
+                >
+                  Cancel
+                </button>
+                <button
                   type="submit"
-                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white py-3 px-6 rounded-lg font-semibold transition-colors border border-purple-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={Object.keys(errors).length > 0}
-              >
-                {isEditing ? 'Update Course' : 'Add Course'}
-              </button>
+                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white py-3 px-6 rounded-lg font-semibold transition-colors border border-purple-500/50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[140px]"
+                  disabled={isSubmitting || Object.keys(errors).length > 0}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></div>
+                      {isEditing ? 'Updating...' : 'Adding...'}
+                    </>
+                  ) : (
+                    isEditing ? 'Update Course' : 'Add Course'
+                  )}
+                </button>
+              </div>
             </div>
-          </div>
           </form>
         </div>
       </div>

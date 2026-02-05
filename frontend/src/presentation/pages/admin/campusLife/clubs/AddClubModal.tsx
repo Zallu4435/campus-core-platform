@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { IoCloseOutline as X, IoAdd, IoTrash } from 'react-icons/io5';
+
 import { usePreventBodyScroll } from '../../../../../shared/hooks/usePreventBodyScroll';
 import { AddClubModalProps } from '../../../../../domain/types/management/clubmanagement';
 import { clubSchema, ClubFormData } from '../../../../../domain/validation/management/clubSchema';
@@ -52,28 +53,39 @@ const AddClubModal: React.FC<AddClubModalProps> = ({
   const watchedIcon = watch('icon');
   const watchedColor = watch('color');
 
-  const handleFormSubmit = (data: ClubFormData) => {
-    const clubData = {
-      name: data.name,
-      type: data.type,
-      members: data.members || '',
-      icon: data.icon || '🎓',
-      color: data.color || '#8B5CF6',
-      status: data.status || 'active',
-      role: data.role,
-      nextMeeting: data.nextMeeting || '',
-      about: data.about || '',
-      createdBy: data.createdBy,
-      upcomingEvents: data.upcomingEvents || [],
-    };
-    onSubmit(clubData);
-    reset();
-    onClose();
+  const handleFormSubmit = async (data: ClubFormData) => {
+    try {
+      const clubData = {
+        name: data.name,
+        type: data.type,
+        members: Array.isArray(data.members) ? data.members : (data.members ? [data.members] : []),
+
+        icon: data.icon || '🎓',
+        color: data.color || '#8B5CF6',
+        status: data.status || 'active',
+        role: data.role,
+        nextMeeting: data.nextMeeting || '',
+        about: data.about || '',
+        createdBy: data.createdBy,
+        upcomingEvents: data.upcomingEvents || [],
+      };
+      await onSubmit(clubData);
+      reset();
+      onClose();
+    } catch (error: unknown) {
+      console.error('Club submission error:', error);
+      throw error;
+    }
   };
 
   useEffect(() => {
     if (isOpen && initialData) {
-      reset({ ...initialData, upcomingEvents: initialData.upcomingEvents || [] });
+      reset({
+        ...initialData,
+        members: Array.isArray(initialData.members) ? initialData.members.join(', ') : (initialData.members || ''),
+        upcomingEvents: initialData.upcomingEvents || []
+      } as any);
+
     } else if (isOpen && !isEditing) {
       reset({
         name: '',

@@ -1,7 +1,7 @@
 export interface LoginFormData {
   email: string;
   password: string;
-} 
+}
 
 export interface LoginResponse {
   user: {
@@ -10,13 +10,14 @@ export interface LoginResponse {
     email: string;
     id?: string;
     profilePicture?: string;
+    role?: string;
   };
   collection: 'register' | 'admin' | 'user' | 'faculty';
 }
 export interface User {
   id: string;
   email: string;
-  role: string; 
+  role: string;
   firstName: string;
   lastName: string;
   profilePicture?: string;

@@ -8,7 +8,7 @@ export interface Material {
   subject: string;
   course: string;
   semester: string;
-  type: 'pdf' | 'video';
+  type: 'pdf';
   fileUrl: string;
   thumbnailUrl: string;
   tags: string[];
@@ -34,7 +34,7 @@ export type MaterialFormData = {
   subject: string;
   course: string;
   semester: string;
-  type: 'pdf' | 'video';
+  type: 'pdf';
   file?: File;
   thumbnail?: File;
   tags: string[];

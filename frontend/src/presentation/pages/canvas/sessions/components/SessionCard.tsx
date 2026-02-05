@@ -37,22 +37,7 @@ export const SessionCard: React.FC<SessionCardProps> = ({
   const avatar = (backendSession.instructorAvatar as string) || '👤';
   const tags = (session.tags as string[]) || [];
 
-  const sessionStyles = {
-    status: styles.status,
-    badgeBackground: styles.badgeBackground || styles.backgroundSecondary,
-    button: styles.button,
-    textSecondary: styles.textSecondary,
-    success: styles.success || styles.status.success,
-    error: styles.error || styles.status.error,
-    info: styles.info || styles.status.info,
-    border: styles.border,
-    cardHover: styles.cardHover || styles.card.hover,
-    cardShadow: styles.cardShadow || '',
-    card: styles.card,
-    icon: styles.icon,
-    backgroundSecondary: styles.backgroundSecondary,
-    accent: styles.accent
-  };
+
 
   const getFrontendStatus = (backendStatus: string): string => {
     switch ((backendStatus || '').toLowerCase()) {
@@ -103,8 +88,8 @@ export const SessionCard: React.FC<SessionCardProps> = ({
                     <span className={`px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-500 text-[10px] font-bold border border-blue-500/20`}>
                       {session.course}
                     </span>
-                    {getDifficultyBadge(session.difficulty, sessionStyles) as React.ReactElement}
-                    {getStatusBadge(status, sessionStyles, session.isLive) as React.ReactElement}
+                    {getDifficultyBadge(session.difficulty) as React.ReactElement}
+                    {getStatusBadge(status, session.isLive) as React.ReactElement}
                   </div>
                   <h3 className={`text-xl sm:text-2xl font-bold ${styles.textPrimary} tracking-tight leading-tight group-hover:text-blue-500 transition-colors duration-300`}>
                     {session.title}
@@ -112,7 +97,7 @@ export const SessionCard: React.FC<SessionCardProps> = ({
                 </div>
 
                 <div className="hidden sm:block">
-                  {getActionButton(session, userAccess, sessionStyles, {
+                  {getActionButton(session, userAccess, {
                     onJoin: () => onJoinSession?.(session.id || session._id || '', user?.id || ''),
                     onWatch: () => onToggleWatched(session.id || session._id || '')
                   }) as React.ReactElement}
@@ -171,7 +156,7 @@ export const SessionCard: React.FC<SessionCardProps> = ({
 
               <div className="flex items-center gap-4 w-full sm:w-auto">
                 <div className="sm:hidden w-full">
-                  {getActionButton(session, userAccess, sessionStyles, {
+                  {getActionButton(session, userAccess, {
                     onJoin: () => onJoinSession?.(session.id || session._id || '', user?.id || ''),
                     onWatch: () => onToggleWatched(session.id || session._id || '')
                   }) as React.ReactElement}

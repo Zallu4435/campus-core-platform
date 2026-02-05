@@ -134,8 +134,8 @@ const AdminEventsManagement: React.FC = () => {
       setSelectedEvent(null);
     } catch (error: unknown) {
       console.error('handleSaveEvent - error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to save event';
-      toast.error(errorMessage);
+      // Error toast is now handled by the form component
+      throw error;
     }
   };
 
@@ -297,14 +297,14 @@ const AdminEventsManagement: React.FC = () => {
             {
               icon: <Calendar />,
               title: 'Upcoming Events',
-              value: events.filter((e: Event) => e.status?.toLowerCase() === 'upcoming').length.toString(),
+              value: events.filter((e) => e.status?.toLowerCase() === 'upcoming').length.toString(),
               change: '+8%',
               isPositive: true,
             },
             {
               icon: <Building />,
               title: 'Department Events',
-              value: events.filter((e: Event) => e.organizerType?.toLowerCase() === 'department').length.toString(),
+              value: events.filter((e) => e.organizerType?.toLowerCase() === 'department').length.toString(),
               change: '+5%',
               isPositive: true,
             },
@@ -316,7 +316,7 @@ const AdminEventsManagement: React.FC = () => {
           searchQuery={searchQuery}
           setSearchQuery={handleSearchChange}
           searchPlaceholder="Search events or requests..."
-          filters={filters as any}
+          filters={filters as Record<string, string>}
           filterOptions={{
             eventType: EVENT_TYPES as unknown as string[],
             dateRange: DATE_RANGES as unknown as string[],

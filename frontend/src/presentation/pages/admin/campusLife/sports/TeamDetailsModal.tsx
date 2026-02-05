@@ -71,7 +71,7 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({ isOpen, onClose, te
               </div>
               <div className="flex items-center space-x-2">
                 <Calendar size={16} className="text-purple-400" />
-                <span>{new Date(team.createdAt).toLocaleDateString()}</span>
+                <span>{new Date(team.createdAt || '').toLocaleDateString()}</span>
               </div>
             </div>
           </div>
@@ -79,8 +79,8 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({ isOpen, onClose, te
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
             <InfoCard icon={Trophy} label="Sport Type" value={team.type} />
             <InfoCard icon={User} label="Coach" value={team.headCoach} />
-            <InfoCard icon={Users} label="Player Count" value={team.participants} />
-            <InfoCard icon={Calendar} label="Formed On" value={new Date(team.formedOn).toLocaleDateString()} />
+            <InfoCard icon={Users} label="Player Count" value={team.participants || 0} />
+            <InfoCard icon={Calendar} label="Formed On" value={new Date(team.formedOn || '').toLocaleDateString()} />
             <InfoCard icon={Trophy} label="Division" value={team.division} />
             <InfoCard icon={OrganizerIcon} label="Organizer" value={team.organizer} />
             <InfoCard icon={Building} label="Category" value={team.category} />

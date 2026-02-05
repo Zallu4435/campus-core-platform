@@ -204,7 +204,7 @@ const AdminSportsManagement: React.FC = () => {
   const handleConfirmApprove = async () => {
     if (selectedRequest) {
       try {
-        await approvePlayerRequest(selectedRequest.requestId);
+        await approvePlayerRequest(selectedRequest.requestId || '');
         setShowApproveWarning(false);
         setShowRequestDetailsModal(false);
         setSelectedRequest(null);
@@ -217,7 +217,7 @@ const AdminSportsManagement: React.FC = () => {
   const handleConfirmReject = async () => {
     if (selectedRequest) {
       try {
-        await rejectPlayerRequest(selectedRequest.requestId);
+        await rejectPlayerRequest(selectedRequest.requestId || '');
         setShowRejectWarning(false);
         setShowRequestDetailsModal(false);
         setSelectedRequest(null);
@@ -253,7 +253,7 @@ const AdminSportsManagement: React.FC = () => {
       icon: <Eye size={16} />,
       label: 'View Details',
       onClick: (request: PlayerRequest) => {
-        handleViewRequest(request.requestId);
+        handleViewRequest(request.requestId || '');
         setShowRequestDetailsModal(true);
       },
       color: 'blue' as const,

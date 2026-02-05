@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FaCalendarAlt, FaSearch, FaUsers, FaArrowLeft, FaFilter } from 'react-icons/fa';
+import { FaSearch, FaUsers, FaArrowLeft, FaFilter } from 'react-icons/fa';
 import JoinRequestForm from './JoinRequestForm';
 import { usePreferences } from '../../../../application/context/PreferencesContext';
 import ReactDOM from 'react-dom';
@@ -14,7 +14,7 @@ export default function ClubsSection({ searchTerm, typeFilter, statusFilter, onF
   statusFilter: string;
   onFilterChange: (filters: { search: string; type: string; status: string }) => void;
 }) {
-  const { clubs, requestToJoinClub, isJoiningClub, joinClubError, isLoadingClubs, clubsError } = useCampusLife({
+  const { clubs, requestToJoinClubAsync, isJoiningClub, joinClubError, isLoadingClubs, clubsError } = useCampusLife({
     activeTab: 'Clubs',
     searchTerm,
     typeFilter,
@@ -59,7 +59,7 @@ export default function ClubsSection({ searchTerm, typeFilter, statusFilter, onF
   const handleJoinRequest = async (request: any) => {
     if (!selectedClub) return;
     try {
-      await requestToJoinClub({ clubId: selectedClub.id, request });
+      await requestToJoinClubAsync({ clubId: selectedClub.id, request });
 
       toast.success('Successfully submitted join request for club!');
 

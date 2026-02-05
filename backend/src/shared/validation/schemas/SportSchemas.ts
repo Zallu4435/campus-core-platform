@@ -30,20 +30,21 @@ export const createSportSchema = Joi.object({
     body: Joi.object({
         title: Joi.string().min(3).max(100).required(),
         type: Joi.string().required(),
-        category: Joi.string().required(),
-        organizer: Joi.string().required(),
-        organizerType: Joi.string().required(),
+        category: Joi.string().optional(),
+        organizer: Joi.string().optional(),
+        organizerType: Joi.string().optional(),
         icon: Joi.string().optional(),
         color: Joi.string().pattern(/^#[0-9A-F]{6}$/i).optional(),
         division: Joi.string().optional(),
-        headCoach: Joi.string().required(),
-        homeGames: Joi.number().integer().min(0).default(0),
+        headCoach: Joi.string().optional(),
+        homeGames: Joi.number().integer().min(0).optional(),
         record: Joi.string().optional(),
         upcomingGames: Joi.array().items(Joi.object({
             date: Joi.string().required(),
             description: Joi.string().required()
         })).optional(),
-        participants: Joi.number().integer().min(0).default(0),
+        participants: Joi.number().integer().min(0).optional(),
+
         status: Joi.string().valid(...Object.values(SportStatus)).optional(),
         playerCount: Joi.number().integer().min(0).optional(),
         formedOn: Joi.string().optional(),

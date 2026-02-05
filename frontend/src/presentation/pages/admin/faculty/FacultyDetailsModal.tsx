@@ -18,7 +18,7 @@ const FacultyDetailsModal: React.FC<FacultyDetailsModalProps> = ({ isOpen, onClo
     }
 
     try {
-      const response = await facultyService.getFacultyDocument(faculty._id, type, documentUrl);
+      const response = await facultyService.getFacultyDocument(faculty.id, type, documentUrl);
 
       if (response && response.pdfData) {
         const byteCharacters = atob(response.pdfData);
@@ -27,7 +27,7 @@ const FacultyDetailsModal: React.FC<FacultyDetailsModalProps> = ({ isOpen, onClo
           byteNumbers[i] = byteCharacters.charCodeAt(i);
         }
         const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: 'application/pdf' });
+        const blob = new Blob([byteArray], { type: response.contentType || 'application/pdf' });
         const url = window.URL.createObjectURL(blob);
         window.open(url, '_blank', 'noopener,noreferrer');
         setTimeout(() => window.URL.revokeObjectURL(url), 1000);
@@ -52,7 +52,7 @@ const FacultyDetailsModal: React.FC<FacultyDetailsModalProps> = ({ isOpen, onClo
     }
 
     try {
-      const response = await facultyService.getFacultyDocument(faculty._id, type, documentUrl);
+      const response = await facultyService.getFacultyDocument(faculty.id, type, documentUrl);
 
       if (response && response.pdfData) {
         const byteCharacters = atob(response.pdfData);
@@ -63,7 +63,7 @@ const FacultyDetailsModal: React.FC<FacultyDetailsModalProps> = ({ isOpen, onClo
         }
         const byteArray = new Uint8Array(byteNumbers);
 
-        const blob = new Blob([byteArray], { type: 'application/pdf' });
+        const blob = new Blob([byteArray], { type: response.contentType || 'application/pdf' });
 
         const url = window.URL.createObjectURL(blob);
 
@@ -127,7 +127,7 @@ const FacultyDetailsModal: React.FC<FacultyDetailsModalProps> = ({ isOpen, onClo
                 </p>
                 <div className="flex items-center mt-2 space-x-4">
                   <StatusBadge status={faculty.status} />
-                  <span className="text-sm text-purple-300">ID: {faculty._id}</span>
+                  <span className="text-sm text-purple-300">ID: {faculty.id}</span>
                   {/* Blocked status badge */}
                   {typeof faculty.blocked === 'boolean' && (
                     <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ml-2 ${faculty.blocked ? 'bg-red-900/40 text-red-400 border-red-500/40' : 'bg-green-900/40 text-green-400 border-green-500/40'}`}>
@@ -138,17 +138,17 @@ const FacultyDetailsModal: React.FC<FacultyDetailsModalProps> = ({ isOpen, onClo
               </div>
             </div>
             <div className="flex items-center space-x-2">
-              {typeof faculty.blocked === 'boolean' && onBlockToggle && (
+              {faculty.blocked !== undefined && onBlockToggle && (
                 <button
                   onClick={() => {
-                    onBlockToggle(faculty._id, faculty.blocked ?? false);
+                    onBlockToggle(faculty.id, faculty.blocked ?? false);
                   }}
                   disabled={faculty.status?.toLowerCase() !== 'approved'}
                   className={`flex items-center px-4 py-2 rounded-lg font-semibold border transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500/50 shadow-md ${faculty.status?.toLowerCase() !== 'approved'
-                      ? 'bg-gray-700/50 text-gray-400 border-gray-600/40 cursor-not-allowed opacity-50'
-                      : faculty.blocked
-                        ? 'bg-green-700/80 hover:bg-green-600/80 text-white border-green-500/40'
-                        : 'bg-red-700/80 hover:bg-red-600/80 text-white border-red-500/40'
+                    ? 'bg-gray-700/50 text-gray-400 border-gray-600/40 cursor-not-allowed opacity-50'
+                    : faculty.blocked
+                      ? 'bg-green-700/80 hover:bg-green-600/80 text-white border-green-500/40'
+                      : 'bg-red-700/80 hover:bg-red-600/80 text-white border-red-500/40'
                     }`}
                   title={
                     faculty.status?.toLowerCase() !== 'approved'

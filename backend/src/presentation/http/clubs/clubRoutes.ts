@@ -3,7 +3,7 @@ import { expressAdapter } from "../../adapters/ExpressAdapter";
 import { getClubsComposer } from "../../../infrastructure/services/clubs/ClubComposers";
 import { getClubRequestsComposer } from "../../../infrastructure/services/clubs/ClubRequestComposers";
 import { authMiddleware } from "../../../shared/middlewares/authMiddleware";
-import { validate } from "../../../shared/middlewares/validationMiddleware";
+import { validateRequest } from "../../../shared/middlewares/validationMiddleware";
 import {
   getClubsSchema,
   clubIdParamSchema,
@@ -20,7 +20,7 @@ const clubController = getClubsComposer();
 clubRouter.get(
   "/",
   authMiddleware,
-  validate(getClubsSchema),
+  validateRequest(getClubsSchema),
   (req, res, next) =>
     expressAdapter(req, res, next, clubController.getClubs.bind(clubController))
 );
@@ -28,7 +28,7 @@ clubRouter.get(
 clubRouter.get(
   "/:id",
   authMiddleware,
-  validate(clubIdParamSchema),
+  validateRequest(clubIdParamSchema),
   (req, res, next) =>
     expressAdapter(req, res, next, clubController.getClubById.bind(clubController))
 );
@@ -36,7 +36,7 @@ clubRouter.get(
 clubRouter.post(
   "/",
   authMiddleware,
-  validate(createClubSchema),
+  validateRequest(createClubSchema),
   (req, res, next) =>
     expressAdapter(req, res, next, clubController.createClub.bind(clubController))
 );
@@ -44,7 +44,7 @@ clubRouter.post(
 clubRouter.put(
   "/:id",
   authMiddleware,
-  validate(updateClubSchema),
+  validateRequest(updateClubSchema),
   (req, res, next) =>
     expressAdapter(req, res, next, clubController.updateClub.bind(clubController))
 );
@@ -52,7 +52,7 @@ clubRouter.put(
 clubRouter.delete(
   "/:id",
   authMiddleware,
-  validate(clubIdParamSchema),
+  validateRequest(clubIdParamSchema),
   (req, res, next) =>
     expressAdapter(req, res, next, clubController.deleteClub.bind(clubController))
 );
@@ -64,7 +64,7 @@ const clubRequestController = getClubRequestsComposer();
 clubRequestRouter.get(
   "/",
   authMiddleware,
-  validate(getClubRequestsSchema),
+  validateRequest(getClubRequestsSchema),
   (req, res, next) =>
     expressAdapter(req, res, next, clubRequestController.getClubRequests.bind(clubRequestController))
 );
@@ -72,7 +72,7 @@ clubRequestRouter.get(
 clubRequestRouter.get(
   "/:id",
   authMiddleware,
-  validate(clubRequestIdParamSchema),
+  validateRequest(clubRequestIdParamSchema),
   (req, res, next) =>
     expressAdapter(req, res, next, clubRequestController.getClubRequestDetails.bind(clubRequestController))
 );
@@ -80,7 +80,7 @@ clubRequestRouter.get(
 clubRequestRouter.post(
   "/:id/approve",
   authMiddleware,
-  validate(clubRequestIdParamSchema),
+  validateRequest(clubRequestIdParamSchema),
   (req, res, next) =>
     expressAdapter(req, res, next, clubRequestController.approveClubRequest.bind(clubRequestController))
 );
@@ -88,7 +88,7 @@ clubRequestRouter.post(
 clubRequestRouter.post(
   "/:id/reject",
   authMiddleware,
-  validate(clubRequestIdParamSchema),
+  validateRequest(clubRequestIdParamSchema),
   (req, res, next) =>
     expressAdapter(req, res, next, clubRequestController.rejectClubRequest.bind(clubRequestController))
 );
