@@ -1,190 +1,152 @@
-# University Academy - Frontend
+# 🎓 University Academy Platform (Frontend)
 
-A modern, responsive web application built with React and TypeScript for managing university academy operations. Features a clean, intuitive interface for students, faculty, and administrators.
+<div align="center">
+  <h3>Modern University Management Frontend System</h3>
+  <p>A production-grade, role-based university management interface built with React 19, TypeScript, and Vite — designed for students, faculty, and administrators with real-time communication, payments, analytics, and PWA support.</p>
+</div>
 
-## 🚀 Technology Stack
+<div align="center">
 
-- **Framework**: React 19.x with TypeScript
-- **Build Tool**: Vite 6.x
-- **Styling**: Tailwind CSS 4.x
-- **State Management**: Redux Toolkit + React Redux
-- **Routing**: React Router DOM 7.x
-- **HTTP Client**: Axios
-- **Form Handling**: React Hook Form + Zod validation
-- **UI Components**: Custom components with Tailwind CSS
-- **Charts**: Chart.js + Recharts
-- **Real-time**: Socket.io client
-- **Authentication**: Firebase
-- **Payment**: Stripe integration
+  [![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
+  [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+  [![Vite](https://img.shields.io/badge/Vite-6.x-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
+  [![TailwindCSS](https://img.shields.io/badge/TailwindCSS-4.x-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+  [![Redux Toolkit](https://img.shields.io/badge/Redux_Toolkit-593D88?style=for-the-badge&logo=redux&logoColor=white)](https://redux-toolkit.js.org/)
 
-## 📋 Prerequisites
+</div>
 
-- Node.js (v18 or higher)
-- npm or yarn
-- Modern web browser with ES6+ support
+---
 
-## 🛠️ Installation
+## 📌 Overview
 
-1. **Clone the repository and navigate to frontend**
-   ```bash
-   cd frontend
-   ```
+The **University Academy Frontend** is a scalable, role-based web application designed to manage core university operations through a unified digital platform. Built with a modular architecture, it supports real-time communication, secure authentication, payment processing, and rich data visualization.
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+### Supported Roles:
+- 🎓 **Students** — learning, payments, and academic tracking
+- 👨‍🏫 **Faculty** — course management, grading, and communication
+- 🧑‍💼 **Admins** — institutional control, analytics, and operations
 
-3. **Environment Setup**
-   Create a `.env` file in the frontend root directory with the following variables:
-   ```env
-   # API Configuration (REQUIRED)
-   VITE_API_BASE_URL=http://localhost:5000/api
-   
-   # Firebase Configuration (REQUIRED)
-   VITE_FIREBASE_API_KEY=your_firebase_api_key
-   VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
-   VITE_FIREBASE_PROJECT_ID=your_project_id
-   VITE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
-   VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-   VITE_FIREBASE_APP_ID=your_app_id
-   VITE_FIREBASE_MEASUREMENT_ID=your_measurement_id
-   VITE_FIREBASE_VAPID_KEY=your_firebase_vapid_key
-   
-   # Payment Gateways
-   VITE_STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
-   VITE_RAZORPAY_KEY_ID=your_razorpay_key_id
-   ```
-   
-   **Important**: Copy `.env.example` to `.env` and update with your actual values.
-   
-   **Note**: The `VITE_API_BASE_URL` should match your backend URL. For Socket.IO connections (chat, video conference), the base URL without `/api` will be used automatically.
+---
 
-## 🚀 Available Scripts
+## 🚀 Key Capabilities
 
-- **Development**: `npm run dev` - Start development server with hot reload
-- **Build**: `npm run build` - Build the project for production
-- **Preview**: `npm run preview` - Preview production build locally
-- **Lint**: `npm run lint` - Run ESLint for code quality
-- **Generate SW**: `npm run generate-sw` - Generate service worker
+### 🎯 Core Platform Features
+- Role-based dashboards (Student / Faculty / Admin)
+- Responsive, mobile-first UI architecture
+- Real-time notifications & communication system
+- PWA support with offline capabilities
 
-## 🏗️ Project Structure
+### 🔐 Authentication & Access Control
+- Firebase authentication (Email / Phone / Social login)
+- Secure session persistence & Role-based route protection
+- Protected UI rendering based on permissions
 
+### 📡 Real-Time System
+- Socket.IO powered live communication
+- Instant notifications & Chat/collaboration features
+
+### 💳 Payments & Finance
+- Stripe integration for online payments
+- Razorpay support for regional payments
+- Fee tracking and secure payment flow handling
+
+### 📊 Analytics & Visualization
+- Chart.js + Recharts dashboards
+- Academic performance & attendance metrics
+
+---
+
+## 🧠 Architecture Overview
+
+```mermaid
+graph TD
+    UI[Presentation Layer<br/>UI Components] --> App[Application Layer<br/>Hooks, State Logic]
+    App --> Domain[Domain Layer<br/>Types, Schemas]
+    Domain --> Service[Service Layer<br/>API + External Integrations]
+    Service --> Infra[Infrastructure<br/>Firebase, Socket.IO, Payments]
 ```
+
+### 🏗️ Project Structure
+```text
 src/
-├── application/          # Application logic, hooks, and services
-├── appStore/            # Redux store and slices
-├── domain/              # Type definitions and validation schemas
-├── frameworks/          # Core framework configurations
-├── presentation/        # UI components and pages
-├── services/            # API services and external integrations
-├── shared/              # Common components, utilities, and constants
-├── App.tsx              # Main application component
-└── main.tsx             # Application entry point
+├── application/     # State management, Hooks, Use cases
+├── domain/          # TypeScript interfaces, Entities
+├── presentation/    # React Components, Pages, Layouts
+├── services/        # API clients, Firebase config
+├── shared/          # Utilities, Constants, UI library
+├── App.tsx          # Root Component
+└── main.tsx         # Entry Point
 ```
 
-## 🔧 Key Features
+---
 
-- **Responsive Design**: Mobile-first approach with Tailwind CSS
-- **Progressive Web App**: Service worker for offline functionality
-- **Real-time Updates**: Live notifications and chat features
-- **Role-based Access**: Different interfaces for students, faculty, and admins
-- **Form Validation**: Robust form handling with Zod schemas
-- **State Management**: Centralized state with Redux Toolkit
-- **Type Safety**: Full TypeScript implementation
-- **Modern UI**: Clean, accessible interface components
-- **Payment Integration**: Stripe payment processing
-- **File Management**: Document upload and management
-- **Analytics**: Chart.js integration for data visualization
+## 🛠️ Tech Stack
 
-## 🎨 UI Components
+| Layer | Technology | Purpose |
+| :--- | :--- | :--- |
+| **Framework** | React 19 | Core UI Library |
+| **Language** | TypeScript | Type-safe development |
+| **Build Tool** | Vite 6 | Lightning fast HMR & bundling |
+| **Styling** | Tailwind CSS 4 | Utility-first CSS |
+| **State Management** | Redux Toolkit | Global state & API caching |
+| **Routing** | React Router 7 | Client-side routing |
+| **Forms** | React Hook Form + Zod | Form validation & handling |
+| **API** | Axios | HTTP client |
+| **Real-time** | Socket.IO Client | WebSocket communication |
+| **Auth** | Firebase | Authentication services |
 
-The application includes:
-- **Layout Components**: Header, sidebar, navigation
-- **Form Components**: Input fields, buttons, modals
-- **Data Display**: Tables, cards, lists
-- **Interactive Elements**: Dropdowns, date pickers, file uploads
-- **Feedback Components**: Toasts, alerts, loading states
+---
 
-## 📱 Responsive Design
+## ⚙️ Setup & Installation
 
-- **Mobile**: Optimized for small screens
-- **Tablet**: Adaptive layouts for medium screens
-- **Desktop**: Full-featured interface for large screens
-- **Touch-friendly**: Optimized for touch interactions
+### 1️⃣ Clone and Install
+```bash
+cd frontend
+npm install
+```
 
-## 🔐 Authentication & Authorization
+### 2️⃣ Environment Variables
+Create a `.env` file in the `frontend` root:
+```env
+VITE_API_BASE_URL=http://localhost:5000/api
 
-- **Firebase Authentication**: Phone, email, and social login
-- **JWT Tokens**: Secure API communication
-- **Role-based Access**: Different permissions for different user types
-- **Session Management**: Persistent login states
+# Firebase Config
+VITE_FIREBASE_API_KEY=your_key
+VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your_project_id
+VITE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+VITE_FIREBASE_APP_ID=your_app_id
 
-## 🌐 API Integration
+# Payment Config
+VITE_STRIPE_PUBLISHABLE_KEY=your_key
+VITE_RAZORPAY_KEY_ID=your_key
+```
 
-- **RESTful APIs**: Communication with backend services
-- **Real-time Updates**: WebSocket connections for live data
-- **Error Handling**: Comprehensive error management
-- **Request/Response Interceptors**: Centralized API configuration
+### 3️⃣ Run Project
+```bash
+npm run dev
+# Running on http://localhost:5173
+```
 
-## 🚀 Getting Started
+---
 
-1. **Start development server**
-   ```bash
-   npm run dev
-   ```
+## 🧪 Production Build
 
-2. **Access the application**
-   - Development: `http://localhost:5173`
-   - The app will automatically open in your default browser
+```bash
+# Type-check and build for production
+npm run build
 
-3. **Build for production**
-   ```bash
-   npm run build
-   ```
+# Preview the production build locally
+npm run preview
+```
 
-## 📝 Development Guidelines
+---
 
-- Follow React best practices and hooks
-- Use TypeScript for type safety
-- Implement responsive design principles
-- Follow accessibility guidelines
-- Write clean, maintainable components
-- Use proper error boundaries and loading states
+## 🔒 Security Highlights
+- Firebase secure authentication & JWT passing
+- Role-based route protection
+- Strict input validation via Zod schemas
 
-## 🔒 Security Features
-
-- Environment variable protection
-- Input validation and sanitization
-- Secure authentication flows
-- HTTPS enforcement in production
-- XSS protection measures
-
-## 📚 Dependencies
-
-Major dependencies include:
-- React 19 for UI framework
-- Vite for build tooling
-- Tailwind CSS for styling
-- Redux Toolkit for state management
-- React Router for navigation
-- Axios for HTTP requests
-- Firebase for authentication
-- Chart.js for data visualization
-
-For a complete list, see `package.json`.
-
-## 🌟 Browser Support
-
-- Chrome (latest)
-- Firefox (latest)
-- Safari (latest)
-- Edge (latest)
-- Mobile browsers (iOS Safari, Chrome Mobile)
-
-## 📱 PWA Features
-
-- Service worker for offline functionality
-- App manifest for installability
-- Push notifications support
-- Background sync capabilities
+## 📜 License
+This project is licensed under the MIT License.

@@ -18,7 +18,7 @@ export const useChatSocket = (
     const queryClient = useQueryClient();
 
     useEffect(() => {
-        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://vagouniversity.com';
         const socketUrl = apiBaseUrl.replace('/api', '') + '/chat';
 
         const socket = io(socketUrl, {

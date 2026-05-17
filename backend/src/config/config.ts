@@ -18,16 +18,16 @@ export const config = {
     password: process.env.EMAIL_PASSWORD!,
     from: process.env.EMAIL_FROM,
   },
-  frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
+  frontendUrl: process.env.FRONTEND_URL || 'https://vagouniversity.com',
   jwt: {
     secret: process.env.JWT_SECRET!,
     refreshSecret: process.env.JWT_REFRESH_SECRET!,
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   },
-    cloudinary: {
+  cloudinary: {
     cloudName: process.env.CLOUDINARY_CLOUD_NAME!,
     apiKey: process.env.CLOUDINARY_API_KEY!,
     apiSecret: process.env.CLOUDINARY_API_SECRET!,
   },
-  backendUrl: process.env.BACKEND_BASE_URL || 'http://localhost:5000',
+  backendUrl: process.env.BACKEND_BASE_URL || 'https://vagouniversity.com',
 };
